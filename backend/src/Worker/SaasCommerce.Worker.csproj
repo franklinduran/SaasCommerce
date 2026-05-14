@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-SaasCommerce.Worker-59d02b18-89e7-4526-b16f-39b67efb31bf</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.5.1" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SaasCommerce.Application\SaasCommerce.Application.csproj" />
+    <ProjectReference Include="..\SaasCommerce.Infrastructure\SaasCommerce.Infrastructure.csproj" />
+    <ProjectReference Include="..\SaasCommerce.Contracts\SaasCommerce.Contracts.csproj" />
+  </ItemGroup>
+</Project>

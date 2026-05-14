@@ -1,0 +1,48 @@
+import type { ApiError, ApiResponse } from '@/shared/types/api'
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+
+type RequestOptions = RequestInit & {
+  accessToken?: string
+}
+
+export class HttpClientError extends Error {
+  public readonly status: number
+  public readonly errors: ApiError[]
+
+  constructor(message: string, status: number, errors: ApiError[]) {
+    super(message)
+    this.name = 'HttpClientError'
+    this.status = status
+    this.errors = errors
+  }
+}
+
+export async function httpClient<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<ApiResponse<T>> {
+  const headers = new Headers(options.headers)
+
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
+  if (options.accessToken) {
+    headers.set('Authorization', `Bearer ${options.accessToken}`)
+  }
+
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...options,
+    headers,
+  })
+
+  const payload = (await response.json()) as ApiResponse<T>
+
+  if (!response.ok || !payload.succeeded) {
+    const message = payload.errors[0]?.message ?? 'Request failed'
+    throw new HttpClientError(message, response.status, payload.errors)
+  }
+
+  return payload
+}

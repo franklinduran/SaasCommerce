@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: saascommerce-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-SaasCommerce}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: saascommerce-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/src/Api/Dockerfile
+    container_name: saascommerce-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-SaasCommerce};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+      Jwt__Secret: ${JWT_SECRET:-}
+      Jwt__Issuer: ${JWT_ISSUER:-SaasCommerce}
+      Jwt__Audience: ${JWT_AUDIENCE:-SaasCommerce}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/src/Worker/Dockerfile
+    container_name: saascommerce-worker
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-SaasCommerce};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: ${RABBITMQ_DEFAULT_USER:-guest}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS:-guest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        VITE_SIGNALR_HUB_URL: ${VITE_SIGNALR_HUB_URL:-http://localhost:8080/hubs/business}
+    container_name: saascommerce-web
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

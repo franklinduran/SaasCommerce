@@ -1,0 +1,12 @@
+.git/
+.vs/
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.vite/
+**/*.user
+**/*.suo
+coverage/
+TestResults/
+.env

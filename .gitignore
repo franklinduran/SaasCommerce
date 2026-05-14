@@ -1,0 +1,42 @@
+## Build outputs
+bin/
+obj/
+out/
+dist/
+coverage/
+TestResults/
+
+## .NET
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+*.lscache
+.vs/
+
+## Node / frontend
+node_modules/
+.vite/
+*.tsbuildinfo
+
+## Logs
+*.log
+logs/
+
+## Environment files
+.env
+.env.*
+!.env.example
+ARCHITECTURE_RULES.md
+
+## IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
