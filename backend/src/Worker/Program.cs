@@ -1,6 +1,6 @@
 using System.Globalization;
-using SaasCommerce.Application;
-using SaasCommerce.Infrastructure;
+using SaasCommerce.BuildingBlocks;
+using SaasCommerce.Modules;
 using SaasCommerce.Worker;
 using SaasCommerce.Worker.Consumers;
 using Serilog;
@@ -13,8 +13,8 @@ Log.Logger = new LoggerConfiguration()
   .CreateLogger();
 
 builder.Services.AddSerilog();
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(
+builder.Services.AddModules();
+builder.Services.AddBuildingBlocks(
   builder.Configuration,
   massTransit => massTransit.AddConsumer<TechnicalPingConsumer>());
 builder.Services.AddHostedService<Worker>();

@@ -2,10 +2,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY SaasCommerce.slnx Directory.Build.props global.json ./
-COPY backend/src/SaasCommerce.Domain/SaasCommerce.Domain.csproj backend/src/SaasCommerce.Domain/
-COPY backend/src/SaasCommerce.Application/SaasCommerce.Application.csproj backend/src/SaasCommerce.Application/
-COPY backend/src/SaasCommerce.Contracts/SaasCommerce.Contracts.csproj backend/src/SaasCommerce.Contracts/
-COPY backend/src/SaasCommerce.Infrastructure/SaasCommerce.Infrastructure.csproj backend/src/SaasCommerce.Infrastructure/
+COPY backend/src/SharedKernel/SaasCommerce.SharedKernel.csproj backend/src/SharedKernel/
+COPY backend/src/BuildingBlocks/SaasCommerce.BuildingBlocks.csproj backend/src/BuildingBlocks/
+COPY backend/src/Modules/SaasCommerce.Modules.csproj backend/src/Modules/
 COPY backend/src/Api/SaasCommerce.Api.csproj backend/src/Api/
 RUN dotnet restore backend/src/Api/SaasCommerce.Api.csproj
 

@@ -1,8 +1,7 @@
 using System.Reflection;
-using SaasCommerce.Application;
-using SaasCommerce.Contracts;
-using SaasCommerce.Domain;
-using SaasCommerce.Infrastructure;
+using SaasCommerce.BuildingBlocks;
+using SaasCommerce.Modules;
+using SaasCommerce.SharedKernel;
 using FluentAssertions;
 using NetArchTest.Rules;
 
@@ -10,44 +9,108 @@ namespace SaasCommerce.Architecture.Tests;
 
 public sealed class ArchitectureDependencyTests
 {
-  private static readonly Assembly DomainAssembly = DomainAssemblyReference.Assembly;
-  private static readonly Assembly ApplicationAssembly = ApplicationAssemblyReference.Assembly;
-  private static readonly Assembly ContractsAssembly = ContractsAssemblyReference.Assembly;
-  private static readonly Assembly InfrastructureAssembly = InfrastructureAssemblyReference.Assembly;
+  private static readonly Assembly SharedKernelAssembly = SharedKernelAssemblyReference.Assembly;
+  private static readonly Assembly BuildingBlocksAssembly = BuildingBlocksAssemblyReference.Assembly;
+  private static readonly Assembly ModulesAssembly = ModulesAssemblyReference.Assembly;
+
+  private static readonly string[] ModuleNames =
+  [
+    "Tenancy",
+    "Identity",
+    "Catalog",
+    "Inventory",
+    "Sales",
+    "Customers",
+    "Billing",
+    "Payments",
+    "Reporting"
+  ];
 
   [Theory]
-  [InlineData("SaasCommerce.Infrastructure")]
-  [InlineData("SaasCommerce.Application")]
+  [InlineData("SaasCommerce.BuildingBlocks")]
+  [InlineData("SaasCommerce.Modules")]
   [InlineData("MassTransit")]
   [InlineData("Microsoft.EntityFrameworkCore")]
-  public void DomainShouldNotDependOnForbiddenNamespaces(string dependency)
+  [InlineData("Microsoft.AspNetCore")]
+  public void SharedKernelShouldNotDependOnForbiddenNamespaces(string dependency)
   {
-    AssertNoDependency(DomainAssembly, dependency);
+    AssertNoDependency(SharedKernelAssembly, dependency);
   }
 
   [Theory]
-  [InlineData("SaasCommerce.Infrastructure")]
-  [InlineData("Microsoft.AspNetCore")]
+  [InlineData("SaasCommerce.BuildingBlocks.Infrastructure")]
+  [InlineData("Microsoft.EntityFrameworkCore")]
+  [InlineData("MassTransit")]
   [InlineData("Microsoft.AspNetCore.SignalR")]
-  public void ApplicationShouldNotDependOnForbiddenNamespaces(string dependency)
+  public void BuildingBlocksApplicationShouldNotDependOnTechnicalDetails(string dependency)
   {
-    AssertNoDependency(ApplicationAssembly, dependency);
-  }
-
-  [Fact]
-  public void ContractsShouldNotDependOnInfrastructure()
-  {
-    AssertNoDependency(ContractsAssembly, "SaasCommerce.Infrastructure");
+    AssertNoDependency(
+      BuildingBlocksAssembly,
+      "SaasCommerce.BuildingBlocks.Application",
+      dependency);
   }
 
   [Theory]
   [InlineData("SaasCommerce.Api")]
   [InlineData("SaasCommerce.Worker")]
-  public void CoreLayersShouldNotDependOnEntrypoints(string dependency)
+  public void CoreAssembliesShouldNotDependOnEntrypoints(string dependency)
   {
-    AssertNoDependency(DomainAssembly, dependency);
-    AssertNoDependency(ApplicationAssembly, dependency);
-    AssertNoDependency(InfrastructureAssembly, dependency);
+    AssertNoDependency(SharedKernelAssembly, dependency);
+    AssertNoDependency(BuildingBlocksAssembly, dependency);
+    AssertNoDependency(ModulesAssembly, dependency);
+  }
+
+  [Theory]
+  [InlineData("MassTransit")]
+  [InlineData("Microsoft.EntityFrameworkCore")]
+  [InlineData("Microsoft.AspNetCore")]
+  public void ModuleDomainsShouldNotDependOnTechnicalFrameworks(string dependency)
+  {
+    foreach (var moduleName in ModuleNames)
+    {
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Domain",
+        dependency);
+    }
+  }
+
+  [Fact]
+  public void ModuleDomainsShouldNotDependOnOtherModuleDomains()
+  {
+    foreach (var sourceModule in ModuleNames)
+    {
+      foreach (var targetModule in ModuleNames.Where(module => module != sourceModule))
+      {
+        AssertNoDependency(
+          ModulesAssembly,
+          $"SaasCommerce.Modules.{sourceModule}.Domain",
+          $"SaasCommerce.Modules.{targetModule}.Domain");
+      }
+    }
+  }
+
+  [Fact]
+  public void ModuleContractsShouldNotDependOnInfrastructure()
+  {
+    foreach (var moduleName in ModuleNames)
+    {
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Contracts",
+        "Infrastructure");
+    }
+  }
+
+  [Fact]
+  public void GlobalApplicationProjectShouldNotExist()
+  {
+    var repositoryRoot = FindRepositoryRoot();
+
+    Directory
+      .Exists(Path.Combine(repositoryRoot, "backend", "src", "SaasCommerce.Application"))
+      .Should()
+      .BeFalse("use cases must live under backend/src/Modules/module/Application");
   }
 
   private static void AssertNoDependency(Assembly assembly, string dependency)
@@ -60,5 +123,36 @@ public sealed class ArchitectureDependencyTests
 
     result.IsSuccessful.Should().BeTrue(
       $"{assembly.GetName().Name} should not depend on {dependency}");
+  }
+
+  private static void AssertNoDependency(
+    Assembly assembly,
+    string sourceNamespace,
+    string dependency)
+  {
+    var result = Types
+      .InAssembly(assembly)
+      .That()
+      .ResideInNamespace(sourceNamespace)
+      .Should()
+      .NotHaveDependencyOn(dependency)
+      .GetResult();
+
+    result.IsSuccessful.Should().BeTrue(
+      $"{sourceNamespace} should not depend on {dependency}");
+  }
+
+  private static string FindRepositoryRoot()
+  {
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+    while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "SaasCommerce.slnx")))
+    {
+      directory = directory.Parent;
+    }
+
+    directory.Should().NotBeNull();
+
+    return directory!.FullName;
   }
 }

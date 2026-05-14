@@ -11,8 +11,8 @@ export type ApiError = {
 }
 
 export type ApiResponse<T> = {
-  succeeded: boolean
+  isSuccess: boolean
   data: T | null
-  errors: ApiError[]
+  error: ApiError | null
   correlationId?: string | null
 }

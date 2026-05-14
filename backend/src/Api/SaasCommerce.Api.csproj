@@ -15,9 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SaasCommerce.Application\SaasCommerce.Application.csproj" />
-    <ProjectReference Include="..\SaasCommerce.Infrastructure\SaasCommerce.Infrastructure.csproj" />
-    <ProjectReference Include="..\SaasCommerce.Contracts\SaasCommerce.Contracts.csproj" />
+    <ProjectReference Include="..\BuildingBlocks\SaasCommerce.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\Modules\SaasCommerce.Modules.csproj" />
   </ItemGroup>
 
 </Project>

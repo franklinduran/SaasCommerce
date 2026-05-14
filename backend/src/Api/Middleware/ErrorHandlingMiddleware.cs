@@ -1,4 +1,4 @@
-using SaasCommerce.Contracts.Common;
+using SaasCommerce.BuildingBlocks.Contracts.Common;
 
 namespace SaasCommerce.Api.Middleware;
 
@@ -6,7 +6,6 @@ public sealed class ErrorHandlingMiddleware(
   RequestDelegate next,
   ILogger<ErrorHandlingMiddleware> logger)
 {
-  private const string CorrelationIdHeaderName = "X-Correlation-ID";
   private static readonly Action<ILogger, string, Exception?> LogUnhandledApiError =
     LoggerMessage.Define<string>(
       LogLevel.Error,
@@ -18,8 +17,6 @@ public sealed class ErrorHandlingMiddleware(
     ArgumentNullException.ThrowIfNull(context);
 
     var correlationId = GetCorrelationId(context);
-    context.Response.Headers[CorrelationIdHeaderName] = correlationId;
-
     try
     {
       await next(context);
@@ -41,7 +38,14 @@ public sealed class ErrorHandlingMiddleware(
 
   private static string GetCorrelationId(HttpContext context)
   {
-    if (context.Request.Headers.TryGetValue(CorrelationIdHeaderName, out var values))
+    if (context.Items.TryGetValue(CorrelationIdMiddleware.HeaderName, out var value) &&
+        value is string itemCorrelationId &&
+        !string.IsNullOrWhiteSpace(itemCorrelationId))
+    {
+      return itemCorrelationId;
+    }
+
+    if (context.Request.Headers.TryGetValue(CorrelationIdMiddleware.HeaderName, out var values))
     {
       var correlationId = values.FirstOrDefault();
 

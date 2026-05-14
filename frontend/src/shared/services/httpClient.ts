@@ -8,13 +8,13 @@ type RequestOptions = RequestInit & {
 
 export class HttpClientError extends Error {
   public readonly status: number
-  public readonly errors: ApiError[]
+  public readonly error: ApiError | null
 
-  constructor(message: string, status: number, errors: ApiError[]) {
+  constructor(message: string, status: number, error: ApiError | null) {
     super(message)
     this.name = 'HttpClientError'
     this.status = status
-    this.errors = errors
+    this.error = error
   }
 }
 
@@ -39,9 +39,9 @@ export async function httpClient<T>(
 
   const payload = (await response.json()) as ApiResponse<T>
 
-  if (!response.ok || !payload.succeeded) {
-    const message = payload.errors[0]?.message ?? 'Request failed'
-    throw new HttpClientError(message, response.status, payload.errors)
+  if (!response.ok || !payload.isSuccess) {
+    const message = payload.error?.message ?? 'Request failed'
+    throw new HttpClientError(message, response.status, payload.error)
   }
 
   return payload

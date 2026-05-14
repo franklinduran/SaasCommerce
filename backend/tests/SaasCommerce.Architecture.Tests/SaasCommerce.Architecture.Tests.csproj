@@ -22,10 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SaasCommerce.Domain\SaasCommerce.Domain.csproj" />
-    <ProjectReference Include="..\..\src\SaasCommerce.Application\SaasCommerce.Application.csproj" />
-    <ProjectReference Include="..\..\src\SaasCommerce.Contracts\SaasCommerce.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\SaasCommerce.Infrastructure\SaasCommerce.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SharedKernel\SaasCommerce.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\SaasCommerce.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SaasCommerce.Modules.csproj" />
     <ProjectReference Include="..\..\src\Api\SaasCommerce.Api.csproj" />
     <ProjectReference Include="..\..\src\Worker\SaasCommerce.Worker.csproj" />
   </ItemGroup>

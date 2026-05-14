@@ -2,17 +2,16 @@
   <Folder Name="/backend/src/">
     <Project Path="backend/src/Api/SaasCommerce.Api.csproj" />
     <Project Path="backend/src/Worker/SaasCommerce.Worker.csproj" />
-    <Project Path="backend/src/SaasCommerce.Application/SaasCommerce.Application.csproj" />
-    <Project Path="backend/src/SaasCommerce.Contracts/SaasCommerce.Contracts.csproj" />
-    <Project Path="backend/src/SaasCommerce.Domain/SaasCommerce.Domain.csproj" />
-    <Project Path="backend/src/SaasCommerce.Infrastructure/SaasCommerce.Infrastructure.csproj" />
+    <Project Path="backend/src/SharedKernel/SaasCommerce.SharedKernel.csproj" />
+    <Project Path="backend/src/BuildingBlocks/SaasCommerce.BuildingBlocks.csproj" />
+    <Project Path="backend/src/Modules/SaasCommerce.Modules.csproj" />
   </Folder>
   <Folder Name="/backend/tests/">
     <Project Path="backend/tests/SaasCommerce.Api.Tests/SaasCommerce.Api.Tests.csproj" />
-    <Project Path="backend/tests/SaasCommerce.Application.Tests/SaasCommerce.Application.Tests.csproj" />
     <Project Path="backend/tests/SaasCommerce.Architecture.Tests/SaasCommerce.Architecture.Tests.csproj" />
-    <Project Path="backend/tests/SaasCommerce.Domain.Tests/SaasCommerce.Domain.Tests.csproj" />
-    <Project Path="backend/tests/SaasCommerce.Infrastructure.Tests/SaasCommerce.Infrastructure.Tests.csproj" />
+    <Project Path="backend/tests/SaasCommerce.BuildingBlocks.Tests/SaasCommerce.BuildingBlocks.Tests.csproj" />
+    <Project Path="backend/tests/SaasCommerce.Modules.Tests/SaasCommerce.Modules.Tests.csproj" />
+    <Project Path="backend/tests/SaasCommerce.SharedKernel.Tests/SaasCommerce.SharedKernel.Tests.csproj" />
     <Project Path="backend/tests/SaasCommerce.Worker.Tests/SaasCommerce.Worker.Tests.csproj" />
   </Folder>
 </Solution>
