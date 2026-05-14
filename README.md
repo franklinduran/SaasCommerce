@@ -126,6 +126,16 @@ VITE_SIGNALR_HUB_URL
 - SharedKernel, BuildingBlocks y Modules no dependen de API ni Worker.
 - No existe una `SaasCommerce.Application` global para casos de uso.
 
+## Proteccion De Etapa 3
+
+La base modular queda protegida con pruebas ejecutables:
+
+- `Architecture.Tests` valida limites entre modulos, hosts sin dominio interno y ausencia de Application global.
+- `Modules.Tests` valida eventos de integracion versionados con `EventId`, `CorrelationId`, `BusinessId`, `OccurredAt` y `Version`.
+- `BuildingBlocks.Tests` valida Inbox, `EfInboxStore` e `IdempotentConsumer`.
+- `Api.Tests` valida `CorrelationIdMiddleware` y el contrato JSON `isSuccess/data/error`.
+- El frontend debe consumir `isSuccess`, `data` y `error`; no debe volver a `succeeded/errors`.
+
 ## Definition Of Done
 
 - `dotnet build --no-restore` pasa con 0 warnings.

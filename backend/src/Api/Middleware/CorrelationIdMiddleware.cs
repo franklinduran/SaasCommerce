@@ -13,12 +13,7 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
     var correlationId = GetOrCreateCorrelationId(context);
     context.TraceIdentifier = correlationId;
     context.Items[HeaderName] = correlationId;
-
-    context.Response.OnStarting(() =>
-    {
-      context.Response.Headers[HeaderName] = correlationId;
-      return Task.CompletedTask;
-    });
+    context.Response.Headers[HeaderName] = correlationId;
 
     using (LogContext.PushProperty("CorrelationId", correlationId))
     {
