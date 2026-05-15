@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Api\SaasCommerce.Api.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\SaasCommerce.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SaasCommerce.Modules.csproj" />
   </ItemGroup>
 
 </Project>

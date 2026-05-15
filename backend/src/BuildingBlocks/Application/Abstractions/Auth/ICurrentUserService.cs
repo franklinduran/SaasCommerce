@@ -6,5 +6,9 @@ public interface ICurrentUserService
 
   Guid? BusinessId { get; }
 
+  Guid? BranchId { get; }
+
+  IReadOnlyCollection<string> Roles { get; }
+
   bool IsAuthenticated { get; }
 }

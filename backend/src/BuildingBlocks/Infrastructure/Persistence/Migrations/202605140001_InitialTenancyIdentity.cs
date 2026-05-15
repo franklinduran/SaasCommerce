@@ -1,0 +1,187 @@
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations;
+
+public partial class InitialTenancyIdentity : Migration
+{
+  protected override void Up(MigrationBuilder migrationBuilder)
+  {
+    migrationBuilder.EnsureSchema(name: "identity");
+    migrationBuilder.EnsureSchema(name: "tenancy");
+
+    migrationBuilder.CreateTable(
+      name: "businesses",
+      schema: "tenancy",
+      columns: table => new
+      {
+        Id = table.Column<Guid>(type: "uuid", nullable: false),
+        Name = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
+        IsActive = table.Column<bool>(type: "boolean", nullable: false),
+        CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+      },
+      constraints: table =>
+      {
+        table.PrimaryKey("pk_businesses", business => business.Id);
+      });
+
+    migrationBuilder.CreateTable(
+      name: "roles",
+      schema: "identity",
+      columns: table => new
+      {
+        Id = table.Column<Guid>(type: "uuid", nullable: false),
+        BusinessId = table.Column<Guid>(type: "uuid", nullable: false),
+        Name = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false)
+      },
+      constraints: table =>
+      {
+        table.PrimaryKey("pk_roles", role => role.Id);
+      });
+
+    migrationBuilder.CreateTable(
+      name: "users",
+      schema: "identity",
+      columns: table => new
+      {
+        Id = table.Column<Guid>(type: "uuid", nullable: false),
+        BusinessId = table.Column<Guid>(type: "uuid", nullable: false),
+        DefaultBranchId = table.Column<Guid>(type: "uuid", nullable: true),
+        FullName = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
+        Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
+        PasswordHash = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+        IsActive = table.Column<bool>(type: "boolean", nullable: false),
+        CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+      },
+      constraints: table =>
+      {
+        table.PrimaryKey("pk_users", user => user.Id);
+      });
+
+    migrationBuilder.CreateTable(
+      name: "branches",
+      schema: "tenancy",
+      columns: table => new
+      {
+        Id = table.Column<Guid>(type: "uuid", nullable: false),
+        BusinessId = table.Column<Guid>(type: "uuid", nullable: false),
+        Name = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: false),
+        IsMain = table.Column<bool>(type: "boolean", nullable: false),
+        IsActive = table.Column<bool>(type: "boolean", nullable: false),
+        CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+      },
+      constraints: table =>
+      {
+        table.PrimaryKey("pk_branches", branch => branch.Id);
+        table.ForeignKey(
+          name: "fk_branches_businesses_business_id",
+          column: branch => branch.BusinessId,
+          principalSchema: "tenancy",
+          principalTable: "businesses",
+          principalColumn: "Id",
+          onDelete: ReferentialAction.Cascade);
+      });
+
+    migrationBuilder.CreateTable(
+      name: "refresh_tokens",
+      schema: "identity",
+      columns: table => new
+      {
+        Id = table.Column<Guid>(type: "uuid", nullable: false),
+        UserId = table.Column<Guid>(type: "uuid", nullable: false),
+        Token = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+        ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+        CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+        RevokedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+      },
+      constraints: table =>
+      {
+        table.PrimaryKey("pk_refresh_tokens", token => token.Id);
+        table.ForeignKey(
+          name: "fk_refresh_tokens_users_user_id",
+          column: token => token.UserId,
+          principalSchema: "identity",
+          principalTable: "users",
+          principalColumn: "Id",
+          onDelete: ReferentialAction.Cascade);
+      });
+
+    migrationBuilder.CreateTable(
+      name: "user_roles",
+      schema: "identity",
+      columns: table => new
+      {
+        user_id = table.Column<Guid>(type: "uuid", nullable: false),
+        role_id = table.Column<Guid>(type: "uuid", nullable: false)
+      },
+      constraints: table =>
+      {
+        table.PrimaryKey("pk_user_roles", userRole => new { userRole.user_id, userRole.role_id });
+        table.ForeignKey(
+          name: "fk_user_roles_roles_role_id",
+          column: userRole => userRole.role_id,
+          principalSchema: "identity",
+          principalTable: "roles",
+          principalColumn: "Id",
+          onDelete: ReferentialAction.Cascade);
+        table.ForeignKey(
+          name: "fk_user_roles_users_user_id",
+          column: userRole => userRole.user_id,
+          principalSchema: "identity",
+          principalTable: "users",
+          principalColumn: "Id",
+          onDelete: ReferentialAction.Cascade);
+      });
+
+    migrationBuilder.CreateIndex(
+      name: "ix_branches_business_id_name",
+      schema: "tenancy",
+      table: "branches",
+      columns: ["BusinessId", "Name"],
+      unique: true);
+
+    migrationBuilder.CreateIndex(
+      name: "ix_refresh_tokens_token",
+      schema: "identity",
+      table: "refresh_tokens",
+      column: "Token",
+      unique: true);
+
+    migrationBuilder.CreateIndex(
+      name: "ix_refresh_tokens_user_id",
+      schema: "identity",
+      table: "refresh_tokens",
+      column: "UserId");
+
+    migrationBuilder.CreateIndex(
+      name: "ix_roles_business_id_name",
+      schema: "identity",
+      table: "roles",
+      columns: ["BusinessId", "Name"],
+      unique: true);
+
+    migrationBuilder.CreateIndex(
+      name: "ix_user_roles_role_id",
+      schema: "identity",
+      table: "user_roles",
+      column: "role_id");
+
+    migrationBuilder.CreateIndex(
+      name: "ix_users_business_id_email",
+      schema: "identity",
+      table: "users",
+      columns: ["BusinessId", "Email"],
+      unique: true);
+  }
+
+  protected override void Down(MigrationBuilder migrationBuilder)
+  {
+    migrationBuilder.DropTable(name: "branches", schema: "tenancy");
+    migrationBuilder.DropTable(name: "refresh_tokens", schema: "identity");
+    migrationBuilder.DropTable(name: "user_roles", schema: "identity");
+    migrationBuilder.DropTable(name: "businesses", schema: "tenancy");
+    migrationBuilder.DropTable(name: "roles", schema: "identity");
+    migrationBuilder.DropTable(name: "users", schema: "identity");
+  }
+}

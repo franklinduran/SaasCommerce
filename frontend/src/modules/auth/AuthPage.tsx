@@ -1,17 +1,17 @@
-import { ShieldCheck } from 'lucide-react'
-import { ModulePage } from '@/shared/components/ModulePage'
+import { Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/modules/auth/authStore'
+import { LoginForm } from '@/modules/auth/components/LoginForm'
 
 export function AuthPage() {
+  const session = useAuthStore((state) => state.session)
+
+  if (session) {
+    return <Navigate replace to="/" />
+  }
+
   return (
-    <ModulePage
-      eyebrow="Acceso"
-      icon={ShieldCheck}
-      rows={[
-        { label: 'Usuarios', value: 'Pendiente', status: 'Base' },
-        { label: 'Roles', value: 'Pendiente', status: 'Base' },
-        { label: 'Sesiones', value: 'Pendiente', status: 'Base' },
-      ]}
-      title="Autenticacion"
-    />
+    <main className="grid min-h-screen place-items-center bg-background px-4 py-10">
+      <LoginForm />
+    </main>
   )
 }

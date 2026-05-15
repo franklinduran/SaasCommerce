@@ -11,7 +11,8 @@ import {
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/modules/auth/authStore'
 import { Button } from '@/shared/components/ui/button'
 import { useAppStore } from '@/shared/hooks/useAppStore'
 import { cn } from '@/shared/utils/cn'
@@ -37,6 +38,14 @@ export function AppShell() {
   const businessName = useAppStore((state) => state.businessName)
   const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed)
   const toggleSidebar = useAppStore((state) => state.toggleSidebar)
+  const session = useAuthStore((state) => state.session)
+  const clearSession = useAuthStore((state) => state.clearSession)
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    clearSession()
+    navigate('/auth', { replace: true })
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground lg:grid lg:grid-cols-[auto_1fr]">
@@ -50,7 +59,9 @@ export function AppShell() {
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-primary">{businessName}</p>
             {!sidebarCollapsed && (
-              <p className="text-xs text-slate-500">Sucursal principal</p>
+              <p className="text-xs text-slate-500">
+                {session?.user.fullName ?? 'Sucursal principal'}
+              </p>
             )}
           </div>
           <Button
@@ -86,7 +97,7 @@ export function AppShell() {
         </nav>
 
         <div className="hidden px-3 pt-3 lg:block">
-          <Button className="w-full" variant="outline">
+          <Button className="w-full" onClick={handleLogout} variant="outline">
             <LogOut size={16} />
             {!sidebarCollapsed && <span>Salir</span>}
           </Button>

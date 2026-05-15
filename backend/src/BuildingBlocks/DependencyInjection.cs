@@ -43,6 +43,16 @@ public static class BuildingBlocksServiceCollectionExtensions
     {
       configureMassTransit?.Invoke(configurator);
 
+      if (configuration.GetValue<bool>("RabbitMq:UseInMemory"))
+      {
+        configurator.UsingInMemory((context, inMemory) =>
+        {
+          inMemory.ConfigureEndpoints(context);
+        });
+
+        return;
+      }
+
       configurator.UsingRabbitMq((context, rabbitMq) =>
       {
         var host = configuration["RabbitMq:Host"] ?? "localhost";
@@ -78,6 +88,9 @@ public static class BuildingBlocksServiceCollectionExtensions
     if (!string.IsNullOrWhiteSpace(connectionString))
     {
       options.UseNpgsql(connectionString);
+      return;
     }
+
+    options.UseInMemoryDatabase("SaasCommerceDevelopment");
   }
 }

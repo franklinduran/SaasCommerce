@@ -1,0 +1,41 @@
+using SaasCommerce.Modules.Tenancy.Domain;
+using SaasCommerce.SharedKernel.Tenancy;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace SaasCommerce.Modules.Tenancy.Infrastructure.Persistence.Configurations;
+
+public sealed class BusinessConfiguration : IEntityTypeConfiguration<Business>
+{
+  public void Configure(EntityTypeBuilder<Business> builder)
+  {
+    ArgumentNullException.ThrowIfNull(builder);
+
+    builder.ToTable("businesses", "tenancy");
+
+    builder.HasKey(business => business.Id);
+
+    builder.Property(business => business.Id)
+      .HasConversion(id => id.Value, value => new BusinessId(value))
+      .ValueGeneratedNever();
+
+    builder.Property(business => business.Name)
+      .HasMaxLength(160)
+      .IsRequired();
+
+    builder.Property(business => business.IsActive)
+      .IsRequired();
+
+    builder.Property(business => business.CreatedAt)
+      .IsRequired();
+
+    builder.HasMany(business => business.Branches)
+      .WithOne()
+      .HasForeignKey(branch => branch.BusinessId)
+      .HasPrincipalKey(business => business.Id)
+      .OnDelete(DeleteBehavior.Cascade);
+
+    builder.Navigation(business => business.Branches)
+      .UsePropertyAccessMode(PropertyAccessMode.Field);
+  }
+}

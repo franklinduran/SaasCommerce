@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/app/AppShell'
 import { AuthPage } from '@/modules/auth/AuthPage'
+import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute'
 import { CustomersPage } from '@/modules/customers/CustomersPage'
 import { DashboardPage } from '@/modules/dashboard/DashboardPage'
 import { InventoryPage } from '@/modules/inventory/InventoryPage'
@@ -11,11 +12,15 @@ import { ReportsPage } from '@/modules/reports/ReportsPage'
 import { SalesPage } from '@/modules/sales/SalesPage'
 
 export const router = createBrowserRouter([
+  { path: 'auth', element: <AuthPage /> },
   {
-    element: <AppShell />,
+    element: (
+      <ProtectedRoute>
+        <AppShell />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <DashboardPage /> },
-      { path: 'auth', element: <AuthPage /> },
       { path: 'sales', element: <SalesPage /> },
       { path: 'products', element: <ProductsPage /> },
       { path: 'inventory', element: <InventoryPage /> },

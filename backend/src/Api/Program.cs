@@ -2,10 +2,14 @@ using System.Text;
 using System.Globalization;
 using SaasCommerce.Api.Middleware;
 using SaasCommerce.BuildingBlocks;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Contracts.Common;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.Modules;
+using SaasCommerce.Modules.Identity.Application.Auth;
+using SaasCommerce.Modules.Identity.Contracts.Requests;
+using SaasCommerce.SharedKernel;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -30,7 +34,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
-builder.Services.AddSaasCommerceJwt(builder.Configuration);
+builder.Services.AddSaasCommerceJwt(builder.Configuration, builder.Environment);
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -77,7 +81,57 @@ app.MapGet("/api/version", () =>
   return Results.Ok(ApiResponse.Success<object>(version));
 });
 
+app.MapPost(
+  "/api/auth/login",
+  async (
+    LoginRequest request,
+    LoginHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new LoginCommand(request.Email, request.Password),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+  })
+  .AllowAnonymous();
+
+app.MapPost(
+  "/api/auth/refresh",
+  async (
+    RefreshTokenRequest request,
+    RefreshTokenHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new RefreshTokenCommand(request.RefreshToken),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+  })
+  .AllowAnonymous();
+
+app.MapGet(
+  "/api/me",
+  async (
+    GetCurrentUserHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+  })
+  .RequireAuthorization();
+
 app.MapHub<BusinessHub>("/hubs/business");
+
+if (app.Environment.IsDevelopment())
+{
+  await app.Services.SeedDevelopmentDataAsync();
+}
 
 app.Run();
 
@@ -100,6 +154,24 @@ static async Task<bool> CanConnectToDatabaseAsync(
   }
 }
 
+static IResult ToApiResult<T>(
+  Result<T> result,
+  ICorrelationIdProvider correlationIdProvider,
+  int failureStatusCode = StatusCodes.Status400BadRequest)
+{
+  ArgumentNullException.ThrowIfNull(result);
+  ArgumentNullException.ThrowIfNull(correlationIdProvider);
+
+  return result.IsSuccess
+    ? Results.Ok(ApiResponse.Success(result.Value, correlationIdProvider.CorrelationId))
+    : Results.Json(
+      ApiResponse.Failure<T>(ToApiError(result.Error), correlationIdProvider.CorrelationId),
+      statusCode: failureStatusCode);
+}
+
+static ApiError ToApiError(DomainError error)
+  => new(error.Code, error.Message);
+
 public partial class Program
 {
 }
@@ -108,34 +180,62 @@ internal static class JwtServiceCollectionExtensions
 {
   public static IServiceCollection AddSaasCommerceJwt(
     this IServiceCollection services,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    IHostEnvironment environment)
   {
-    var secret = configuration["Jwt:Secret"];
-    var issuer = configuration["Jwt:Issuer"];
-    var audience = configuration["Jwt:Audience"];
+    ArgumentNullException.ThrowIfNull(configuration);
+    ArgumentNullException.ThrowIfNull(environment);
 
     services
       .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-      .AddJwtBearer(options =>
+      .AddJwtBearer();
+
+    services
+      .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+      .Configure<IConfiguration, IHostEnvironment>((options, currentConfiguration, currentEnvironment) =>
       {
-        options.RequireHttpsMetadata = true;
+        var secret = currentConfiguration["Jwt:Secret"];
+        var issuer = currentConfiguration["Jwt:Issuer"];
+        var audience = currentConfiguration["Jwt:Audience"];
 
-        if (string.IsNullOrWhiteSpace(secret))
+        options.RequireHttpsMetadata = !currentEnvironment.IsDevelopment();
+        options.IncludeErrorDetails = currentEnvironment.IsDevelopment();
+        options.Events = new JwtBearerEvents
         {
-          return;
-        }
+          OnChallenge = async context =>
+          {
+            context.HandleResponse();
 
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-          ValidateIssuer = !string.IsNullOrWhiteSpace(issuer),
-          ValidIssuer = issuer,
-          ValidateAudience = !string.IsNullOrWhiteSpace(audience),
-          ValidAudience = audience,
-          ValidateIssuerSigningKey = true,
-          IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-          ValidateLifetime = true,
-          ClockSkew = TimeSpan.FromMinutes(1)
+            var correlationIdProvider = context.HttpContext.RequestServices
+              .GetService<ICorrelationIdProvider>();
+            var correlationId = correlationIdProvider?.CorrelationId ??
+              context.HttpContext.TraceIdentifier;
+
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsJsonAsync(
+              ApiResponse.Failure<object?>(
+                new ApiError("unauthorized", "Authentication is required."),
+                correlationId));
+          }
         };
+
+        if (!string.IsNullOrWhiteSpace(secret))
+        {
+          options.MapInboundClaims = false;
+          options.TokenValidationParameters = new TokenValidationParameters
+          {
+            ValidateIssuer = !string.IsNullOrWhiteSpace(issuer),
+            ValidIssuer = issuer,
+            ValidateAudience = !string.IsNullOrWhiteSpace(audience),
+            ValidAudience = audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+          };
+        }
       });
 
     return services;

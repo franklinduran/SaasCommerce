@@ -16,7 +16,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     ArgumentNullException.ThrowIfNull(modelBuilder);
 
     modelBuilder.ApplyConfigurationsFromAssembly(BuildingBlocksAssemblyReference.Assembly);
+    ApplyModuleConfigurations(modelBuilder);
 
     base.OnModelCreating(modelBuilder);
+  }
+
+  private static void ApplyModuleConfigurations(ModelBuilder modelBuilder)
+  {
+    var moduleAssemblies = AppDomain.CurrentDomain
+      .GetAssemblies()
+      .Where(assembly => assembly.GetName().Name == "SaasCommerce.Modules");
+
+    foreach (var assembly in moduleAssemblies)
+    {
+      modelBuilder.ApplyConfigurationsFromAssembly(assembly);
+    }
   }
 }

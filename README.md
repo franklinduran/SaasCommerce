@@ -62,6 +62,7 @@ Frontend:
 cd frontend
 npm install
 npm run dev
+npm run test
 npm run build
 ```
 
@@ -69,6 +70,7 @@ En Windows con PowerShell restringido, usa `npm.cmd`:
 
 ```bash
 npm.cmd run dev
+npm.cmd run test
 npm.cmd run build
 ```
 
@@ -101,6 +103,37 @@ Jwt__Audience
 VITE_API_BASE_URL
 VITE_SIGNALR_HUB_URL
 ```
+
+## Autenticacion Y Tenancy
+
+Endpoints base:
+
+```txt
+POST /api/auth/login
+POST /api/auth/refresh
+GET  /api/me
+```
+
+Usuario seed para desarrollo:
+
+```txt
+Email: admin@test.com
+Password: Admin123!
+BusinessId: 11111111-1111-1111-1111-111111111111
+BranchId: 22222222-2222-2222-2222-222222222222
+```
+
+Claims obligatorios del JWT:
+
+```txt
+sub
+nameidentifier
+business_id
+branch_id
+role
+```
+
+Regla de seguridad: `BusinessId`, `BranchId` y `UserId` salen del JWT o de `ICurrentUserService`. El frontend nunca es fuente confiable para esos valores, aunque los envie en un request.
 
 ## Reglas Para Agentes IA
 
@@ -136,11 +169,22 @@ La base modular queda protegida con pruebas ejecutables:
 - `Api.Tests` valida `CorrelationIdMiddleware` y el contrato JSON `isSuccess/data/error`.
 - El frontend debe consumir `isSuccess`, `data` y `error`; no debe volver a `succeeded/errors`.
 
+## Proteccion De Etapa 4
+
+- `Tenancy` contiene `Business` y `Branch`.
+- `Identity` contiene `User`, `Role`, `RefreshToken`, login, refresh token y consulta de usuario actual.
+- `Api` expone `/api/auth/login`, `/api/auth/refresh` y `/api/me` sin logica de negocio.
+- `CurrentUserService` lee `UserId`, `BusinessId`, `BranchId` y roles desde claims.
+- El frontend tiene `LoginPage`, `LoginForm`, `authService`, `useLoginMutation`, `authStore` y ruta protegida.
+- Tests backend validan login correcto, password incorrecto, claims JWT, `/api/me` sin token, `/api/me` con token y lectura de `BusinessId` desde claims.
+- Tests frontend validan errores de formulario en `LoginForm`.
+
 ## Definition Of Done
 
 - `dotnet build --no-restore` pasa con 0 warnings.
 - `dotnet test --no-build` pasa.
 - `npm run build` pasa en `frontend`.
+- `npm run test` pasa en `frontend` cuando hay pruebas de UI.
 - No se introducen issues nuevos de Sonar en codigo nuevo.
 - Las dependencias respetan Clean Architecture.
 - API y Worker siguen separados.
