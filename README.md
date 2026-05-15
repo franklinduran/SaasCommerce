@@ -86,7 +86,7 @@ Servicios locales:
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger`
 - RabbitMQ Management: `http://localhost:15672`
-- PostgreSQL: `localhost:5432`
+- PostgreSQL: `localhost:5433` por defecto en host, `5432` dentro de Docker.
 
 ## Variables De Entorno
 

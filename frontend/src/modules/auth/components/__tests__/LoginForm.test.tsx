@@ -11,7 +11,7 @@ describe('LoginForm', () => {
 
     renderLoginForm()
 
-    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesion' }))
 
     expect(await screen.findByText('Correo invalido')).toBeTruthy()
     expect(

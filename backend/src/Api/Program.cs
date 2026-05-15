@@ -130,6 +130,7 @@ app.MapHub<BusinessHub>("/hubs/business");
 
 if (app.Environment.IsDevelopment())
 {
+  await MigrateDatabaseAsync(app.Services);
   await app.Services.SeedDevelopmentDataAsync();
 }
 
@@ -171,6 +172,21 @@ static IResult ToApiResult<T>(
 
 static ApiError ToApiError(DomainError error)
   => new(error.Code, error.Message);
+
+static async Task MigrateDatabaseAsync(
+  IServiceProvider serviceProvider,
+  CancellationToken cancellationToken = default)
+{
+  ArgumentNullException.ThrowIfNull(serviceProvider);
+
+  using var scope = serviceProvider.CreateScope();
+  var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+  if (dbContext.Database.IsRelational())
+  {
+    await dbContext.Database.MigrateAsync(cancellationToken);
+  }
+}
 
 public partial class Program
 {

@@ -10,7 +10,7 @@ export function AuthPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-background px-4 py-10">
+    <main className="grid min-h-screen place-items-center bg-background px-5 py-10">
       <LoginForm />
     </main>
   )

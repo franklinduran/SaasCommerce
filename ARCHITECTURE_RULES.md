@@ -165,6 +165,8 @@ Exponer datos de un BusinessId en pantallas de otro tenant.
 
 ## 4. Stack oficial
 
+La UI debe seguir tambien las reglas visuales del archivo `UI_RULES.md`. Toda modificacion de frontend debe respetar Tailwind Stone, estilo SaaS administrativo sobrio, componentes reutilizables, estados visibles y accesibilidad.
+
 ### Frontend
 
 ```txt

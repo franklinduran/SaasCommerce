@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { CircleDollarSign, Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
@@ -15,6 +16,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm() {
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const loginMutation = useLoginMutation()
   const {
@@ -41,76 +43,97 @@ export function LoginForm() {
 
   return (
     <form
-      className="w-full max-w-[420px] rounded-lg border border-border bg-white p-6 shadow-sm"
+      className="w-full max-w-[400px] rounded-xl bg-white p-6 shadow-sm ring-1 ring-stone-200"
       onSubmit={handleSubmit(onSubmit)}
     >
-      <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-md bg-primary text-white">
-          <ShieldCheck aria-hidden="true" size={22} />
+      <div className="mb-8 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 text-white">
+          <CircleDollarSign aria-hidden="true" size={25} strokeWidth={2.4} />
         </span>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Iniciar sesion</h1>
-          <p className="text-sm text-slate-500">SaasCommerce RD</p>
-        </div>
+        <h1 className="mt-6 text-[28px] font-semibold leading-tight text-foreground">
+          Iniciar sesion
+        </h1>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-slate-700">Correo</span>
+          <span className="mb-2 block text-sm font-medium text-stone-900">
+            Correo electronico
+          </span>
           <span className="relative block">
-            <Mail
-              aria-hidden="true"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
             <input
+              aria-label="Correo electronico"
               autoComplete="email"
-              className="h-11 w-full rounded-md border border-border bg-white pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-md bg-white px-3 text-sm text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
               placeholder="admin@test.com"
               type="email"
               {...register('email')}
             />
           </span>
           {errors.email && (
-            <span className="mt-1 block text-sm text-danger">{errors.email.message}</span>
+            <span className="mt-2 block text-sm font-medium text-danger">{errors.email.message}</span>
           )}
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-medium text-slate-700">Contrasena</span>
+          <span className="mb-2 block text-sm font-medium text-stone-900">Contrasena</span>
           <span className="relative block">
-            <LockKeyhole
-              aria-hidden="true"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
             <input
+              aria-label="Contrasena"
               autoComplete="current-password"
-              className="h-11 w-full rounded-md border border-border bg-white pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-md bg-white px-3 pr-12 text-sm text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
               placeholder="Admin123!"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               {...register('password')}
             />
+            <button
+              aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+              onClick={() => setShowPassword((value) => !value)}
+              type="button"
+            >
+              {showPassword ? <EyeOff aria-hidden="true" size={21} /> : <Eye aria-hidden="true" size={21} />}
+            </button>
           </span>
           {errors.password && (
-            <span className="mt-1 block text-sm text-danger">{errors.password.message}</span>
+            <span className="mt-2 block text-sm font-medium text-danger">
+              {errors.password.message}
+            </span>
           )}
         </label>
       </div>
 
       {errorMessage && (
-        <div className="mt-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+        <div className="mt-6 rounded-md bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
           {errorMessage}
         </div>
       )}
 
       <Button
-        className="mt-6 w-full"
+        className="mt-6 h-11 w-full"
         disabled={loginMutation.isPending}
         type="submit"
       >
-        {loginMutation.isPending ? 'Validando' : 'Entrar'}
+        {loginMutation.isPending ? 'Validando' : 'Iniciar sesion'}
       </Button>
+
+      <button
+        className="mx-auto mt-4 block rounded-md px-3 py-2 text-sm font-medium text-stone-600 transition hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+        type="button"
+      >
+        Olvidaste tu contrasena?
+      </button>
+
+      <div className="mt-8 text-center">
+        <p className="text-sm font-medium text-stone-600">No tienes una cuenta?</p>
+        <Button
+          className="mt-4 h-11 w-full"
+          type="button"
+          variant="outline"
+        >
+          Crear cuenta nueva
+        </Button>
+      </div>
     </form>
   )
 }

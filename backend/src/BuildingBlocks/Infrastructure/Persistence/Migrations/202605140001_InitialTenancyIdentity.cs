@@ -1,9 +1,12 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations;
 
+[DbContext(typeof(AppDbContext))]
+[Migration("202605140001_InitialTenancyIdentity")]
 public partial class InitialTenancyIdentity : Migration
 {
   protected override void Up(MigrationBuilder migrationBuilder)
