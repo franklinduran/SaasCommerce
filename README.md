@@ -179,6 +179,41 @@ La base modular queda protegida con pruebas ejecutables:
 - Tests backend validan login correcto, password incorrecto, claims JWT, `/api/me` sin token, `/api/me` con token y lectura de `BusinessId` desde claims.
 - Tests frontend validan errores de formulario en `LoginForm`.
 
+## Etapa 5: Catalog E Inventory Base
+
+- `Catalog` contiene `Product`, `Category`, `ProductComponent`, contratos de requests/responses y eventos versionados `ProductCreatedIntegrationEventV1` y `ProductUpdatedIntegrationEventV1`.
+- `Inventory` contiene `StockItem`, `InventoryMovement`, razones de movimiento, contratos de ajuste/stock/movimientos y eventos versionados `InventoryAdjustedIntegrationEventV1` y `StockReservedIntegrationEventV1`.
+- `Product` soporta tipos `Simple`, `Service`, `Weighed`, `Composite`, `VariantParent` y `VariantChild`.
+- `Product` administra datos comerciales reales: descripcion, SKU, barcode, unidad de medida, precio venta, costo, mayorista, precio minimo, impuestos, codigos internos/proveedor, variantes y atributos JSON.
+- `Product` define su politica de inventario: `TrackInventory`, `MinimumStock`, `MaximumStock`, `ReorderPoint` y `AllowNegativeStock`.
+- `Inventory` administra existencias y movimientos: cantidad anterior, cantidad nueva, cantidad del ajuste, razon, usuario y tenant.
+- `Inventory` consulta la politica publica de inventario del producto antes de ajustar stock; servicios y productos sin `TrackInventory` no aceptan ajustes.
+- `Inventory` no referencia infraestructura de `Catalog`; usa contratos publicos/read models como frontera.
+- La API expone endpoints autenticados:
+
+```txt
+POST /api/catalog/products
+PUT  /api/catalog/products/{id}
+GET  /api/catalog/products/{id}
+GET  /api/catalog/products
+POST /api/inventory/adjustments
+GET  /api/inventory/stock
+GET  /api/inventory/movements
+```
+
+- El frontend tiene pantallas funcionales para `Productos` e `Inventario`, usando TanStack Query, servicios centralizados, formularios con React Hook Form + Zod, estados loading/error/empty y contrato `isSuccess/data/error`.
+- La UI de producto esta organizada por secciones: datos generales, precio/costos, inventario, codigos, impuestos/opciones y opciones avanzadas.
+- Tests backend validan creacion de productos, SKU duplicado por tenant, barcode duplicado, producto servicio sin inventario, producto pesado sin unidad `Unit`, ajuste de inventario, movimiento generado y proteccion contra stock negativo.
+
+## Etapa 5.2: UX De Productos Y Paginacion
+
+- `/products` prioriza busqueda, filtros, listado y paginacion; no muestra formularios grandes en el flujo principal.
+- Crear y editar productos se hace en un drawer lateral reutilizando el mismo formulario por secciones.
+- El listado soporta filtros por `query`, `productType`, `isActive`, `categoryId`, `page` y `pageSize`.
+- `GET /api/catalog/products` devuelve `items`, `page`, `pageSize`, `totalItems` y `totalPages`.
+- La tabla incluye producto, tipo, SKU/barcode, unidad, precio, politica de stock, estado y acciones.
+- La UI incluye skeleton de tabla, empty state, error state con reintento, paginacion anterior/siguiente y selector de 10, 25 o 50 registros.
+
 ## Definition Of Done
 
 - `dotnet build --no-restore` pasa con 0 warnings.

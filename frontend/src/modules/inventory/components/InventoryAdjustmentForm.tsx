@@ -1,0 +1,92 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { SlidersHorizontal } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { Button } from '@/shared/components/ui/button'
+import { HttpClientError } from '@/shared/services/httpClient'
+import { useCreateInventoryAdjustmentMutation } from '@/modules/inventory/hooks/useInventory'
+
+const adjustmentSchema = z.object({
+  productId: z.string().uuid('Producto invalido'),
+  quantity: z.coerce.number().refine((value) => value !== 0, 'La cantidad no puede ser cero'),
+  reason: z.string().min(1, 'Selecciona una razon'),
+})
+
+type AdjustmentFormValues = z.infer<typeof adjustmentSchema>
+type AdjustmentFormInput = z.input<typeof adjustmentSchema>
+
+export function InventoryAdjustmentForm() {
+  const adjustment = useCreateInventoryAdjustmentMutation()
+  const {
+    formState: { errors },
+    handleSubmit,
+    register,
+    reset,
+  } = useForm<AdjustmentFormInput, undefined, AdjustmentFormValues>({
+    resolver: zodResolver(adjustmentSchema),
+    defaultValues: {
+      productId: '',
+      quantity: 1,
+      reason: 'Adjustment',
+    },
+  })
+
+  const errorMessage =
+    adjustment.error instanceof HttpClientError
+      ? adjustment.error.message
+      : null
+
+  async function onSubmit(values: AdjustmentFormValues) {
+    await adjustment.mutateAsync(values)
+    reset()
+  }
+
+  return (
+    <form className="grid gap-4 lg:grid-cols-[1fr_160px_190px_auto]" onSubmit={handleSubmit(onSubmit)}>
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold text-stone-900">Producto ID</span>
+        <input
+          className="h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+          placeholder="guid del producto"
+          {...register('productId')}
+        />
+        {errors.productId && <span className="mt-2 block text-sm font-medium text-red-700">{errors.productId.message}</span>}
+      </label>
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold text-stone-900">Cantidad</span>
+        <input
+          className="h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+          step="0.001"
+          type="number"
+          {...register('quantity')}
+        />
+        {errors.quantity && <span className="mt-2 block text-sm font-medium text-red-700">{errors.quantity.message}</span>}
+      </label>
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold text-stone-900">Razon</span>
+        <select
+          className="h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+          {...register('reason')}
+        >
+          <option value="InitialLoad">Carga inicial</option>
+          <option value="Adjustment">Ajuste</option>
+          <option value="ManualCorrection">Correccion manual</option>
+          <option value="Return">Devolucion</option>
+          <option value="Purchase">Compra</option>
+        </select>
+        {errors.reason && <span className="mt-2 block text-sm font-medium text-red-700">{errors.reason.message}</span>}
+      </label>
+      <div className="flex items-end">
+        <Button className="w-full" disabled={adjustment.isPending} type="submit">
+          <SlidersHorizontal size={16} />
+          {adjustment.isPending ? 'Aplicando' : 'Ajustar'}
+        </Button>
+      </div>
+      {errorMessage && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 ring-1 ring-red-200 lg:col-span-4">
+          {errorMessage}
+        </p>
+      )}
+    </form>
+  )
+}

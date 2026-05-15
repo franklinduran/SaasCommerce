@@ -7,8 +7,12 @@ using SaasCommerce.BuildingBlocks.Contracts.Common;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.Modules;
+using SaasCommerce.Modules.Catalog.Application.Products;
+using SaasCommerce.Modules.Catalog.Contracts.Requests;
 using SaasCommerce.Modules.Identity.Application.Auth;
 using SaasCommerce.Modules.Identity.Contracts.Requests;
+using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Contracts.Requests;
 using SaasCommerce.SharedKernel;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -123,6 +127,179 @@ app.MapGet(
     var result = await handler.Handle(cancellationToken);
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+  })
+  .RequireAuthorization();
+
+app.MapPost(
+  "/api/catalog/products",
+  async (
+    CreateProductRequest request,
+    CreateProductHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new CreateProductCommand(
+        request.ProductType,
+        request.Name,
+        request.Description,
+        request.Sku,
+        request.Barcode,
+        request.CategoryId,
+        request.BrandId,
+        request.UnitOfMeasure,
+        request.SalePrice,
+        request.CostPrice,
+        request.WholesalePrice,
+        request.MinSalePrice,
+        request.TaxCategory,
+        request.TaxRate,
+        request.IsTaxIncluded,
+        request.AllowsDiscount,
+        request.TrackInventory,
+        request.MinimumStock,
+        request.MaximumStock,
+        request.ReorderPoint,
+        request.AllowNegativeStock,
+        request.InternalCode,
+        request.SupplierCode,
+        request.ParentProductId,
+        request.VariantName,
+        request.AttributesJson),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapPut(
+  "/api/catalog/products/{id:guid}",
+  async (
+    Guid id,
+    UpdateProductRequest request,
+    UpdateProductHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new UpdateProductCommand(
+        id,
+        request.ProductType,
+        request.Name,
+        request.Description,
+        request.Sku,
+        request.Barcode,
+        request.CategoryId,
+        request.BrandId,
+        request.UnitOfMeasure,
+        request.SalePrice,
+        request.CostPrice,
+        request.WholesalePrice,
+        request.MinSalePrice,
+        request.TaxCategory,
+        request.TaxRate,
+        request.IsTaxIncluded,
+        request.AllowsDiscount,
+        request.TrackInventory,
+        request.MinimumStock,
+        request.MaximumStock,
+        request.ReorderPoint,
+        request.AllowNegativeStock,
+        request.InternalCode,
+        request.SupplierCode,
+        request.ParentProductId,
+        request.VariantName,
+        request.AttributesJson,
+        request.IsActive),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapGet(
+  "/api/catalog/products/{id:guid}",
+  async (
+    Guid id,
+    GetProductHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new GetProductQuery(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+  })
+  .RequireAuthorization();
+
+app.MapGet(
+  "/api/catalog/products",
+  async (
+    string? query,
+    string? productType,
+    Guid? categoryId,
+    bool? isActive,
+    int? page,
+    int? pageSize,
+    GetProductsHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetProductsQuery(query, productType, categoryId, isActive, page ?? 1, pageSize ?? 10),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapPost(
+  "/api/inventory/adjustments",
+  async (
+    CreateInventoryAdjustmentRequest request,
+    AdjustInventoryHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new AdjustInventoryCommand(request.ProductId, request.Quantity, request.Reason),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapGet(
+  "/api/inventory/stock",
+  async (
+    int? page,
+    int? pageSize,
+    GetStockHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetStockQuery(page ?? 1, pageSize ?? 20),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapGet(
+  "/api/inventory/movements",
+  async (
+    Guid? productId,
+    int? page,
+    int? pageSize,
+    GetInventoryMovementsHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetInventoryMovementsQuery(productId, page ?? 1, pageSize ?? 20),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization();
 
