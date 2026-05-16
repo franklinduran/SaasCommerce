@@ -1,6 +1,6 @@
-using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Configurations;
 

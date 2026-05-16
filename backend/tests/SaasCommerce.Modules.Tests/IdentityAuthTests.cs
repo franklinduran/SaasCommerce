@@ -1,4 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Auth;
@@ -7,9 +10,6 @@ using SaasCommerce.Modules.Identity.Infrastructure.Auth;
 using SaasCommerce.Modules.Identity.Infrastructure.Persistence;
 using SaasCommerce.Modules.Tenancy.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
 namespace SaasCommerce.Modules.Tests;
 

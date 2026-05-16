@@ -1,5 +1,5 @@
-using SaasCommerce.BuildingBlocks;
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks;
 
 namespace SaasCommerce.BuildingBlocks.Tests;
 

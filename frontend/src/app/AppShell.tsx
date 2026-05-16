@@ -9,6 +9,7 @@ import {
   Package,
   ReceiptText,
   Search,
+  Settings,
   ShoppingCart,
   Truck,
   Users,
@@ -26,7 +27,7 @@ type NavigationItem = {
   icon: LucideIcon
 }
 
-const navigationItems: NavigationItem[] = [
+const navigationItems: readonly NavigationItem[] = [
   { label: 'Inicio', path: '/', icon: LayoutDashboard },
   { label: 'POS', path: '/sales', icon: ShoppingCart },
   { label: 'Productos', path: '/products', icon: Package },
@@ -35,6 +36,7 @@ const navigationItems: NavigationItem[] = [
   { label: 'Compras', path: '/purchases', icon: Truck },
   { label: 'Facturas', path: '/invoices', icon: ReceiptText },
   { label: 'Reportes', path: '/reports', icon: BarChart3 },
+  { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
 const mainNavigation = navigationItems.slice(0, 5)
@@ -49,6 +51,7 @@ const pageTitles: Record<string, string> = {
   '/purchases': 'Compras',
   '/invoices': 'Facturas',
   '/reports': 'Reportes',
+  '/settings': 'Ajustes',
 }
 
 export function AppShell() {
@@ -177,11 +180,11 @@ export function AppShell() {
 
 type NavigationSectionProps = {
   collapsed: boolean
-  items: NavigationItem[]
+  items: readonly NavigationItem[]
   label: string
 }
 
-function NavigationSection({ collapsed, items, label }: NavigationSectionProps) {
+function NavigationSection({ collapsed, items, label }: Readonly<NavigationSectionProps>) {
   return (
     <div className="flex gap-1 lg:flex-col lg:gap-1.5">
       {!collapsed && (

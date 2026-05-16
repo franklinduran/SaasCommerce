@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Inbox;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 

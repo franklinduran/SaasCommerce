@@ -1,5 +1,5 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using MassTransit;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
 

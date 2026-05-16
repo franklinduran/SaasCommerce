@@ -6,10 +6,15 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
 {
   public const string HeaderName = "X-Correlation-Id";
 
-  public async Task InvokeAsync(HttpContext context)
+  public Task InvokeAsync(HttpContext context)
   {
     ArgumentNullException.ThrowIfNull(context);
 
+    return InvokeCoreAsync(context);
+  }
+
+  private async Task InvokeCoreAsync(HttpContext context)
+  {
     var correlationId = GetOrCreateCorrelationId(context);
     context.TraceIdentifier = correlationId;
     context.Items[HeaderName] = correlationId;

@@ -1,6 +1,6 @@
 using System.Text.Json;
-using SaasCommerce.BuildingBlocks.Contracts.Common;
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks.Contracts.Common;
 
 namespace SaasCommerce.Api.Tests;
 

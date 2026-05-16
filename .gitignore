@@ -5,6 +5,8 @@ out/
 dist/
 coverage/
 TestResults/
+.sonarqube/
+
 
 ## .NET
 *.user

@@ -1,0 +1,45 @@
+services:
+  sonarqube-db:
+    image: postgres:17-alpine
+    container_name: saascommerce-sonarqube-db
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - sonarqube-2025-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sonarqube:
+    image: sonarqube:25.1.0.102122-community
+    container_name: saascommerce-sonarqube
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    ports:
+      - "${SONAR_HOST_PORT:-9000}:9000"
+    volumes:
+      - sonarqube-2025-data:/opt/sonarqube/data
+      - sonarqube-2025-extensions:/opt/sonarqube/extensions
+      - sonarqube-2025-logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/api/system/status | grep -E 'UP|DB_MIGRATION_NEEDED|DB_MIGRATION_RUNNING'"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+volumes:
+  sonarqube-2025-db-data:
+  sonarqube-2025-data:
+  sonarqube-2025-extensions:
+  sonarqube-2025-logs:

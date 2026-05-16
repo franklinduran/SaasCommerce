@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Identity.Application;
 
-public sealed class IdentityApplicationMarker;
+internal interface IdentityApplicationMarker
+{
+}

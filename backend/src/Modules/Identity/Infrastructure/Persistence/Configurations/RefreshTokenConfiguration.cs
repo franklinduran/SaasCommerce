@@ -1,6 +1,6 @@
-using SaasCommerce.Modules.Identity.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SaasCommerce.Modules.Identity.Domain;
 
 namespace SaasCommerce.Modules.Identity.Infrastructure.Persistence.Configurations;
 

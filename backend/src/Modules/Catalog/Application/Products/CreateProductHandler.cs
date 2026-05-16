@@ -15,12 +15,19 @@ public sealed class CreateProductHandler(
   IClock clock,
   IUnitOfWork unitOfWork)
 {
-  public async Task<Result<ProductResponse>> Handle(
+  public Task<Result<ProductResponse>> Handle(
     CreateProductCommand command,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(command);
 
+    return HandleCoreAsync(command, cancellationToken);
+  }
+
+  private async Task<Result<ProductResponse>> HandleCoreAsync(
+    CreateProductCommand command,
+    CancellationToken cancellationToken)
+  {
     if (currentUser.BusinessId is not Guid businessId)
     {
       return Result.Failure<ProductResponse>(CatalogErrors.UserContextRequired);
@@ -58,35 +65,12 @@ public sealed class CreateProductHandler(
     try
     {
       product = new Product(
-        Guid.NewGuid(),
-        tenantId,
-        productType,
-        command.Name,
-        command.Description,
-        normalizedSku,
-        command.Barcode,
-        command.CategoryId,
-        command.BrandId,
-        unitOfMeasure,
-        command.SalePrice,
-        command.CostPrice,
-        command.WholesalePrice,
-        command.MinSalePrice,
-        taxCategory,
-        command.TaxRate,
-        command.IsTaxIncluded,
-        command.AllowsDiscount,
-        command.TrackInventory,
-        command.MinimumStock,
-        command.MaximumStock,
-        command.ReorderPoint,
-        command.AllowNegativeStock,
-        command.InternalCode,
-        command.SupplierCode,
-        command.ParentProductId,
-        command.VariantName,
-        command.AttributesJson,
-        clock.UtcNow);
+        new ProductCreationContext(Guid.NewGuid(), tenantId, clock.UtcNow),
+        CreateIdentity(command, productType, unitOfMeasure),
+        CreateCodes(command, normalizedSku),
+        CreatePricing(command, taxCategory),
+        CreateInventorySettings(command),
+        CreateOptions(command));
     }
     catch (ArgumentException)
     {
@@ -117,4 +101,52 @@ public sealed class CreateProductHandler(
       Enum.TryParse(command.UnitOfMeasure, true, out unitOfMeasure) &&
       Enum.TryParse(command.TaxCategory, true, out taxCategory);
   }
+
+  private static ProductIdentity CreateIdentity(
+    CreateProductCommand command,
+    ProductType productType,
+    UnitOfMeasure unitOfMeasure)
+    => new(
+      productType,
+      command.Name,
+      command.Description,
+      command.CategoryId,
+      command.BrandId,
+      unitOfMeasure);
+
+  private static ProductCodes CreateCodes(
+    CreateProductCommand command,
+    string normalizedSku)
+    => new(
+      normalizedSku,
+      command.Barcode,
+      command.InternalCode,
+      command.SupplierCode);
+
+  private static ProductPricing CreatePricing(
+    CreateProductCommand command,
+    TaxCategory taxCategory)
+    => new(
+      command.SalePrice,
+      command.CostPrice,
+      command.WholesalePrice,
+      command.MinSalePrice,
+      taxCategory,
+      command.TaxRate,
+      command.IsTaxIncluded);
+
+  private static ProductInventorySettings CreateInventorySettings(CreateProductCommand command)
+    => new(
+      command.TrackInventory,
+      command.MinimumStock,
+      command.MaximumStock,
+      command.ReorderPoint,
+      command.AllowNegativeStock);
+
+  private static ProductOptions CreateOptions(CreateProductCommand command)
+    => new(
+      command.AllowsDiscount,
+      command.ParentProductId,
+      command.VariantName,
+      command.AttributesJson);
 }

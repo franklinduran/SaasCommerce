@@ -1,3 +1,5 @@
+using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
@@ -6,8 +8,6 @@ using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
 using SaasCommerce.Modules.Inventory.Application.Stock;
 using SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
-using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.Modules.Tests;
 

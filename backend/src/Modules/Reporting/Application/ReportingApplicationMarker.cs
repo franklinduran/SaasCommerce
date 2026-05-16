@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Reporting.Application;
 
-public sealed class ReportingApplicationMarker;
+internal interface IReportingApplicationMarker
+{
+}

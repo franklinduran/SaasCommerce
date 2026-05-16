@@ -13,12 +13,19 @@ public sealed class RefreshTokenHandler(
   IClock clock,
   IUnitOfWork unitOfWork)
 {
-  public async Task<Result<LoginResponse>> Handle(
+  public Task<Result<LoginResponse>> Handle(
     RefreshTokenCommand command,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(command);
 
+    return HandleCoreAsync(command, cancellationToken);
+  }
+
+  private async Task<Result<LoginResponse>> HandleCoreAsync(
+    RefreshTokenCommand command,
+    CancellationToken cancellationToken)
+  {
     var tokenValue = command.RefreshToken.Trim();
     var user = await users.GetByRefreshTokenAsync(tokenValue, cancellationToken);
     var currentToken = user?.RefreshTokens.SingleOrDefault(token => token.Token == tokenValue);

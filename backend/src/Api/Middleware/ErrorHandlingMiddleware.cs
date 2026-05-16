@@ -12,10 +12,15 @@ public sealed class ErrorHandlingMiddleware(
       new EventId(5000, nameof(LogUnhandledApiError)),
       "Unhandled API error. CorrelationId: {CorrelationId}");
 
-  public async Task InvokeAsync(HttpContext context)
+  public Task InvokeAsync(HttpContext context)
   {
     ArgumentNullException.ThrowIfNull(context);
 
+    return InvokeCoreAsync(context);
+  }
+
+  private async Task InvokeCoreAsync(HttpContext context)
+  {
     var correlationId = GetCorrelationId(context);
     try
     {

@@ -9,77 +9,19 @@ public sealed class Product
   }
 
   public Product(
-    Guid id,
-    BusinessId businessId,
-    ProductType productType,
-    string name,
-    string? description,
-    string sku,
-    string? barcode,
-    Guid? categoryId,
-    Guid? brandId,
-    UnitOfMeasure unitOfMeasure,
-    decimal salePrice,
-    decimal costPrice,
-    decimal? wholesalePrice,
-    decimal? minSalePrice,
-    TaxCategory taxCategory,
-    decimal taxRate,
-    bool isTaxIncluded,
-    bool allowsDiscount,
-    bool trackInventory,
-    decimal? minimumStock,
-    decimal? maximumStock,
-    decimal? reorderPoint,
-    bool allowNegativeStock,
-    string? internalCode,
-    string? supplierCode,
-    Guid? parentProductId,
-    string? variantName,
-    string? attributesJson,
-    DateTimeOffset createdAt)
+    ProductCreationContext context,
+    ProductIdentity identity,
+    ProductCodes codes,
+    ProductPricing pricing,
+    ProductInventorySettings inventory,
+    ProductOptions options)
   {
-    Validate(
-      productType,
-      name,
-      sku,
-      unitOfMeasure,
-      salePrice,
-      costPrice,
-      wholesalePrice,
-      minSalePrice,
-      trackInventory);
+    Validate(identity, codes, pricing, inventory);
 
-    Id = id;
-    BusinessId = businessId;
-    ProductType = productType;
-    Name = name.Trim();
-    Description = NormalizeOptional(description);
-    Sku = sku.Trim().ToUpperInvariant();
-    Barcode = NormalizeOptional(barcode);
-    CategoryId = categoryId;
-    BrandId = brandId;
-    UnitOfMeasure = unitOfMeasure;
-    SalePrice = salePrice;
-    CostPrice = costPrice;
-    WholesalePrice = wholesalePrice;
-    MinSalePrice = minSalePrice;
-    TaxCategory = taxCategory;
-    TaxRate = taxRate;
-    IsTaxIncluded = isTaxIncluded;
-    AllowsDiscount = allowsDiscount;
-    TrackInventory = trackInventory;
-    MinimumStock = minimumStock;
-    MaximumStock = maximumStock;
-    ReorderPoint = reorderPoint;
-    AllowNegativeStock = allowNegativeStock;
-    InternalCode = NormalizeOptional(internalCode);
-    SupplierCode = NormalizeOptional(supplierCode);
-    ParentProductId = parentProductId;
-    VariantName = NormalizeOptional(variantName);
-    AttributesJson = NormalizeOptional(attributesJson);
-    SearchName = NormalizeSearchName(name);
-    CreatedAt = createdAt;
+    Id = context.Id;
+    BusinessId = context.BusinessId;
+    ApplyDetails(identity, codes, pricing, inventory, options);
+    CreatedAt = context.CreatedAt;
     IsActive = true;
   }
 
@@ -151,72 +93,15 @@ public sealed class Product
     => SalePrice == 0 ? null : Math.Round(((SalePrice - CostPrice) / SalePrice) * 100, 2);
 
   public void Update(
-    ProductType productType,
-    string name,
-    string? description,
-    string sku,
-    string? barcode,
-    Guid? categoryId,
-    Guid? brandId,
-    UnitOfMeasure unitOfMeasure,
-    decimal salePrice,
-    decimal costPrice,
-    decimal? wholesalePrice,
-    decimal? minSalePrice,
-    TaxCategory taxCategory,
-    decimal taxRate,
-    bool isTaxIncluded,
-    bool allowsDiscount,
-    bool trackInventory,
-    decimal? minimumStock,
-    decimal? maximumStock,
-    decimal? reorderPoint,
-    bool allowNegativeStock,
-    string? internalCode,
-    string? supplierCode,
-    Guid? parentProductId,
-    string? variantName,
-    string? attributesJson,
+    ProductIdentity identity,
+    ProductCodes codes,
+    ProductPricing pricing,
+    ProductInventorySettings inventory,
+    ProductOptions options,
     DateTimeOffset updatedAt)
   {
-    Validate(
-      productType,
-      name,
-      sku,
-      unitOfMeasure,
-      salePrice,
-      costPrice,
-      wholesalePrice,
-      minSalePrice,
-      trackInventory);
-
-    ProductType = productType;
-    Name = name.Trim();
-    Description = NormalizeOptional(description);
-    Sku = sku.Trim().ToUpperInvariant();
-    Barcode = NormalizeOptional(barcode);
-    CategoryId = categoryId;
-    BrandId = brandId;
-    UnitOfMeasure = unitOfMeasure;
-    SalePrice = salePrice;
-    CostPrice = costPrice;
-    WholesalePrice = wholesalePrice;
-    MinSalePrice = minSalePrice;
-    TaxCategory = taxCategory;
-    TaxRate = taxRate;
-    IsTaxIncluded = isTaxIncluded;
-    AllowsDiscount = allowsDiscount;
-    TrackInventory = trackInventory;
-    MinimumStock = minimumStock;
-    MaximumStock = maximumStock;
-    ReorderPoint = reorderPoint;
-    AllowNegativeStock = allowNegativeStock;
-    InternalCode = NormalizeOptional(internalCode);
-    SupplierCode = NormalizeOptional(supplierCode);
-    ParentProductId = parentProductId;
-    VariantName = NormalizeOptional(variantName);
-    AttributesJson = NormalizeOptional(attributesJson);
-    SearchName = NormalizeSearchName(name);
+    Validate(identity, codes, pricing, inventory);
+    ApplyDetails(identity, codes, pricing, inventory, options);
     UpdatedAt = updatedAt;
   }
 
@@ -226,51 +111,82 @@ public sealed class Product
     UpdatedAt = updatedAt;
   }
 
-  private static void Validate(
-    ProductType productType,
-    string name,
-    string sku,
-    UnitOfMeasure unitOfMeasure,
-    decimal salePrice,
-    decimal costPrice,
-    decimal? wholesalePrice,
-    decimal? minSalePrice,
-    bool trackInventory)
+  private void ApplyDetails(
+    ProductIdentity identity,
+    ProductCodes codes,
+    ProductPricing pricing,
+    ProductInventorySettings inventory,
+    ProductOptions options)
   {
-    ArgumentException.ThrowIfNullOrWhiteSpace(name);
-    ArgumentException.ThrowIfNullOrWhiteSpace(sku);
+    ProductType = identity.ProductType;
+    Name = identity.Name.Trim();
+    Description = NormalizeOptional(identity.Description);
+    Sku = codes.Sku.Trim().ToUpperInvariant();
+    Barcode = NormalizeOptional(codes.Barcode);
+    CategoryId = identity.CategoryId;
+    BrandId = identity.BrandId;
+    UnitOfMeasure = identity.UnitOfMeasure;
+    SalePrice = pricing.SalePrice;
+    CostPrice = pricing.CostPrice;
+    WholesalePrice = pricing.WholesalePrice;
+    MinSalePrice = pricing.MinSalePrice;
+    TaxCategory = pricing.TaxCategory;
+    TaxRate = pricing.TaxRate;
+    IsTaxIncluded = pricing.IsTaxIncluded;
+    AllowsDiscount = options.AllowsDiscount;
+    TrackInventory = inventory.TrackInventory;
+    MinimumStock = inventory.MinimumStock;
+    MaximumStock = inventory.MaximumStock;
+    ReorderPoint = inventory.ReorderPoint;
+    AllowNegativeStock = inventory.AllowNegativeStock;
+    InternalCode = NormalizeOptional(codes.InternalCode);
+    SupplierCode = NormalizeOptional(codes.SupplierCode);
+    ParentProductId = options.ParentProductId;
+    VariantName = NormalizeOptional(options.VariantName);
+    AttributesJson = NormalizeOptional(options.AttributesJson);
+    SearchName = NormalizeSearchName(identity.Name);
+  }
 
-    if (salePrice < 0)
+  private static void Validate(
+    ProductIdentity identity,
+    ProductCodes codes,
+    ProductPricing pricing,
+    ProductInventorySettings inventory)
+  {
+    ArgumentException.ThrowIfNullOrWhiteSpace(identity.Name);
+    ArgumentException.ThrowIfNullOrWhiteSpace(codes.Sku);
+
+    if (pricing.SalePrice < 0)
     {
-      throw new ArgumentOutOfRangeException(nameof(salePrice), "Sale price cannot be negative.");
+      throw new ArgumentOutOfRangeException(nameof(pricing), "Sale price cannot be negative.");
     }
 
-    if (costPrice < 0)
+    if (pricing.CostPrice < 0)
     {
-      throw new ArgumentOutOfRangeException(nameof(costPrice), "Cost price cannot be negative.");
+      throw new ArgumentOutOfRangeException(nameof(pricing), "Cost price cannot be negative.");
     }
 
-    if (wholesalePrice < 0)
+    if (pricing.WholesalePrice < 0)
     {
-      throw new ArgumentOutOfRangeException(nameof(wholesalePrice), "Wholesale price cannot be negative.");
+      throw new ArgumentOutOfRangeException(nameof(pricing), "Wholesale price cannot be negative.");
     }
 
-    if (minSalePrice < 0 || minSalePrice > salePrice)
+    if (pricing.MinSalePrice < 0 || pricing.MinSalePrice > pricing.SalePrice)
     {
-      throw new ArgumentOutOfRangeException(nameof(minSalePrice), "Minimum sale price must be between zero and sale price.");
+      throw new ArgumentOutOfRangeException(nameof(pricing), "Minimum sale price must be between zero and sale price.");
     }
 
-    if (productType == ProductType.Service && trackInventory)
+    if (identity.ProductType == ProductType.Service && inventory.TrackInventory)
     {
       throw new InvalidOperationException("Services cannot track inventory.");
     }
 
-    if (productType == ProductType.Weighed && unitOfMeasure == UnitOfMeasure.Unit)
+    if (identity.ProductType == ProductType.Weighed && identity.UnitOfMeasure == UnitOfMeasure.Unit)
     {
       throw new InvalidOperationException("Weighed products cannot use Unit as unit of measure.");
     }
 
-    if (trackInventory && unitOfMeasure == UnitOfMeasure.Service)
+    if (inventory.TrackInventory && identity.UnitOfMeasure == UnitOfMeasure.Service)
     {
       throw new InvalidOperationException("Inventory products require a physical unit of measure.");
     }
@@ -282,3 +198,44 @@ public sealed class Product
   private static string NormalizeSearchName(string name)
     => name.Trim().ToUpperInvariant();
 }
+
+public sealed record ProductCreationContext(
+  Guid Id,
+  BusinessId BusinessId,
+  DateTimeOffset CreatedAt);
+
+public sealed record ProductIdentity(
+  ProductType ProductType,
+  string Name,
+  string? Description,
+  Guid? CategoryId,
+  Guid? BrandId,
+  UnitOfMeasure UnitOfMeasure);
+
+public sealed record ProductCodes(
+  string Sku,
+  string? Barcode,
+  string? InternalCode,
+  string? SupplierCode);
+
+public sealed record ProductPricing(
+  decimal SalePrice,
+  decimal CostPrice,
+  decimal? WholesalePrice,
+  decimal? MinSalePrice,
+  TaxCategory TaxCategory,
+  decimal TaxRate,
+  bool IsTaxIncluded);
+
+public sealed record ProductInventorySettings(
+  bool TrackInventory,
+  decimal? MinimumStock,
+  decimal? MaximumStock,
+  decimal? ReorderPoint,
+  bool AllowNegativeStock);
+
+public sealed record ProductOptions(
+  bool AllowsDiscount,
+  Guid? ParentProductId,
+  string? VariantName,
+  string? AttributesJson);

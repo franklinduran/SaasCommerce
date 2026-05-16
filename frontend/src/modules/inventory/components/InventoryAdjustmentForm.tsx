@@ -7,7 +7,7 @@ import { HttpClientError } from '@/shared/services/httpClient'
 import { useCreateInventoryAdjustmentMutation } from '@/modules/inventory/hooks/useInventory'
 
 const adjustmentSchema = z.object({
-  productId: z.string().uuid('Producto invalido'),
+  productId: z.uuid('Producto invalido'),
   quantity: z.coerce.number().refine((value) => value !== 0, 'La cantidad no puede ser cero'),
   reason: z.string().min(1, 'Selecciona una razon'),
 })

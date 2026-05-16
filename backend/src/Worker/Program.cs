@@ -7,12 +7,10 @@ using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-Log.Logger = new LoggerConfiguration()
-  .Enrich.FromLogContext()
-  .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
-  .CreateLogger();
-
-builder.Services.AddSerilog();
+builder.Services.AddSerilog((_, loggerConfiguration) =>
+  loggerConfiguration
+    .Enrich.FromLogContext()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 builder.Services.AddModules();
 builder.Services.AddBuildingBlocks(
   builder.Configuration,
@@ -20,8 +18,11 @@ builder.Services.AddBuildingBlocks(
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
-host.Run();
+await host.RunAsync();
 
 public partial class Program
 {
+  protected Program()
+  {
+  }
 }

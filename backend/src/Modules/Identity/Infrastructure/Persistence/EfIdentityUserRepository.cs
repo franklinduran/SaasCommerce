@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Domain;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.Modules.Identity.Infrastructure.Persistence;
 
@@ -26,6 +26,13 @@ public sealed class EfIdentityUserRepository(AppDbContext dbContext) : IIdentity
       .SingleOrDefaultAsync(
         user => user.RefreshTokens.Any(token => token.Token == refreshToken),
         cancellationToken);
+
+  public Task AddAsync(User user, CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(user);
+
+    return dbContext.Set<User>().AddAsync(user, cancellationToken).AsTask();
+  }
 
   private IQueryable<User> Users()
     => dbContext.Set<User>()

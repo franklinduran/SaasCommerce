@@ -1,7 +1,7 @@
-using SaasCommerce.Modules.Tenancy.Domain;
-using SaasCommerce.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SaasCommerce.Modules.Tenancy.Domain;
+using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Tenancy.Infrastructure.Persistence.Configurations;
 
@@ -27,6 +27,12 @@ public sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
       .HasMaxLength(160)
       .IsRequired();
 
+    builder.Property(branch => branch.Address)
+      .HasMaxLength(240);
+
+    builder.Property(branch => branch.Phone)
+      .HasMaxLength(40);
+
     builder.Property(branch => branch.IsMain)
       .IsRequired();
 
@@ -34,6 +40,9 @@ public sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
       .IsRequired();
 
     builder.Property(branch => branch.CreatedAt)
+      .IsRequired();
+
+    builder.Property(branch => branch.UpdatedAt)
       .IsRequired();
 
     builder.HasIndex(branch => new { branch.BusinessId, branch.Name })

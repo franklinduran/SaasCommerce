@@ -1,7 +1,7 @@
-using SaasCommerce.Modules.Identity.Domain;
-using SaasCommerce.SharedKernel.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SaasCommerce.Modules.Identity.Domain;
+using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Identity.Infrastructure.Persistence.Configurations;
 
@@ -35,6 +35,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
       .HasMaxLength(320)
       .IsRequired();
 
+    builder.Property(user => user.Phone)
+      .HasMaxLength(40);
+
     builder.Property(user => user.PasswordHash)
       .HasMaxLength(512)
       .IsRequired();
@@ -43,6 +46,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
       .IsRequired();
 
     builder.Property(user => user.CreatedAt)
+      .IsRequired();
+
+    builder.Property(user => user.UpdatedAt)
       .IsRequired();
 
     builder.HasIndex(user => new { user.BusinessId, user.Email })

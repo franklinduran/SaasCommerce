@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type { AuthSession } from '@/modules/auth/types'
+import type { LoginResponse } from '@/modules/auth/types'
 
 type AuthState = {
-  session: AuthSession | null
-  setSession: (session: AuthSession) => void
+  session: LoginResponse | null
+  setSession: (session: LoginResponse) => void
   clearSession: () => void
 }
 

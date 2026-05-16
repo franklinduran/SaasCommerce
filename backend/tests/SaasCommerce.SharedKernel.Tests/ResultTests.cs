@@ -1,5 +1,5 @@
-using SaasCommerce.SharedKernel;
 using FluentAssertions;
+using SaasCommerce.SharedKernel;
 
 namespace SaasCommerce.SharedKernel.Tests;
 

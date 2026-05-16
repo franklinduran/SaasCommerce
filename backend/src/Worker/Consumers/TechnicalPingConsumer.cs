@@ -1,8 +1,8 @@
+using MassTransit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events.V1;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
-using MassTransit;
 
 namespace SaasCommerce.Worker.Consumers;
 

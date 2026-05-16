@@ -10,22 +10,17 @@ public sealed class InventoryMovement
 
   public InventoryMovement(
     Guid id,
-    BusinessId businessId,
-    Guid productId,
-    decimal previousStock,
-    decimal newStock,
-    decimal quantity,
-    InventoryMovementReason reason,
+    InventoryMovementSnapshot snapshot,
     Guid userId,
     DateTimeOffset createdAt)
   {
     Id = id;
-    BusinessId = businessId;
-    ProductId = productId;
-    PreviousStock = previousStock;
-    NewStock = newStock;
-    Quantity = quantity;
-    Reason = reason;
+    BusinessId = snapshot.BusinessId;
+    ProductId = snapshot.ProductId;
+    PreviousStock = snapshot.PreviousStock;
+    NewStock = snapshot.NewStock;
+    Quantity = snapshot.Quantity;
+    Reason = snapshot.Reason;
     UserId = userId;
     CreatedAt = createdAt;
   }
@@ -48,3 +43,11 @@ public sealed class InventoryMovement
 
   public DateTimeOffset CreatedAt { get; private set; }
 }
+
+public sealed record InventoryMovementSnapshot(
+  BusinessId BusinessId,
+  Guid ProductId,
+  decimal PreviousStock,
+  decimal NewStock,
+  decimal Quantity,
+  InventoryMovementReason Reason);

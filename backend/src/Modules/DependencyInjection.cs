@@ -6,7 +6,9 @@ using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
+using SaasCommerce.Modules.Identity.Application.Account;
 using SaasCommerce.Modules.Identity.Application.Auth;
+using SaasCommerce.Modules.Identity.Application.Settings;
 using SaasCommerce.Modules.Identity.Infrastructure.Auth;
 using SaasCommerce.Modules.Identity.Infrastructure.Development;
 using SaasCommerce.Modules.Identity.Infrastructure.Persistence;
@@ -26,7 +28,9 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<ICatalogProductRepository, EfCatalogProductRepository>();
     services.AddScoped<IProductInventoryPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
+    services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
     services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();
+    services.AddScoped<IIdentitySettingsRepository, EfIdentitySettingsRepository>();
     services.AddScoped<IJwtTokenService, JwtTokenService>();
     services.AddScoped<IPasswordHasher, PasswordHasher>();
     services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
@@ -37,9 +41,17 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<AdjustInventoryHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();
+    services.AddScoped<RegisterBusinessHandler>();
     services.AddScoped<LoginHandler>();
     services.AddScoped<RefreshTokenHandler>();
     services.AddScoped<GetCurrentUserHandler>();
+    services.AddScoped<GetMeHandler>();
+    services.AddScoped<UpdateMyProfileHandler>();
+    services.AddScoped<ChangeMyPasswordHandler>();
+    services.AddScoped<GetCurrentBusinessHandler>();
+    services.AddScoped<UpdateCurrentBusinessHandler>();
+    services.AddScoped<GetCurrentBranchHandler>();
+    services.AddScoped<UpdateCurrentBranchHandler>();
     services.AddScoped<DevelopmentDataSeeder>();
 
     return services;

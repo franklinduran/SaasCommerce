@@ -165,7 +165,7 @@ export function ProductsPage() {
         </CardHeader>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-left text-sm">
+          <table className="w-full min-w-260 text-left text-sm">
             <thead className="bg-stone-50 text-xs font-semibold uppercase text-stone-600">
               <tr>
                 <th className="px-5 py-3">Producto</th>
@@ -240,7 +240,9 @@ export function ProductsPage() {
 
         <div className="flex flex-col gap-4 border-t border-stone-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <p className="text-sm font-medium text-stone-600">
-            Pagina {filters.page} de {totalPages || 1} · {totalItems} registros
+            <span>Pagina {filters.page} de {totalPages || 1}</span>
+            <span aria-hidden="true" className="px-1">/</span>
+            <span>{totalItems} registros</span>
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <select
@@ -288,9 +290,18 @@ export function ProductsPage() {
   )
 }
 
+const skeletonRowIds = [
+  'product-skeleton-1',
+  'product-skeleton-2',
+  'product-skeleton-3',
+  'product-skeleton-4',
+  'product-skeleton-5',
+  'product-skeleton-6',
+]
+
 function SkeletonRows() {
-  return Array.from({ length: 6 }).map((_, index) => (
-    <tr key={index}>
+  return skeletonRowIds.map((id) => (
+    <tr key={id}>
       <td className="px-5 py-4" colSpan={8}>
         <div className="h-4 w-full rounded bg-stone-100" />
       </td>
@@ -298,12 +309,13 @@ function SkeletonRows() {
   ))
 }
 
-function StatusBadge({ isActive }: { isActive: boolean }) {
+function StatusBadge({ isActive }: Readonly<{ isActive: boolean }>) {
+  const className = isActive
+    ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200'
+    : 'rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700 ring-1 ring-stone-200'
+
   return (
-    <span className={isActive
-      ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200'
-      : 'rounded-full bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700 ring-1 ring-stone-200'}
-    >
+    <span className={className}>
       {isActive ? 'Activo' : 'Inactivo'}
     </span>
   )
@@ -313,11 +325,11 @@ function ProductDrawer({
   children,
   onClose,
   title,
-}: {
+}: Readonly<{
   children: ReactNode
   onClose: () => void
   title: string
-}) {
+}>) {
   return (
     <div className="fixed inset-0 z-50 bg-stone-950/20">
       <div className="absolute inset-y-0 right-0 flex w-full max-w-5xl flex-col bg-white shadow-xl ring-1 ring-stone-200">

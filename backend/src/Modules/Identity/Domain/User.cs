@@ -31,6 +31,7 @@ public sealed class User
     Email = email.Trim().ToLowerInvariant();
     PasswordHash = passwordHash;
     CreatedAt = createdAt;
+    UpdatedAt = createdAt;
     IsActive = true;
   }
 
@@ -44,11 +45,15 @@ public sealed class User
 
   public string Email { get; private set; } = string.Empty;
 
+  public string? Phone { get; private set; }
+
   public string PasswordHash { get; private set; } = string.Empty;
 
   public bool IsActive { get; private set; }
 
   public DateTimeOffset CreatedAt { get; private set; }
+
+  public DateTimeOffset UpdatedAt { get; private set; }
 
   public IReadOnlyCollection<Role> Roles => roles.AsReadOnly();
 
@@ -74,5 +79,22 @@ public sealed class User
     refreshTokens.Add(refreshToken);
 
     return refreshToken;
+  }
+
+  public void UpdateProfile(string fullName, string? phone, DateTimeOffset updatedAt)
+  {
+    ArgumentException.ThrowIfNullOrWhiteSpace(fullName);
+
+    FullName = fullName.Trim();
+    Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+    UpdatedAt = updatedAt;
+  }
+
+  public void ChangePasswordHash(string passwordHash, DateTimeOffset updatedAt)
+  {
+    ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
+
+    PasswordHash = passwordHash;
+    UpdatedAt = updatedAt;
   }
 }

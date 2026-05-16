@@ -1,6 +1,6 @@
-using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 
 namespace SaasCommerce.BuildingBlocks.Tests;
 

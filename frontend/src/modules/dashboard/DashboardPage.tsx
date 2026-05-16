@@ -60,6 +60,11 @@ const topSales = [
   { label: 'Televisores', value: '237 unidades', color: 'bg-stone-500' },
 ]
 
+const salesBars = Array.from({ length: 24 }, (_, index) => ({
+  id: `sales-bar-${index + 1}`,
+  tone: getSalesBarTone(index),
+}))
+
 const products = [
   {
     name: 'Playstation 4 Limited Edition',
@@ -138,11 +143,11 @@ export function DashboardPage() {
                 <div className="mt-2 flex gap-4 text-xs font-medium text-steel">
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-stone-900" />
-                    Ingresos
+                    <span>Ingresos</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-primary" />
-                    Gastos
+                    <span>Gastos</span>
                   </span>
                 </div>
               </div>
@@ -154,12 +159,12 @@ export function DashboardPage() {
             <CardContent>
               <div className="relative min-h-[220px] overflow-hidden rounded-md bg-muted p-3">
                 <svg
+                  aria-labelledby="orders-chart-title"
                   className="h-full min-h-[220px] w-full"
                   preserveAspectRatio="none"
-                  role="img"
                   viewBox="0 0 700 240"
                 >
-                  <title>Ingresos y gastos por mes</title>
+                  <title id="orders-chart-title">Ingresos y gastos por mes</title>
                   <g stroke="#e7e5e4" strokeWidth="1">
                     {[44, 88, 132, 176].map((y) => (
                       <line key={y} x1="28" x2="672" y1={y} y2={y} />
@@ -204,11 +209,8 @@ export function DashboardPage() {
                 <p className="text-sm font-medium text-steel">+512 esta semana</p>
               </div>
               <div className="mb-5 grid grid-cols-[repeat(24,minmax(0,1fr))] gap-1">
-                {Array.from({ length: 24 }).map((_, index) => (
-                  <span
-                    className={`h-16 rounded-sm ${index % 3 === 0 ? 'bg-stone-950' : index % 3 === 1 ? 'bg-stone-700' : 'bg-stone-400'}`}
-                    key={index}
-                  />
+                {salesBars.map((bar) => (
+                  <span className={`h-16 rounded-sm ${bar.tone}`} key={bar.id} />
                 ))}
               </div>
               <div className="space-y-3">
@@ -306,4 +308,10 @@ export function DashboardPage() {
       </div>
     </section>
   )
+}
+
+function getSalesBarTone(index: number) {
+  const tones = ['bg-stone-950', 'bg-stone-700', 'bg-stone-400']
+
+  return tones[index % tones.length]
 }

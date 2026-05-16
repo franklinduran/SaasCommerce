@@ -24,19 +24,19 @@ public interface ICatalogProductRepository
 
   Task<int> CountAsync(
     BusinessId businessId,
-    string? query,
-    ProductType? productType,
-    Guid? categoryId,
-    bool? isActive,
+    ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 
   Task<IReadOnlyCollection<Product>> ListAsync(
     BusinessId businessId,
-    string? query,
-    ProductType? productType,
-    Guid? categoryId,
-    bool? isActive,
-    int page,
-    int pageSize,
+    ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 }
+
+public sealed record ProductSearchCriteria(
+  string? Query,
+  ProductType? ProductType,
+  Guid? CategoryId,
+  bool? IsActive,
+  int Page,
+  int PageSize);

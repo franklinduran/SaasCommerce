@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, Plus } from 'lucide-react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
@@ -42,21 +42,48 @@ type ProductFormInput = z.input<typeof productSchema>
 const inputClass =
   'h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15'
 
+const emptyProductFormDefaults: ProductFormInput = {
+  allowsDiscount: true,
+  allowNegativeStock: false,
+  attributesJson: '',
+  barcode: '',
+  costPrice: 0,
+  description: '',
+  internalCode: '',
+  isTaxIncluded: true,
+  maximumStock: null,
+  minimumStock: null,
+  minSalePrice: null,
+  name: '',
+  parentProductId: '',
+  productType: 'Simple',
+  reorderPoint: null,
+  salePrice: 0,
+  sku: '',
+  supplierCode: '',
+  taxCategory: 'Itbis18',
+  taxRate: 18,
+  trackInventory: true,
+  unitOfMeasure: 'Unit',
+  variantName: '',
+  wholesalePrice: null,
+}
+
 type ProductFormProps = {
   product?: Product | null
   onSaved?: () => void
 }
 
-export function ProductForm({ product, onSaved }: ProductFormProps) {
+export function ProductForm({ product, onSaved }: Readonly<ProductFormProps>) {
   const createProduct = useCreateProductMutation()
   const updateProduct = useUpdateProductMutation()
   const isEditing = Boolean(product)
   const {
     formState: { errors },
     handleSubmit,
+    control,
     register,
     reset,
-    watch,
   } = useForm<ProductFormInput, undefined, ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: toFormDefaults(product),
@@ -66,7 +93,7 @@ export function ProductForm({ product, onSaved }: ProductFormProps) {
     reset(toFormDefaults(product))
   }, [product, reset])
 
-  const productType = watch('productType')
+  const productType = useWatch({ control, name: 'productType' })
   const errorMessage =
     createProduct.error instanceof HttpClientError || updateProduct.error instanceof HttpClientError
       ? (createProduct.error ?? updateProduct.error)?.message
@@ -236,7 +263,7 @@ export function ProductForm({ product, onSaved }: ProductFormProps) {
       <div className="flex justify-end">
         <Button disabled={isPending} type="submit">
           {isEditing ? <Check size={16} /> : <Plus size={16} />}
-          {isPending ? 'Guardando' : isEditing ? 'Guardar cambios' : 'Crear producto'}
+          {getSubmitLabel(isPending, isEditing)}
         </Button>
       </div>
     </form>
@@ -249,7 +276,7 @@ type FieldProps = {
   label: string
 }
 
-function Field({ children, error, label }: FieldProps) {
+function Field({ children, error, label }: Readonly<FieldProps>) {
   return (
     <label className="block min-w-0">
       <span className="mb-2 block text-sm font-semibold text-stone-900">{label}</span>
@@ -259,7 +286,7 @@ function Field({ children, error, label }: FieldProps) {
   )
 }
 
-function FormSection({ children, title }: { children: ReactNode; title: string }) {
+function FormSection({ children, title }: Readonly<{ children: ReactNode; title: string }>) {
   return (
     <section className="rounded-lg bg-stone-50 p-4 ring-1 ring-stone-200">
       <h4 className="mb-4 text-sm font-semibold text-stone-950">{title}</h4>
@@ -275,7 +302,7 @@ function Toggle({
 }: {
   disabled?: boolean
   label: string
-} & InputHTMLAttributes<HTMLInputElement>) {
+} & Readonly<InputHTMLAttributes<HTMLInputElement>>) {
   return (
     <label className="flex h-11 items-center gap-3 self-end rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)]">
       <input
@@ -293,31 +320,47 @@ function emptyToNull(value?: string | null): string | null {
   return value && value.trim().length > 0 ? value.trim() : null
 }
 
-function toFormDefaults(product?: Product | null): ProductFormInput {
-  return {
-    allowsDiscount: product?.allowsDiscount ?? true,
-    allowNegativeStock: product?.allowNegativeStock ?? false,
-    attributesJson: product?.attributesJson ?? '',
-    barcode: product?.barcode ?? '',
-    costPrice: product?.costPrice ?? 0,
-    description: product?.description ?? '',
-    internalCode: product?.internalCode ?? '',
-    isTaxIncluded: product?.isTaxIncluded ?? true,
-    maximumStock: product?.maximumStock ?? null,
-    minimumStock: product?.minimumStock ?? null,
-    minSalePrice: product?.minSalePrice ?? null,
-    name: product?.name ?? '',
-    parentProductId: product?.parentProductId ?? '',
-    productType: product?.productType ?? 'Simple',
-    reorderPoint: product?.reorderPoint ?? null,
-    salePrice: product?.salePrice ?? 0,
-    sku: product?.sku ?? '',
-    supplierCode: product?.supplierCode ?? '',
-    taxCategory: product?.taxCategory ?? 'Itbis18',
-    taxRate: product?.taxRate ?? 18,
-    trackInventory: product?.trackInventory ?? true,
-    unitOfMeasure: product?.unitOfMeasure ?? 'Unit',
-    variantName: product?.variantName ?? '',
-    wholesalePrice: product?.wholesalePrice ?? null,
+function getSubmitLabel(isPending: boolean, isEditing: boolean): string {
+  if (isPending) {
+    return 'Guardando'
   }
+
+  return isEditing ? 'Guardar cambios' : 'Crear producto'
+}
+
+function toFormDefaults(product?: Product | null): ProductFormInput {
+  if (!product) {
+    return { ...emptyProductFormDefaults }
+  }
+
+  return {
+    allowsDiscount: product.allowsDiscount,
+    allowNegativeStock: product.allowNegativeStock,
+    attributesJson: nullableTextToInput(product.attributesJson),
+    barcode: nullableTextToInput(product.barcode),
+    costPrice: product.costPrice,
+    description: nullableTextToInput(product.description),
+    internalCode: nullableTextToInput(product.internalCode),
+    isTaxIncluded: product.isTaxIncluded,
+    maximumStock: product.maximumStock,
+    minimumStock: product.minimumStock,
+    minSalePrice: product.minSalePrice,
+    name: product.name,
+    parentProductId: nullableTextToInput(product.parentProductId),
+    productType: product.productType,
+    reorderPoint: product.reorderPoint,
+    salePrice: product.salePrice,
+    sku: product.sku,
+    supplierCode: nullableTextToInput(product.supplierCode),
+    taxCategory: product.taxCategory,
+    taxRate: product.taxRate,
+    trackInventory: product.trackInventory,
+    unitOfMeasure: product.unitOfMeasure,
+    variantName: nullableTextToInput(product.variantName),
+    wholesalePrice: product.wholesalePrice,
+  }
+}
+
+function nullableTextToInput(value: string | null): string {
+  return value ?? ''
 }

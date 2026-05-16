@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Catalog.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 

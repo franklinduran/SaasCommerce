@@ -10,12 +10,19 @@ public sealed class GetInventoryMovementsHandler(
   IInventoryRepository inventory,
   ICurrentUserService currentUser)
 {
-  public async Task<Result<InventoryMovementListResponse>> Handle(
+  public Task<Result<InventoryMovementListResponse>> Handle(
     GetInventoryMovementsQuery query,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(query);
 
+    return HandleCoreAsync(query, cancellationToken);
+  }
+
+  private async Task<Result<InventoryMovementListResponse>> HandleCoreAsync(
+    GetInventoryMovementsQuery query,
+    CancellationToken cancellationToken)
+  {
     if (currentUser.BusinessId is not Guid businessId)
     {
       return Result.Failure<InventoryMovementListResponse>(InventoryErrors.UserContextRequired);

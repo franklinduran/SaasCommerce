@@ -1,7 +1,7 @@
+using MassTransit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
-using MassTransit;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
 
@@ -10,10 +10,15 @@ public abstract class IdempotentConsumer<TMessage>(
   IClock clock) : IConsumer<TMessage>
   where TMessage : class, IIntegrationEvent
 {
-  public async Task Consume(ConsumeContext<TMessage> context)
+  public Task Consume(ConsumeContext<TMessage> context)
   {
     ArgumentNullException.ThrowIfNull(context);
 
+    return ConsumeCoreAsync(context);
+  }
+
+  private async Task ConsumeCoreAsync(ConsumeContext<TMessage> context)
+  {
     if (await inboxStore
         .HasProcessedAsync(context.Message.EventId, context.CancellationToken)
         .ConfigureAwait(false))

@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
 
@@ -17,22 +17,22 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
         stockItem => stockItem.BusinessId == businessId && stockItem.ProductId == productId,
         cancellationToken);
 
-  public async Task AddStockItemAsync(
+  public Task AddStockItemAsync(
     StockItem stockItem,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(stockItem);
 
-    await dbContext.Set<StockItem>().AddAsync(stockItem, cancellationToken);
+    return dbContext.Set<StockItem>().AddAsync(stockItem, cancellationToken).AsTask();
   }
 
-  public async Task AddMovementAsync(
+  public Task AddMovementAsync(
     InventoryMovement movement,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(movement);
 
-    await dbContext.Set<InventoryMovement>().AddAsync(movement, cancellationToken);
+    return dbContext.Set<InventoryMovement>().AddAsync(movement, cancellationToken).AsTask();
   }
 
   public Task<int> CountStockAsync(BusinessId businessId, CancellationToken cancellationToken = default)

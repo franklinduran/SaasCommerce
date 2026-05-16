@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Catalog.Application.Abstractions;
 using SaasCommerce.Modules.Catalog.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
 
@@ -37,36 +37,28 @@ public sealed class EfCatalogProductRepository(AppDbContext dbContext) : ICatalo
       .SingleOrDefaultAsync(product => product.Barcode == normalizedBarcode, cancellationToken);
   }
 
-  public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
+  public Task AddAsync(Product product, CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(product);
 
-    await dbContext.Set<Product>().AddAsync(product, cancellationToken);
+    return dbContext.Set<Product>().AddAsync(product, cancellationToken).AsTask();
   }
 
   public Task<int> CountAsync(
     BusinessId businessId,
-    string? query,
-    ProductType? productType,
-    Guid? categoryId,
-    bool? isActive,
+    ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => ApplyFilters(Products(businessId), query, productType, categoryId, isActive)
+    => ApplyFilters(Products(businessId), criteria)
       .CountAsync(cancellationToken);
 
   public async Task<IReadOnlyCollection<Product>> ListAsync(
     BusinessId businessId,
-    string? query,
-    ProductType? productType,
-    Guid? categoryId,
-    bool? isActive,
-    int page,
-    int pageSize,
+    ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => await ApplyFilters(Products(businessId), query, productType, categoryId, isActive)
+    => await ApplyFilters(Products(businessId), criteria)
       .OrderBy(product => product.Name)
-      .Skip((page - 1) * pageSize)
-      .Take(pageSize)
+      .Skip((criteria.Page - 1) * criteria.PageSize)
+      .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
 
   private IQueryable<Product> Products(BusinessId businessId)
@@ -75,14 +67,11 @@ public sealed class EfCatalogProductRepository(AppDbContext dbContext) : ICatalo
 
   private static IQueryable<Product> ApplyFilters(
     IQueryable<Product> query,
-    string? searchText,
-    ProductType? productType,
-    Guid? categoryId,
-    bool? isActive)
+    ProductSearchCriteria criteria)
   {
-    if (!string.IsNullOrWhiteSpace(searchText))
+    if (!string.IsNullOrWhiteSpace(criteria.Query))
     {
-      var term = searchText.Trim();
+      var term = criteria.Query.Trim();
       var normalizedTerm = term.ToUpperInvariant();
       query = query.Where(product =>
         product.Name.Contains(term) ||
@@ -91,19 +80,19 @@ public sealed class EfCatalogProductRepository(AppDbContext dbContext) : ICatalo
         product.Barcode != null && product.Barcode.Contains(term));
     }
 
-    if (productType.HasValue)
+    if (criteria.ProductType.HasValue)
     {
-      query = query.Where(product => product.ProductType == productType.Value);
+      query = query.Where(product => product.ProductType == criteria.ProductType.Value);
     }
 
-    if (categoryId.HasValue)
+    if (criteria.CategoryId.HasValue)
     {
-      query = query.Where(product => product.CategoryId == categoryId.Value);
+      query = query.Where(product => product.CategoryId == criteria.CategoryId.Value);
     }
 
-    if (isActive.HasValue)
+    if (criteria.IsActive.HasValue)
     {
-      query = query.Where(product => product.IsActive == isActive.Value);
+      query = query.Where(product => product.IsActive == criteria.IsActive.Value);
     }
 
     return query;

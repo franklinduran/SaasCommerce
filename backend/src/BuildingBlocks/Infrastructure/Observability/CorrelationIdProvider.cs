@@ -1,5 +1,5 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using Microsoft.AspNetCore.Http;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Observability;
 

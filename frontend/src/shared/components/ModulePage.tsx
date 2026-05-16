@@ -5,10 +5,10 @@ type ModulePageProps = {
   title: string
   eyebrow: string
   icon: LucideIcon
-  rows: Array<{ label: string; value: string; status: string }>
+  rows: ReadonlyArray<{ label: string; value: string; status: string }>
 }
 
-export function ModulePage({ title, eyebrow, icon: Icon, rows }: ModulePageProps) {
+export function ModulePage({ title, eyebrow, icon: Icon, rows }: Readonly<ModulePageProps>) {
   return (
     <section className="min-h-full bg-surface-subtle p-4 lg:p-6">
       <div className="flex w-full flex-col gap-6">

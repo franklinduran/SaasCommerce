@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
-using SaasCommerce.Modules.Identity.Application.Abstractions;
 using Microsoft.AspNetCore.WebUtilities;
+using SaasCommerce.Modules.Identity.Application.Abstractions;
 
 namespace SaasCommerce.Modules.Identity.Infrastructure.Auth;
 

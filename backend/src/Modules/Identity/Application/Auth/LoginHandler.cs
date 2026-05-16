@@ -14,12 +14,19 @@ public sealed class LoginHandler(
   IClock clock,
   IUnitOfWork unitOfWork)
 {
-  public async Task<Result<LoginResponse>> Handle(
+  public Task<Result<LoginResponse>> Handle(
     LoginCommand command,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(command);
 
+    return HandleCoreAsync(command, cancellationToken);
+  }
+
+  private async Task<Result<LoginResponse>> HandleCoreAsync(
+    LoginCommand command,
+    CancellationToken cancellationToken)
+  {
     var email = command.Email.Trim().ToLowerInvariant();
     var user = await users.GetByEmailAsync(email, cancellationToken);
 

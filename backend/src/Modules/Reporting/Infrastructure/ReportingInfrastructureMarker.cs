@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Reporting.Infrastructure;
 
-public sealed class ReportingInfrastructureMarker;
+internal interface IReportingInfrastructureMarker
+{
+}

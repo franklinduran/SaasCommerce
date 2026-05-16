@@ -26,9 +26,9 @@ public class Result
 
   public static Result Success() => new(true, DomainError.None);
 
-  public static Result Failure(DomainError error) => new(false, error);
-
   public static Result<T> Success<T>(T value) => new(value);
+
+  public static Result Failure(DomainError error) => new(false, error);
 
   public static Result<T> Failure<T>(DomainError error) => new(error);
 }

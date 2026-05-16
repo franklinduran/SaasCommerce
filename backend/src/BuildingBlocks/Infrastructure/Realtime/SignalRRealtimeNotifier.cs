@@ -1,5 +1,5 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using Microsoft.AspNetCore.SignalR;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 

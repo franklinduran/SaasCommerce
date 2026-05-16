@@ -1,13 +1,13 @@
 using System.Reflection;
+using FluentAssertions;
+using MassTransit;
+using NetArchTest.Rules;
 using SaasCommerce.Api;
 using SaasCommerce.BuildingBlocks;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
 using SaasCommerce.Modules;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.Worker;
-using FluentAssertions;
-using MassTransit;
-using NetArchTest.Rules;
 
 namespace SaasCommerce.Architecture.Tests;
 

@@ -1,11 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Domain;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace SaasCommerce.Modules.Identity.Infrastructure.Auth;
 

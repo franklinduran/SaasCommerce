@@ -1,3 +1,7 @@
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
@@ -10,10 +14,6 @@ using SaasCommerce.BuildingBlocks.Infrastructure.Observability;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.BuildingBlocks.Infrastructure.Time;
-using MassTransit;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace SaasCommerce.BuildingBlocks;
 

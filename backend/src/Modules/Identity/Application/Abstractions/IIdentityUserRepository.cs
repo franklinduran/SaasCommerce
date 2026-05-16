@@ -9,4 +9,6 @@ public interface IIdentityUserRepository
   Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
   Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+
+  Task AddAsync(User user, CancellationToken cancellationToken = default);
 }

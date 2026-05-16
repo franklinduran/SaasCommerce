@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Payments.Domain;
 
-public sealed class PaymentsDomainMarker;
+internal interface IPaymentsDomainMarker
+{
+}

@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Identity.Contracts;
 
-public sealed class IdentityContractsMarker;
+internal interface IdentityContractsMarker
+{
+}

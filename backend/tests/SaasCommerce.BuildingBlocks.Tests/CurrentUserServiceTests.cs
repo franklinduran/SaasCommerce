@@ -1,7 +1,7 @@
 using System.Security.Claims;
-using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
 
 namespace SaasCommerce.BuildingBlocks.Tests;
 

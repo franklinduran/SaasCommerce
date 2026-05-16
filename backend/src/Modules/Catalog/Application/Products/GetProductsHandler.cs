@@ -11,12 +11,19 @@ public sealed class GetProductsHandler(
   ICatalogProductRepository products,
   ICurrentUserService currentUser)
 {
-  public async Task<Result<ProductListResponse>> Handle(
+  public Task<Result<ProductListResponse>> Handle(
     GetProductsQuery query,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(query);
 
+    return HandleCoreAsync(query, cancellationToken);
+  }
+
+  private async Task<Result<ProductListResponse>> HandleCoreAsync(
+    GetProductsQuery query,
+    CancellationToken cancellationToken)
+  {
     if (currentUser.BusinessId is not Guid businessId)
     {
       return Result.Failure<ProductListResponse>(CatalogErrors.UserContextRequired);
@@ -37,21 +44,20 @@ public sealed class GetProductsHandler(
     }
 
     var tenantId = new BusinessId(businessId);
-    var totalItems = await products.CountAsync(
-      tenantId,
-      query.Query,
-      productType,
-      query.CategoryId,
-      query.IsActive,
-      cancellationToken);
-    var items = await products.ListAsync(
-      tenantId,
+    var criteria = new ProductSearchCriteria(
       query.Query,
       productType,
       query.CategoryId,
       query.IsActive,
       page,
-      pageSize,
+      pageSize);
+    var totalItems = await products.CountAsync(
+      tenantId,
+      criteria,
+      cancellationToken);
+    var items = await products.ListAsync(
+      tenantId,
+      criteria,
       cancellationToken);
     var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
 

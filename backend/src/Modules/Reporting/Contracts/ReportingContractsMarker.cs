@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Reporting.Contracts;
 
-public sealed class ReportingContractsMarker;
+internal interface IReportingContractsMarker
+{
+}

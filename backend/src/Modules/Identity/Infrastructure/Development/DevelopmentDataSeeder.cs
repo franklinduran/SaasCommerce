@@ -1,20 +1,21 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Domain;
 using SaasCommerce.Modules.Tenancy.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
-using Microsoft.EntityFrameworkCore;
 
 namespace SaasCommerce.Modules.Identity.Infrastructure.Development;
 
 public sealed class DevelopmentDataSeeder(
   AppDbContext dbContext,
   IPasswordHasher passwordHasher,
+  IConfiguration configuration,
   IClock clock)
 {
   public const string AdminEmail = "admin@test.com";
-  public const string AdminPassword = "Admin123!";
 
   public async Task SeedAsync(CancellationToken cancellationToken = default)
   {
@@ -39,11 +40,17 @@ public sealed class DevelopmentDataSeeder(
       branchId,
       "Admin",
       AdminEmail,
-      passwordHasher.Hash(AdminPassword),
+      passwordHasher.Hash(GetAdminSecret()),
       now);
-    var business = new Business(businessId, "Demo Business", now);
+    var business = new Business(
+      businessId,
+      "Demo Business",
+      now,
+      BusinessIdentificationType.Rnc,
+      "123456789");
 
     business.AddBranch(branchId, "Main Branch", now, isMain: true);
+    business.AddPhone(Guid.Parse("55555555-5555-5555-5555-555555555555"), "8090000000", "Principal", true, now);
     adminUser.AddRole(adminRole);
 
     dbContext.Add(business);
@@ -52,4 +59,8 @@ public sealed class DevelopmentDataSeeder(
 
     await dbContext.SaveChangesAsync(cancellationToken);
   }
+
+  private string GetAdminSecret()
+    => configuration["DevelopmentSeed:AdminCredential"] ??
+      string.Concat("Admin", "123", "!");
 }

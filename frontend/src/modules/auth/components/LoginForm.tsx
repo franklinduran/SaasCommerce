@@ -9,7 +9,7 @@ import { HttpClientError } from '@/shared/services/httpClient'
 import { useLoginMutation } from '@/modules/auth/hooks/useLoginMutation'
 
 const loginSchema = z.object({
-  email: z.string().email('Correo invalido'),
+  email: z.email('Correo invalido'),
   password: z.string().min(6, 'La contrasena debe tener al menos 6 caracteres'),
 })
 
@@ -128,6 +128,7 @@ export function LoginForm() {
         <p className="text-sm font-medium text-stone-600">No tienes una cuenta?</p>
         <Button
           className="mt-4 h-11 w-full"
+          onClick={() => navigate('/register-business')}
           type="button"
           variant="outline"
         >

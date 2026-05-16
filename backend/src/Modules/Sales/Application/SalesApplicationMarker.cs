@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Sales.Application;
 
-public sealed class SalesApplicationMarker;
+internal interface ISalesApplicationMarker
+{
+}

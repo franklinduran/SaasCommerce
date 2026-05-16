@@ -83,7 +83,7 @@ export function InventoryPage() {
             </div>
           </CardHeader>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-sm">
+            <table className="w-full min-w-130 text-left text-sm">
               <thead className="bg-stone-50 text-xs font-semibold uppercase text-stone-600">
                 <tr>
                   <th className="px-5 py-3">Razon</th>
@@ -113,9 +113,11 @@ export function InventoryPage() {
   )
 }
 
+const placeholderRowIds = ['inventory-placeholder-1', 'inventory-placeholder-2', 'inventory-placeholder-3', 'inventory-placeholder-4']
+
 function PlaceholderRows({ columns }: { columns: number }) {
-  return Array.from({ length: 4 }).map((_, index) => (
-    <tr key={index}>
+  return placeholderRowIds.map((id) => (
+    <tr key={id}>
       <td className="px-5 py-4" colSpan={columns}>
         <div className="h-4 w-full rounded bg-stone-100" />
       </td>
@@ -123,7 +125,7 @@ function PlaceholderRows({ columns }: { columns: number }) {
   ))
 }
 
-function EmptyRow({ columns, text }: { columns: number; text: string }) {
+function EmptyRow({ columns, text }: Readonly<{ columns: number; text: string }>) {
   return (
     <tr>
       <td className="px-5 py-10 text-center text-sm font-medium text-stone-600" colSpan={columns}>
@@ -133,7 +135,7 @@ function EmptyRow({ columns, text }: { columns: number; text: string }) {
   )
 }
 
-function ErrorRow({ columns, text }: { columns: number; text: string }) {
+function ErrorRow({ columns, text }: Readonly<{ columns: number; text: string }>) {
   return (
     <tr>
       <td className="px-5 py-10 text-center text-sm font-medium text-red-700" colSpan={columns}>

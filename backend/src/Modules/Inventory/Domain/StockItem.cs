@@ -52,12 +52,13 @@ public sealed class StockItem
 
     return new InventoryMovement(
       Guid.NewGuid(),
-      BusinessId,
-      ProductId,
-      previousStock,
-      newStock,
-      quantity,
-      reason,
+      new InventoryMovementSnapshot(
+        BusinessId,
+        ProductId,
+        previousStock,
+        newStock,
+        quantity,
+        reason),
       userId,
       occurredAt);
   }

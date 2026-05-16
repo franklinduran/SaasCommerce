@@ -1,6 +1,6 @@
-using SaasCommerce.Api.Middleware;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using SaasCommerce.Api.Middleware;
 
 namespace SaasCommerce.Api.Tests;
 

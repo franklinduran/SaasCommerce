@@ -1,5 +1,5 @@
-using SaasCommerce.BuildingBlocks.Infrastructure.Time;
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks.Infrastructure.Time;
 
 namespace SaasCommerce.BuildingBlocks.Tests;
 

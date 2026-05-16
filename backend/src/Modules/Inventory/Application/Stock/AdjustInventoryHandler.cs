@@ -17,12 +17,19 @@ public sealed class AdjustInventoryHandler(
   IClock clock,
   IUnitOfWork unitOfWork)
 {
-  public async Task<Result<InventoryAdjustmentResponse>> Handle(
+  public Task<Result<InventoryAdjustmentResponse>> Handle(
     AdjustInventoryCommand command,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(command);
 
+    return HandleCoreAsync(command, cancellationToken);
+  }
+
+  private async Task<Result<InventoryAdjustmentResponse>> HandleCoreAsync(
+    AdjustInventoryCommand command,
+    CancellationToken cancellationToken)
+  {
     if (currentUser.BusinessId is not Guid businessId || currentUser.UserId is not Guid userId)
     {
       return Result.Failure<InventoryAdjustmentResponse>(InventoryErrors.UserContextRequired);

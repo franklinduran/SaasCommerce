@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 
-export function ProtectedRoute({ children }: PropsWithChildren) {
+export function ProtectedRoute({ children }: Readonly<PropsWithChildren>) {
   const session = useAuthStore((state) => state.session)
   const location = useLocation()
 

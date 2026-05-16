@@ -22,5 +22,3 @@ export type LoginResponse = {
 export type RefreshTokenRequest = {
   refreshToken: string
 }
-
-export type AuthSession = LoginResponse

@@ -1,18 +1,30 @@
+import { Suspense } from 'react'
+import type { ReactNode } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/app/AppShell'
-import { AuthPage } from '@/modules/auth/AuthPage'
+import {
+  AuthRoute,
+  CustomersRoute,
+  DashboardRoute,
+  InventoryRoute,
+  InvoicesRoute,
+  ProductsRoute,
+  PurchasesRoute,
+  RegisterBusinessRoute,
+  ReportsRoute,
+  SalesRoute,
+  SettingsRoute,
+} from '@/app/LazyPages'
 import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute'
-import { CustomersPage } from '@/modules/customers/CustomersPage'
-import { DashboardPage } from '@/modules/dashboard/DashboardPage'
-import { InventoryPage } from '@/modules/inventory/InventoryPage'
-import { InvoicesPage } from '@/modules/invoices/InvoicesPage'
-import { ProductsPage } from '@/modules/products/ProductsPage'
-import { PurchasesPage } from '@/modules/purchases/PurchasesPage'
-import { ReportsPage } from '@/modules/reports/ReportsPage'
-import { SalesPage } from '@/modules/sales/SalesPage'
+import { PageLoadingState } from '@/shared/components/PageLoadingState'
+
+function withPageLoading(element: ReactNode) {
+  return <Suspense fallback={<PageLoadingState />}>{element}</Suspense>
+}
 
 export const router = createBrowserRouter([
-  { path: 'auth', element: <AuthPage /> },
+  { path: 'auth', element: withPageLoading(<AuthRoute />) },
+  { path: 'register-business', element: withPageLoading(<RegisterBusinessRoute />) },
   {
     element: (
       <ProtectedRoute>
@@ -20,14 +32,15 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: 'sales', element: <SalesPage /> },
-      { path: 'products', element: <ProductsPage /> },
-      { path: 'inventory', element: <InventoryPage /> },
-      { path: 'customers', element: <CustomersPage /> },
-      { path: 'purchases', element: <PurchasesPage /> },
-      { path: 'invoices', element: <InvoicesPage /> },
-      { path: 'reports', element: <ReportsPage /> },
+      { index: true, element: withPageLoading(<DashboardRoute />) },
+      { path: 'sales', element: withPageLoading(<SalesRoute />) },
+      { path: 'products', element: withPageLoading(<ProductsRoute />) },
+      { path: 'inventory', element: withPageLoading(<InventoryRoute />) },
+      { path: 'customers', element: withPageLoading(<CustomersRoute />) },
+      { path: 'purchases', element: withPageLoading(<PurchasesRoute />) },
+      { path: 'invoices', element: withPageLoading(<InvoicesRoute />) },
+      { path: 'reports', element: withPageLoading(<ReportsRoute />) },
+      { path: 'settings', element: withPageLoading(<SettingsRoute />) },
     ],
   },
 ])

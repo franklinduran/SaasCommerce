@@ -1,5 +1,5 @@
-using SaasCommerce.Worker;
 using FluentAssertions;
+using SaasCommerce.Worker;
 
 namespace SaasCommerce.Worker.Tests;
 

@@ -80,6 +80,42 @@ Docker:
 docker compose up --build
 ```
 
+SonarQube / SonarCloud:
+
+```powershell
+# Levantar SonarQube local
+# Usa SonarQube Community Build 25.1.0.102122 con PostgreSQL.
+docker compose -f docker-compose.sonar.yml up -d
+
+[Environment]::SetEnvironmentVariable("SONAR_HOST_URL", "http://localhost:9000", "User")
+[Environment]::SetEnvironmentVariable("SONAR_PROJECT_KEY", "saascommerce", "User")
+[Environment]::SetEnvironmentVariable("SONAR_TOKEN", "tu-token", "User")
+
+# Solo para SonarCloud:
+[Environment]::SetEnvironmentVariable("SONAR_ORGANIZATION", "tu-organizacion", "User")
+
+.\scripts\sonar.ps1
+```
+
+URLs para crear token:
+
+```txt
+SonarQube local: http://localhost:9000/account/security
+SonarCloud: https://sonarcloud.io/account/security
+```
+
+Credenciales iniciales de SonarQube local:
+
+```txt
+Usuario: admin
+Password: admin
+```
+
+En el primer login SonarQube pedira cambiar la contrasena.
+
+No guardar tokens en el repositorio. El script `scripts/sonar.ps1` lee secretos desde variables de entorno de usuario.
+El script envia el token como `sonar.token` y `sonar.login` para mantener compatibilidad con instancias locales.
+
 Servicios locales:
 
 - Web: `http://localhost:5173`
@@ -109,9 +145,16 @@ VITE_SIGNALR_HUB_URL
 Endpoints base:
 
 ```txt
+POST /api/account/register-business
 POST /api/auth/login
 POST /api/auth/refresh
 GET  /api/me
+PUT  /api/me/profile
+PUT  /api/me/password
+GET  /api/business/current
+PUT  /api/business/current
+GET  /api/branches/current
+PUT  /api/branches/current
 ```
 
 Usuario seed para desarrollo:
@@ -134,6 +177,47 @@ role
 ```
 
 Regla de seguridad: `BusinessId`, `BranchId` y `UserId` salen del JWT o de `ICurrentUserService`. El frontend nunca es fuente confiable para esos valores, aunque los envie en un request.
+
+## Account Onboarding
+
+El flujo principal para empezar a usar el SaaS es registrar un comercio real:
+
+```txt
+POST /api/account/register-business
+```
+
+El registro crea:
+
+```txt
+Business
+Branch principal
+Usuario administrador
+Rol Admin
+Access token
+Refresh token
+```
+
+El comercio puede tener identificacion flexible:
+
+```txt
+Cedula
+RNC
+Pasaporte
+```
+
+Y puede registrar varios telefonos desde el inicio. El seed de desarrollo se mantiene para pruebas locales, pero el flujo principal de la aplicacion no depende del seed.
+
+### Hardening De Onboarding
+
+- `identificationType` e `identificationNumber` son obligatorios.
+- Tipos permitidos: `Cedula`, `Rnc`, `Passport`.
+- Cedula se normaliza a digitos y debe tener 11 digitos.
+- RNC se normaliza a digitos y debe tener 9 digitos.
+- Pasaporte permite letras y numeros y requiere minimo 5 caracteres.
+- Debe existir al menos un telefono.
+- Debe existir exactamente un telefono principal.
+- No se permiten telefonos vacios ni duplicados en el request.
+- Backend valida estas reglas como fuente de verdad; frontend las replica con Zod para UX.
 
 ## Reglas Para Agentes IA
 
@@ -171,13 +255,18 @@ La base modular queda protegida con pruebas ejecutables:
 
 ## Proteccion De Etapa 4
 
-- `Tenancy` contiene `Business` y `Branch`.
+- `Tenancy` contiene `Business`, `BusinessPhone` y `Branch`.
 - `Identity` contiene `User`, `Role`, `RefreshToken`, login, refresh token y consulta de usuario actual.
-- `Api` expone `/api/auth/login`, `/api/auth/refresh` y `/api/me` sin logica de negocio.
+- `Api` expone `/api/account/register-business`, `/api/auth/login`, `/api/auth/refresh`, `/api/me`, `/api/me/profile`, `/api/me/password`, `/api/business/current` y `/api/branches/current` sin logica de negocio.
 - `CurrentUserService` lee `UserId`, `BusinessId`, `BranchId` y roles desde claims.
-- El frontend tiene `LoginPage`, `LoginForm`, `authService`, `useLoginMutation`, `authStore` y ruta protegida.
-- Tests backend validan login correcto, password incorrecto, claims JWT, `/api/me` sin token, `/api/me` con token y lectura de `BusinessId` desde claims.
-- Tests frontend validan errores de formulario en `LoginForm`.
+- `GET /api/me` devuelve usuario, roles, negocio actual y sucursal actual sin exponer `PasswordHash` ni `RefreshTokens`.
+- `PUT /api/me/profile` solo permite editar el perfil del usuario autenticado.
+- `PUT /api/me/password` valida la contrasena actual y guarda la nueva contrasena hasheada.
+- `GET/PUT /api/business/current` usan `BusinessId` del token; el update requiere rol `Admin`, identificacion valida y exactamente un telefono principal.
+- `GET/PUT /api/branches/current` usan `BranchId` y `BusinessId` del token; no aceptan cambiar tenant desde frontend.
+- El frontend tiene `RegisterBusinessPage`, `LoginPage`, `SettingsPage`, `ProfileSettingsCard`, `BusinessSettingsCard`, `BranchSettingsCard` y `SecuritySettingsCard`.
+- Tests backend validan login, `/api/me`, endpoints de settings, cambio de contrasena invalido y validacion de telefono principal.
+- Tests frontend validan registro, login y secciones/validaciones de `/settings`.
 
 ## Etapa 5: Catalog E Inventory Base
 

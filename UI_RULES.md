@@ -327,3 +327,28 @@ No se mezclo logica de negocio en componentes visuales?
 ```txt
 Antes de modificar UI, debes seguir las reglas de UI del proyecto. La interfaz debe usar Tailwind Stone como paleta principal, con estilo SaaS administrativo sobrio, limpio y profesional. No uses colores aleatorios, gradientes fuertes, sombras exageradas ni componentes gigantes. Usa ShadCN UI, cards blancas, bordes stone-200, texto stone-900, secundarios stone-600, primary stone-900, estados con emerald/amber/red/sky solo cuando representen informacion real. Toda pantalla debe tener loading, error y empty states, formularios con React Hook Form + Zod, componentes reutilizables y diseno responsive.
 ```
+# Regla de formularios de onboarding
+
+Todo formulario de onboarding debe indicar claramente campos obligatorios.
+
+Reglas:
+
+- Los labels deben estar visibles.
+- Los campos requeridos deben marcarse con `*` o texto equivalente.
+- Los errores deben aparecer debajo del campo.
+- El boton submit debe mostrar estado loading.
+- No se debe permitir avanzar visualmente si faltan campos criticos.
+- La respuesta de error del backend debe mostrarse de forma clara y segura.
+
+# Regla de settings
+
+Las pantallas de settings deben ser sobrias y operativas.
+
+Reglas:
+
+- Separar perfil, negocio, sucursal y seguridad en secciones pequenas.
+- No mezclar datos sensibles con datos operativos.
+- Mantener labels visibles y campos requeridos marcados.
+- Mostrar loading, error y success por seccion.
+- No permitir editar `BusinessId`, `BranchId`, `UserId`, roles ni tokens desde formularios.
+- El boton principal de cada seccion debe tener estado loading mientras guarda.

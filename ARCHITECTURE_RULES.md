@@ -1804,3 +1804,37 @@ Si alguna pregunta aplica y no tiene prueba, debes agregarla.
 ## 32. Frase oficial de arquitectura
 
 SaasCommerce RD utiliza Clean Architecture con principios SOLID sobre .NET, separando Domain, Application, Contracts, Infrastructure, API y Worker. Debes manejar los procesos críticos mediante arquitectura orientada a eventos con MassTransit, Saga State Machine, Outbox Pattern y SignalR para notificaciones en tiempo real hacia React.
+# Regla de onboarding de negocio
+
+El registro inicial de un negocio debe crear un tenant valido y completo.
+
+No debes permitir registrar un negocio sin:
+
+- Nombre del negocio.
+- Tipo de identificacion.
+- Numero de identificacion.
+- Al menos un telefono.
+- Exactamente un telefono principal.
+- Nombre del administrador.
+- Email del administrador.
+- Contrasena valida.
+- Sucursal principal.
+
+Las validaciones deben existir en backend con FluentValidation o validadores equivalentes. El frontend debe duplicar esas validaciones con Zod para mejorar la experiencia, pero el backend siempre es la fuente de verdad.
+
+No debes depender del seed como flujo principal de onboarding.
+
+# Regla de settings seguros
+
+Los endpoints de perfil, comercio y sucursal deben usar siempre el contexto autenticado.
+
+Reglas:
+
+- `UserId` debe salir del JWT o de `ICurrentUserService`.
+- `BusinessId` debe salir del JWT o de `ICurrentUserService`.
+- `BranchId` debe salir del JWT o de `ICurrentUserService`.
+- No aceptar `BusinessId`, `BranchId`, `UserId`, roles, tokens ni password hash desde requests de settings.
+- `/api/business/current` no debe permitir consultar ni editar otro negocio por id.
+- `/api/branches/current` no debe permitir consultar ni editar sucursales fuera del `BusinessId` autenticado.
+- Cambios de contrasena deben validar la contrasena actual y guardar solo hash.
+- Las respuestas deben usar `ApiResponse` con `isSuccess`, `data` y `error`.

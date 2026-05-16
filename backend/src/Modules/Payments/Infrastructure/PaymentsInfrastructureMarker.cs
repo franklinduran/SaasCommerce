@@ -1,3 +1,5 @@
 namespace SaasCommerce.Modules.Payments.Infrastructure;
 
-public sealed class PaymentsInfrastructureMarker;
+internal interface IPaymentsInfrastructureMarker
+{
+}

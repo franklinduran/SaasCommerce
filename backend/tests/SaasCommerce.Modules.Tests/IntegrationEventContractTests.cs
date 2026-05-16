@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using SaasCommerce.BuildingBlocks.Contracts.Events;
-using SaasCommerce.BuildingBlocks;
-using SaasCommerce.Modules;
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks;
+using SaasCommerce.BuildingBlocks.Contracts.Events;
+using SaasCommerce.Modules;
 
 namespace SaasCommerce.Modules.Tests;
 

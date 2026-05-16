@@ -10,12 +10,19 @@ public sealed class GetStockHandler(
   IInventoryRepository inventory,
   ICurrentUserService currentUser)
 {
-  public async Task<Result<StockListResponse>> Handle(
+  public Task<Result<StockListResponse>> Handle(
     GetStockQuery query,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(query);
 
+    return HandleCoreAsync(query, cancellationToken);
+  }
+
+  private async Task<Result<StockListResponse>> HandleCoreAsync(
+    GetStockQuery query,
+    CancellationToken cancellationToken)
+  {
     if (currentUser.BusinessId is not Guid businessId)
     {
       return Result.Failure<StockListResponse>(InventoryErrors.UserContextRequired);
