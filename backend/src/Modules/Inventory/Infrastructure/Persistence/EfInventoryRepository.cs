@@ -38,63 +38,196 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
     return dbContext.Set<InventoryMovement>().AddAsync(movement, cancellationToken).AsTask();
   }
 
-  public Task<int> CountStockAsync(
+  public async Task<int> CountStockAsync(
     BusinessId businessId,
     BranchId branchId,
+    StockSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => dbContext.Set<StockItem>()
-      .CountAsync(
-        stockItem => stockItem.BusinessId == businessId && stockItem.BranchId == branchId,
-        cancellationToken);
+  {
+    ArgumentNullException.ThrowIfNull(criteria);
+
+    var query = ApplyStockBaseFilters(
+      dbContext.Set<StockItem>().AsNoTracking(),
+      businessId,
+      branchId,
+      criteria);
+
+    if (!criteria.LowStockOnly)
+    {
+      return await query.CountAsync(cancellationToken);
+    }
+
+    var stockItems = await query.ToArrayAsync(cancellationToken);
+    return FilterLowStock(stockItems, criteria).Length;
+  }
 
   public async Task<IReadOnlyCollection<StockItem>> ListStockAsync(
     BusinessId businessId,
     BranchId branchId,
-    int page,
-    int pageSize,
+    StockSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => await dbContext.Set<StockItem>()
-      .AsNoTracking()
-      .Where(stockItem => stockItem.BusinessId == businessId && stockItem.BranchId == branchId)
-      .OrderBy(stockItem => stockItem.ProductId)
-      .Skip((page - 1) * pageSize)
-      .Take(pageSize)
+  {
+    ArgumentNullException.ThrowIfNull(criteria);
+
+    var query = ApplyStockBaseFilters(
+      dbContext.Set<StockItem>().AsNoTracking(),
+      businessId,
+      branchId,
+      criteria);
+
+    if (criteria.LowStockOnly)
+    {
+      var stockItems = await query.ToArrayAsync(cancellationToken);
+      return ApplyStockSorting(FilterLowStock(stockItems, criteria), criteria)
+        .Skip((criteria.Page - 1) * criteria.PageSize)
+        .Take(criteria.PageSize)
+        .ToArray();
+    }
+
+    return await ApplyStockSorting(query, criteria)
+      .Skip((criteria.Page - 1) * criteria.PageSize)
+      .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
+  }
 
   public Task<int> CountMovementsAsync(
     BusinessId businessId,
     BranchId branchId,
-    Guid? productId,
+    InventoryMovementSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => ApplyMovementFilters(dbContext.Set<InventoryMovement>().AsNoTracking(), businessId, branchId, productId)
+  {
+    ArgumentNullException.ThrowIfNull(criteria);
+
+    return ApplyMovementFilters(
+        dbContext.Set<InventoryMovement>().AsNoTracking(),
+        businessId,
+        branchId,
+        criteria)
       .CountAsync(cancellationToken);
+  }
 
   public async Task<IReadOnlyCollection<InventoryMovement>> ListMovementsAsync(
     BusinessId businessId,
     BranchId branchId,
-    Guid? productId,
-    int page,
-    int pageSize,
+    InventoryMovementSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => await ApplyMovementFilters(dbContext.Set<InventoryMovement>().AsNoTracking(), businessId, branchId, productId)
-      .OrderByDescending(movement => movement.CreatedAt)
-      .Skip((page - 1) * pageSize)
-      .Take(pageSize)
+  {
+    ArgumentNullException.ThrowIfNull(criteria);
+
+    var query = ApplyMovementFilters(
+      dbContext.Set<InventoryMovement>().AsNoTracking(),
+      businessId,
+      branchId,
+      criteria);
+
+    return await ApplyMovementSorting(query, criteria)
+      .Skip((criteria.Page - 1) * criteria.PageSize)
+      .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
+  }
+
+  private static IQueryable<StockItem> ApplyStockBaseFilters(
+    IQueryable<StockItem> query,
+    BusinessId businessId,
+    BranchId branchId,
+    StockSearchCriteria criteria)
+  {
+    query = query.Where(stockItem => stockItem.BusinessId == businessId && stockItem.BranchId == branchId);
+
+    if (criteria.RestrictToProductIds)
+    {
+      query = query.Where(stockItem => criteria.ProductIds.Contains(stockItem.ProductId));
+    }
+
+    return query;
+  }
+
+  private static StockItem[] FilterLowStock(
+    IReadOnlyCollection<StockItem> stockItems,
+    StockSearchCriteria criteria)
+    => stockItems
+      .Where(stockItem =>
+        criteria.MinimumStockByProduct.TryGetValue(stockItem.ProductId, out var minimumStock) &&
+        minimumStock.HasValue &&
+        stockItem.Quantity <= minimumStock.Value)
+      .ToArray();
+
+  private static IOrderedEnumerable<StockItem> ApplyStockSorting(
+    IReadOnlyCollection<StockItem> stockItems,
+    StockSearchCriteria criteria)
+    => criteria.SortBy switch
+    {
+      StockSortOption.Quantity => criteria.SortDirection == InventorySortDirection.Desc
+        ? stockItems.OrderByDescending(stockItem => stockItem.Quantity)
+        : stockItems.OrderBy(stockItem => stockItem.Quantity),
+      StockSortOption.CreatedAt => criteria.SortDirection == InventorySortDirection.Desc
+        ? stockItems.OrderByDescending(stockItem => stockItem.CreatedAt)
+        : stockItems.OrderBy(stockItem => stockItem.CreatedAt),
+      _ => criteria.SortDirection == InventorySortDirection.Desc
+        ? stockItems.OrderByDescending(stockItem => stockItem.ProductId)
+        : stockItems.OrderBy(stockItem => stockItem.ProductId)
+    };
+
+  private static IQueryable<StockItem> ApplyStockSorting(
+    IQueryable<StockItem> query,
+    StockSearchCriteria criteria)
+    => criteria.SortBy switch
+    {
+      StockSortOption.Quantity => criteria.SortDirection == InventorySortDirection.Desc
+        ? query.OrderByDescending(stockItem => stockItem.Quantity)
+        : query.OrderBy(stockItem => stockItem.Quantity),
+      StockSortOption.CreatedAt => criteria.SortDirection == InventorySortDirection.Desc
+        ? query.OrderByDescending(stockItem => stockItem.CreatedAt)
+        : query.OrderBy(stockItem => stockItem.CreatedAt),
+      _ => criteria.SortDirection == InventorySortDirection.Desc
+        ? query.OrderByDescending(stockItem => stockItem.ProductId)
+        : query.OrderBy(stockItem => stockItem.ProductId)
+    };
 
   private static IQueryable<InventoryMovement> ApplyMovementFilters(
     IQueryable<InventoryMovement> query,
     BusinessId businessId,
     BranchId branchId,
-    Guid? productId)
+    InventoryMovementSearchCriteria criteria)
   {
     query = query.Where(movement => movement.BusinessId == businessId && movement.BranchId == branchId);
 
-    if (productId.HasValue)
+    if (criteria.ProductId.HasValue)
     {
-      query = query.Where(movement => movement.ProductId == productId.Value);
+      query = query.Where(movement => movement.ProductId == criteria.ProductId.Value);
+    }
+
+    if (criteria.MovementType.HasValue)
+    {
+      query = query.Where(movement => movement.Reason == criteria.MovementType.Value);
+    }
+
+    if (criteria.DateFrom.HasValue)
+    {
+      query = query.Where(movement => movement.CreatedAt >= criteria.DateFrom.Value);
+    }
+
+    if (criteria.DateTo.HasValue)
+    {
+      query = query.Where(movement => movement.CreatedAt <= criteria.DateTo.Value);
     }
 
     return query;
   }
+
+  private static IQueryable<InventoryMovement> ApplyMovementSorting(
+    IQueryable<InventoryMovement> query,
+    InventoryMovementSearchCriteria criteria)
+    => criteria.SortBy switch
+    {
+      InventoryMovementSortOption.ProductId => criteria.SortDirection == InventorySortDirection.Desc
+        ? query.OrderByDescending(movement => movement.ProductId)
+        : query.OrderBy(movement => movement.ProductId),
+      InventoryMovementSortOption.Quantity => criteria.SortDirection == InventorySortDirection.Desc
+        ? query.OrderByDescending(movement => movement.Quantity)
+        : query.OrderBy(movement => movement.Quantity),
+      _ => criteria.SortDirection == InventorySortDirection.Desc
+        ? query.OrderByDescending(movement => movement.CreatedAt)
+        : query.OrderBy(movement => movement.CreatedAt)
+    };
 }

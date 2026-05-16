@@ -92,7 +92,7 @@ public sealed class AdjustInventoryHandler(
     await unitOfWork.SaveChangesAsync(cancellationToken);
 
     return Result.Success(new InventoryAdjustmentResponse(
-      InventoryResponseMapper.ToResponse(stockItem),
+      InventoryResponseMapper.ToResponse(stockItem, null),
       InventoryResponseMapper.ToResponse(movement)));
   }
 }

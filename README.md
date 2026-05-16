@@ -270,7 +270,7 @@ La base modular queda protegida con pruebas ejecutables:
 
 ## Etapa 5: Catalog E Inventory Base
 
-- `Catalog` contiene `Product`, `Category`, `ProductComponent`, contratos de requests/responses y eventos versionados `ProductCreatedIntegrationEventV1` y `ProductUpdatedIntegrationEventV1`.
+- `Catalog` contiene `Product`, `Category`, `ProductComponent`, contratos de requests/responses y eventos versionados `ProductCreatedIntegrationEventV1`, `ProductUpdatedIntegrationEventV1`, `ProductActivatedIntegrationEventV1` y `ProductDeactivatedIntegrationEventV1`.
 - `Inventory` contiene `StockItem`, `InventoryMovement`, razones de movimiento, contratos de ajuste/stock/movimientos y eventos versionados `InventoryAdjustedIntegrationEventV1` y `StockReservedIntegrationEventV1`.
 - `Product` soporta tipos `Simple`, `Service`, `Weighed`, `Composite`, `VariantParent` y `VariantChild`.
 - `Product` administra datos comerciales reales: descripcion, SKU, barcode, unidad de medida, precio venta, costo, mayorista, precio minimo, impuestos, codigos internos/proveedor, variantes y atributos JSON.
@@ -284,6 +284,8 @@ La base modular queda protegida con pruebas ejecutables:
 ```txt
 POST /api/catalog/products
 PUT  /api/catalog/products/{id}
+PUT  /api/catalog/products/{id}/activate
+PUT  /api/catalog/products/{id}/deactivate
 GET  /api/catalog/products/{id}
 GET  /api/catalog/products
 POST /api/catalog/categories
@@ -296,7 +298,7 @@ GET  /api/inventory/movements
 
 - El frontend tiene pantallas funcionales para `Productos` e `Inventario`, usando TanStack Query, servicios centralizados, formularios con React Hook Form + Zod, estados loading/error/empty y contrato `isSuccess/data/error`.
 - La UI de producto esta organizada por secciones: datos generales, precio/costos, inventario, codigos, impuestos/opciones y opciones avanzadas.
-- Tests backend validan creacion de productos, SKU duplicado por tenant, barcode duplicado, producto servicio sin inventario, producto pesado sin unidad `Unit`, ajuste de inventario, movimiento generado y proteccion contra stock negativo.
+- Tests backend validan creacion de productos, SKU duplicado por tenant, barcode duplicado, producto servicio sin inventario, producto pesado sin unidad `Unit`, ajuste de inventario, movimiento generado, filtros de stock/movimientos y proteccion contra stock negativo.
 
 ## Etapa 5.2: UX De Productos Y Paginacion
 
@@ -309,6 +311,12 @@ GET  /api/inventory/movements
 - El filtro de categoria consume `GET /api/catalog/categories`; no se escribe el `categoryId` manualmente en la UI.
 - La tabla incluye producto, tipo, SKU/barcode, unidad, precio, politica de stock, estado y acciones.
 - La UI incluye skeleton de tabla, empty state, error state con reintento, paginacion anterior/siguiente y selector de 10, 25 o 50 registros.
+- Los productos pueden activarse y desactivarse sin borrado fisico; la UI pide confirmacion antes de desactivar.
+- `/inventory` prioriza stock y movimientos, con ajuste de inventario en drawer lateral.
+- `GET /api/inventory/stock` soporta `search`, `lowStockOnly`, `productType`, `categoryId`, `page`, `pageSize`, `sortBy` y `sortDirection`.
+- `GET /api/inventory/movements` soporta `productId`, `movementType`, `dateFrom`, `dateTo`, `page`, `pageSize`, `sortBy` y `sortDirection`.
+- Las respuestas paginadas de inventario devuelven `items`, `page`, `pageSize`, `totalItems`, `totalPages`, `hasPreviousPage` y `hasNextPage`.
+- Tests frontend cubren render de stock, paginacion de inventario y validacion del drawer de ajuste.
 
 ## Definition Of Done
 

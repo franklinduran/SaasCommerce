@@ -42,7 +42,7 @@ export function InventoryAdjustmentForm() {
   }
 
   return (
-    <form className="grid gap-4 lg:grid-cols-[1fr_160px_190px_auto]" onSubmit={handleSubmit(onSubmit)}>
+    <form className="grid gap-5" onSubmit={handleSubmit(onSubmit)}>
       <label className="block">
         <span className="mb-2 block text-sm font-semibold text-stone-900">Producto ID</span>
         <input
@@ -77,13 +77,13 @@ export function InventoryAdjustmentForm() {
         {errors.reason && <span className="mt-2 block text-sm font-medium text-red-700">{errors.reason.message}</span>}
       </label>
       <div className="flex items-end">
-        <Button className="w-full" disabled={adjustment.isPending} type="submit">
+        <Button className="w-full sm:w-auto" disabled={adjustment.isPending} type="submit">
           <SlidersHorizontal size={16} />
           {adjustment.isPending ? 'Aplicando' : 'Ajustar'}
         </Button>
       </div>
       {errorMessage && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 ring-1 ring-red-200 lg:col-span-4">
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 ring-1 ring-red-200">
           {errorMessage}
         </p>
       )}

@@ -1,5 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 using SaasCommerce.Api;
 using SaasCommerce.Api.Endpoints;
 using SaasCommerce.Api.Middleware;
@@ -49,7 +51,37 @@ builder.Services.AddCors(options =>
       .AllowAnyMethod());
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+  options.SwaggerDoc(
+    "v1",
+    new OpenApiInfo
+    {
+      Title = "SaasCommerce API",
+      Version = "v1",
+      Description = "API modular para comercio, identidad, catalogo e inventario."
+    });
+
+  options.AddSecurityDefinition(
+    "Bearer",
+    new OpenApiSecurityScheme
+    {
+      Name = "Authorization",
+      Type = SecuritySchemeType.Http,
+      Scheme = "bearer",
+      BearerFormat = "JWT",
+      In = ParameterLocation.Header,
+      Description = "Pega el JWT sin escribir Bearer. Swagger agregara el prefijo automaticamente."
+    });
+
+  options.AddSecurityRequirement(openApiDocument => new OpenApiSecurityRequirement
+  {
+    {
+      new OpenApiSecuritySchemeReference("Bearer", openApiDocument, null),
+      []
+    }
+  });
+});
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddSaasCommerceJwt(builder.Configuration, builder.Environment);
@@ -74,7 +106,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health/live", () =>
-  Results.Ok(ApiResponse.Success("Live")));
+  Results.Ok(ApiResponse.Success("Live")))
+  .WithTags("System");
 
 app.MapGet("/health/ready", async (AppDbContext dbContext, CancellationToken cancellationToken) =>
 {
@@ -85,7 +118,8 @@ app.MapGet("/health/ready", async (AppDbContext dbContext, CancellationToken can
     : Results.Json(
       ApiResponse.Failure<string>(new ApiError("DatabaseUnavailable", "PostgreSQL is not ready.")),
       statusCode: StatusCodes.Status503ServiceUnavailable);
-});
+})
+  .WithTags("System");
 
 app.MapGet("/api/version", () =>
 {
@@ -97,7 +131,8 @@ app.MapGet("/api/version", () =>
   };
 
   return Results.Ok(ApiResponse.Success<object>(version));
-});
+})
+  .WithTags("System");
 
 app.MapPost(
   "/api/account/register-business",
@@ -123,7 +158,8 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .AllowAnonymous();
+  .AllowAnonymous()
+  .WithTags("Account");
 
 app.MapPost(
   "/api/auth/login",
@@ -139,7 +175,8 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .AllowAnonymous();
+  .AllowAnonymous()
+  .WithTags("Auth");
 
 app.MapPost(
   "/api/auth/refresh",
@@ -155,7 +192,8 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
-  .AllowAnonymous();
+  .AllowAnonymous()
+  .WithTags("Auth");
 
 app.MapGet(
   "/api/me",
@@ -168,7 +206,8 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Identity");
 
 app.MapPut(
   "/api/me/profile",
@@ -184,7 +223,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Identity");
 
 app.MapPut(
   "/api/me/password",
@@ -200,7 +240,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status400BadRequest);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Identity");
 
 app.MapGet(
   "/api/business/current",
@@ -213,7 +254,8 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Tenancy");
 
 app.MapPut(
   "/api/business/current",
@@ -238,7 +280,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider, failureStatusCode);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Tenancy");
 
 app.MapGet(
   "/api/branches/current",
@@ -251,7 +294,8 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Tenancy");
 
 app.MapPut(
   "/api/branches/current",
@@ -267,7 +311,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Tenancy");
 
 app.MapPost(
   "/api/catalog/products",
@@ -309,7 +354,8 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapPut(
   "/api/catalog/products/{id:guid}",
@@ -354,7 +400,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapGet(
   "/api/catalog/products/{id:guid}",
@@ -368,7 +415,8 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapPut(
   "/api/catalog/products/{id:guid}/activate",
@@ -382,7 +430,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapPut(
   "/api/catalog/products/{id:guid}/deactivate",
@@ -396,7 +445,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapGet(
   "/api/catalog/products",
@@ -420,7 +470,8 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapPost(
   "/api/catalog/categories",
@@ -436,7 +487,8 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapPut(
   "/api/catalog/categories/{id:guid}",
@@ -453,7 +505,8 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapGet(
   "/api/catalog/categories",
@@ -466,7 +519,8 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Catalog");
 
 app.MapPost(
   "/api/inventory/adjustments",
@@ -482,44 +536,61 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Inventory");
 
 app.MapGet(
   "/api/inventory/stock",
   async (
-    int? page,
-    int? pageSize,
+    [AsParameters] InventoryStockEndpointRequest request,
     GetStockHandler handler,
     ICorrelationIdProvider correlationIdProvider,
     CancellationToken cancellationToken) =>
   {
     var result = await handler.Handle(
-      new GetStockQuery(page ?? 1, pageSize ?? 20),
+      new GetStockQuery(
+        request.Search,
+        request.LowStockOnly ?? false,
+        request.ProductType,
+        request.CategoryId,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
       cancellationToken);
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Inventory");
 
 app.MapGet(
   "/api/inventory/movements",
   async (
-    Guid? productId,
-    int? page,
-    int? pageSize,
+    [AsParameters] InventoryMovementsEndpointRequest request,
     GetInventoryMovementsHandler handler,
     ICorrelationIdProvider correlationIdProvider,
     CancellationToken cancellationToken) =>
   {
     var result = await handler.Handle(
-      new GetInventoryMovementsQuery(productId, page ?? 1, pageSize ?? 20),
+      new GetInventoryMovementsQuery(
+        request.ProductId,
+        request.MovementType,
+        request.DateFrom,
+        request.DateTo,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
       cancellationToken);
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization();
+  .RequireAuthorization()
+  .WithTags("Inventory");
 
-app.MapHub<BusinessHub>("/hubs/business");
+app.MapHub<BusinessHub>("/hubs/business")
+  .WithTags("Realtime");
 
 if (app.Environment.IsDevelopment())
 {

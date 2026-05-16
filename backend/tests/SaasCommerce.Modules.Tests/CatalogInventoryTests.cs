@@ -378,12 +378,57 @@ public sealed class CatalogInventoryTests
         ProductInventoryPolicy(secondProductId, currentUser.BusinessId!.Value))
       .Handle(new AdjustInventoryCommand(secondProductId, 8, "InitialLoad"));
 
-    var result = await new GetStockHandler(new EfInventoryRepository(dbContext), currentUser)
-      .Handle(new GetStockQuery(1, 10));
+    var result = await new GetStockHandler(
+        new EfInventoryRepository(dbContext),
+        new TestProductInventoryPolicyReader(ProductInventoryPolicy(firstProductId, currentUser.BusinessId!.Value)),
+        currentUser)
+      .Handle(new GetStockQuery(null, false, null, null, 1, 10, null, null));
 
     result.IsSuccess.Should().BeTrue();
     result.Value.Items.Should().ContainSingle();
     result.Value.Items.Single().ProductId.Should().Be(firstProductId);
+  }
+
+  [Fact]
+  public async Task GetStockShouldFilterLowStockOnly()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var productId = Guid.NewGuid();
+    var productPolicy = ProductInventoryPolicy(productId, currentUser.BusinessId!.Value);
+
+    await CreateInventoryHandler(dbContext, currentUser, productPolicy)
+      .Handle(new AdjustInventoryCommand(productId, 5, "InitialLoad"));
+
+    var result = await new GetStockHandler(
+        new EfInventoryRepository(dbContext),
+        new TestProductInventoryPolicyReader(productPolicy, minimumStock: 10),
+        currentUser)
+      .Handle(new GetStockQuery(null, true, null, null, 1, 10, null, null));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Items.Should().ContainSingle();
+    result.Value.Items.Single().IsLowStock.Should().BeTrue();
+  }
+
+  [Fact]
+  public async Task GetInventoryMovementsShouldFilterByReason()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var productId = Guid.NewGuid();
+    var productPolicy = ProductInventoryPolicy(productId, currentUser.BusinessId!.Value);
+    var handler = CreateInventoryHandler(dbContext, currentUser, productPolicy);
+
+    await handler.Handle(new AdjustInventoryCommand(productId, 5, "InitialLoad"));
+    await handler.Handle(new AdjustInventoryCommand(productId, 8, "Purchase"));
+
+    var result = await new GetInventoryMovementsHandler(new EfInventoryRepository(dbContext), currentUser)
+      .Handle(new GetInventoryMovementsQuery(null, "Purchase", null, null, 1, 10, null, null));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Items.Should().ContainSingle();
+    result.Value.Items.Single().Reason.Should().Be("Purchase");
   }
 
   private static CreateProductHandler CreateProductHandler(
@@ -490,8 +535,11 @@ public sealed class CatalogInventoryTests
       new(2026, 5, 15, 12, 0, 0, TimeSpan.Zero);
   }
 
-  private sealed class TestProductInventoryPolicyReader(ProductInventoryPolicy productPolicy)
-    : IProductInventoryPolicyReader
+  private sealed class TestProductInventoryPolicyReader(
+    ProductInventoryPolicy productPolicy,
+    decimal? minimumStock = 1)
+    : IProductInventoryPolicyReader,
+      IInventoryProductLookupReader
   {
     public Task<ProductInventoryPolicy?> GetAsync(
       Guid businessId,
@@ -501,6 +549,28 @@ public sealed class CatalogInventoryTests
         productPolicy.BusinessId == businessId && productPolicy.ProductId == productId
           ? productPolicy
           : null);
+
+    public Task<IReadOnlyCollection<InventoryProductLookup>> SearchAsync(
+      InventoryProductLookupQuery query,
+      CancellationToken cancellationToken = default)
+    {
+      IReadOnlyCollection<InventoryProductLookup> products =
+        productPolicy.BusinessId == query.BusinessId
+          ? [new InventoryProductLookup(
+              productPolicy.ProductId,
+              productPolicy.BusinessId,
+              "Producto de prueba",
+              "SKU-TEST",
+              null,
+              productPolicy.ProductType,
+              null,
+              productPolicy.UnitOfMeasure,
+              minimumStock,
+              5)]
+          : [];
+
+      return Task.FromResult(products);
+    }
   }
 
   private sealed record TestCurrentUser : ICurrentUserService

@@ -5,4 +5,11 @@ public sealed record StockItemResponse(
   Guid BusinessId,
   Guid BranchId,
   Guid ProductId,
-  decimal Quantity);
+  string ProductName,
+  string Sku,
+  string? Barcode,
+  string UnitOfMeasure,
+  decimal Quantity,
+  decimal? MinimumStock,
+  decimal? ReorderPoint,
+  bool IsLowStock);

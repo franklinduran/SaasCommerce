@@ -2,21 +2,23 @@ import { useAuthStore } from '@/modules/auth/authStore'
 import type {
   CreateInventoryAdjustmentRequest,
   InventoryMovementListResponse,
+  MovementFilters,
   StockListResponse,
+  StockFilters,
 } from '@/modules/inventory/types'
 import { httpClient } from '@/shared/services/httpClient'
 
-export async function getStock(): Promise<StockListResponse> {
-  const response = await httpClient<StockListResponse>('/api/inventory/stock?page=1&pageSize=20', {
+export async function getStock(filters: StockFilters): Promise<StockListResponse> {
+  const response = await httpClient<StockListResponse>(`/api/inventory/stock?${toQueryString(filters)}`, {
     accessToken: getAccessToken(),
   })
 
   return response.data!
 }
 
-export async function getInventoryMovements(): Promise<InventoryMovementListResponse> {
+export async function getInventoryMovements(filters: MovementFilters): Promise<InventoryMovementListResponse> {
   const response = await httpClient<InventoryMovementListResponse>(
-    '/api/inventory/movements?page=1&pageSize=20',
+    `/api/inventory/movements?${toQueryString(filters)}`,
     { accessToken: getAccessToken() },
   )
 
@@ -35,4 +37,16 @@ export async function createInventoryAdjustment(request: CreateInventoryAdjustme
 
 function getAccessToken(): string | undefined {
   return useAuthStore.getState().session?.accessToken
+}
+
+function toQueryString(filters: Record<string, boolean | number | string>): string {
+  const params = new URLSearchParams()
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== '' && value !== false) {
+      params.set(key, String(value))
+    }
+  })
+
+  return params.toString()
 }

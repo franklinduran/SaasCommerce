@@ -4,18 +4,19 @@ import {
   getInventoryMovements,
   getStock,
 } from '@/modules/inventory/services/inventoryService'
+import type { MovementFilters, StockFilters } from '@/modules/inventory/types'
 
-export function useStockQuery() {
+export function useStockQuery(filters: StockFilters) {
   return useQuery({
-    queryKey: ['inventory', 'stock'],
-    queryFn: getStock,
+    queryKey: ['inventory', 'stock', filters],
+    queryFn: () => getStock(filters),
   })
 }
 
-export function useInventoryMovementsQuery() {
+export function useInventoryMovementsQuery(filters: MovementFilters) {
   return useQuery({
-    queryKey: ['inventory', 'movements'],
-    queryFn: getInventoryMovements,
+    queryKey: ['inventory', 'movements', filters],
+    queryFn: () => getInventoryMovements(filters),
   })
 }
 

@@ -18,26 +18,64 @@ public interface IInventoryRepository
   Task<int> CountStockAsync(
     BusinessId businessId,
     BranchId branchId,
+    StockSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 
   Task<IReadOnlyCollection<StockItem>> ListStockAsync(
     BusinessId businessId,
     BranchId branchId,
-    int page,
-    int pageSize,
+    StockSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 
   Task<int> CountMovementsAsync(
     BusinessId businessId,
     BranchId branchId,
-    Guid? productId,
+    InventoryMovementSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 
   Task<IReadOnlyCollection<InventoryMovement>> ListMovementsAsync(
     BusinessId businessId,
     BranchId branchId,
-    Guid? productId,
-    int page,
-    int pageSize,
+    InventoryMovementSearchCriteria criteria,
     CancellationToken cancellationToken = default);
+}
+
+public sealed record StockSearchCriteria(
+  IReadOnlyCollection<Guid> ProductIds,
+  bool RestrictToProductIds,
+  bool LowStockOnly,
+  IReadOnlyDictionary<Guid, decimal?> MinimumStockByProduct,
+  int Page,
+  int PageSize,
+  StockSortOption SortBy,
+  InventorySortDirection SortDirection);
+
+public sealed record InventoryMovementSearchCriteria(
+  Guid? ProductId,
+  InventoryMovementReason? MovementType,
+  DateTimeOffset? DateFrom,
+  DateTimeOffset? DateTo,
+  int Page,
+  int PageSize,
+  InventoryMovementSortOption SortBy,
+  InventorySortDirection SortDirection);
+
+public enum StockSortOption
+{
+  ProductId = 1,
+  Quantity = 2,
+  CreatedAt = 3
+}
+
+public enum InventoryMovementSortOption
+{
+  CreatedAt = 1,
+  ProductId = 2,
+  Quantity = 3
+}
+
+public enum InventorySortDirection
+{
+  Asc = 1,
+  Desc = 2
 }

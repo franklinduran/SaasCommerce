@@ -29,6 +29,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<ICatalogCategoryRepository, EfCatalogCategoryRepository>();
     services.AddScoped<ICatalogProductRepository, EfCatalogProductRepository>();
     services.AddScoped<IProductInventoryPolicyReader, EfProductInventoryPolicyReader>();
+    services.AddScoped<IInventoryProductLookupReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
     services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
     services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();

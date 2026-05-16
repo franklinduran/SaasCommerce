@@ -7,3 +7,15 @@ public sealed record ProductInventoryPolicy(
   bool TrackInventory,
   bool AllowNegativeStock,
   string UnitOfMeasure);
+
+public sealed record InventoryProductLookup(
+  Guid ProductId,
+  Guid BusinessId,
+  string Name,
+  string Sku,
+  string? Barcode,
+  string ProductType,
+  Guid? CategoryId,
+  string UnitOfMeasure,
+  decimal? MinimumStock,
+  decimal? ReorderPoint);

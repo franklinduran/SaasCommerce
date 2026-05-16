@@ -1,6 +1,7 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Contracts.Responses;
+using SaasCommerce.Modules.Inventory.Domain;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -10,6 +11,8 @@ public sealed class GetInventoryMovementsHandler(
   IInventoryRepository inventory,
   ICurrentUserService currentUser)
 {
+  private static readonly int[] AllowedPageSizes = [10, 25, 50];
+
   public Task<Result<InventoryMovementListResponse>> Handle(
     GetInventoryMovementsQuery query,
     CancellationToken cancellationToken = default)
@@ -32,24 +35,79 @@ public sealed class GetInventoryMovementsHandler(
     var tenantId = new BusinessId(businessId);
     var currentBranchId = new BranchId(branchId);
     var page = Math.Max(1, query.Page);
-    var pageSize = Math.Clamp(query.PageSize, 1, 100);
+    var pageSize = NormalizePageSize(query.PageSize);
+    var criteria = new InventoryMovementSearchCriteria(
+      query.ProductId,
+      ParseMovementType(query.MovementType),
+      query.DateFrom,
+      query.DateTo,
+      page,
+      pageSize,
+      ParseMovementSort(query.SortBy),
+      ParseSortDirection(query.SortDirection, InventorySortDirection.Desc));
     var total = await inventory.CountMovementsAsync(
       tenantId,
       currentBranchId,
-      query.ProductId,
+      criteria,
       cancellationToken);
     var items = await inventory.ListMovementsAsync(
       tenantId,
       currentBranchId,
-      query.ProductId,
-      page,
-      pageSize,
+      criteria,
       cancellationToken);
+    var totalPages = CalculateTotalPages(total, pageSize);
 
     return Result.Success(new InventoryMovementListResponse(
       items.Select(InventoryResponseMapper.ToResponse).ToArray(),
       page,
       pageSize,
-      total));
+      total,
+      total,
+      totalPages,
+      page > 1,
+      page < totalPages));
+  }
+
+  private static int NormalizePageSize(int pageSize)
+    => AllowedPageSizes.Contains(pageSize) ? pageSize : 10;
+
+  private static int CalculateTotalPages(int totalItems, int pageSize)
+    => totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+
+  private static InventoryMovementReason? ParseMovementType(string? movementType)
+    => Enum.TryParse<InventoryMovementReason>(movementType, true, out var parsed)
+      ? parsed
+      : null;
+
+  private static InventoryMovementSortOption ParseMovementSort(string? sortBy)
+  {
+    if (string.Equals(sortBy, "productId", StringComparison.OrdinalIgnoreCase))
+    {
+      return InventoryMovementSortOption.ProductId;
+    }
+
+    if (string.Equals(sortBy, "quantity", StringComparison.OrdinalIgnoreCase))
+    {
+      return InventoryMovementSortOption.Quantity;
+    }
+
+    return InventoryMovementSortOption.CreatedAt;
+  }
+
+  private static InventorySortDirection ParseSortDirection(
+    string? sortDirection,
+    InventorySortDirection defaultDirection)
+  {
+    if (string.Equals(sortDirection, "asc", StringComparison.OrdinalIgnoreCase))
+    {
+      return InventorySortDirection.Asc;
+    }
+
+    if (string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase))
+    {
+      return InventorySortDirection.Desc;
+    }
+
+    return defaultDirection;
   }
 }
