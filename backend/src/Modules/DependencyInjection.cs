@@ -4,6 +4,7 @@ using SaasCommerce.Modules.Catalog.Application.Abstractions;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
+using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
@@ -15,6 +16,8 @@ using SaasCommerce.Modules.Identity.Infrastructure.Development;
 using SaasCommerce.Modules.Identity.Infrastructure.Persistence;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Contracts.Availability;
+using SaasCommerce.Modules.Inventory.Infrastructure.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
 
 namespace SaasCommerce.Modules;
@@ -30,7 +33,9 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<ICatalogProductRepository, EfCatalogProductRepository>();
     services.AddScoped<IProductInventoryPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryProductLookupReader, EfProductInventoryPolicyReader>();
+    services.AddScoped<IProductSalesPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
+    services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
     services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
     services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();
     services.AddScoped<IIdentitySettingsRepository, EfIdentitySettingsRepository>();

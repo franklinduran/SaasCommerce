@@ -6,8 +6,12 @@ using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
+using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
+using SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Contracts.Availability;
+using SaasCommerce.Modules.Inventory.Infrastructure.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
 
 namespace SaasCommerce.Modules.Tests;
@@ -429,6 +433,96 @@ public sealed class CatalogInventoryTests
     result.IsSuccess.Should().BeTrue();
     result.Value.Items.Should().ContainSingle();
     result.Value.Items.Single().Reason.Should().Be("Purchase");
+  }
+
+  [Fact]
+  public async Task ProductSalesPolicyShouldBlockInactiveProducts()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var created = await CreateProductHandler(dbContext, currentUser)
+      .Handle(CreateProductCommand("Cafe", "SKU-001"));
+    await new DeactivateProductHandler(
+        new EfCatalogProductRepository(dbContext),
+        currentUser,
+        new FixedClock(),
+        new EfUnitOfWork(dbContext))
+      .Handle(new DeactivateProductCommand(created.Value.Id));
+
+    var policy = await new EfProductInventoryPolicyReader(dbContext)
+      .GetSalesPolicyAsync(currentUser.BusinessId!.Value, created.Value.Id);
+
+    policy.Should().NotBeNull();
+    policy!.CanBeSold.Should().BeFalse();
+    policy.ReasonIfCannotBeSold.Should().Be("Product is inactive.");
+  }
+
+  [Fact]
+  public async Task ProductSalesPolicyShouldAllowActiveServicesWithoutInventory()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var created = await CreateProductHandler(dbContext, currentUser)
+      .Handle(CreateProductCommand(
+        "Delivery",
+        "SRV-001",
+        productType: "Service",
+        unitOfMeasure: "Service",
+        trackInventory: false,
+        salePrice: 100));
+
+    var policy = await new EfProductInventoryPolicyReader(dbContext)
+      .GetSalesPolicyAsync(currentUser.BusinessId!.Value, created.Value.Id);
+
+    policy.Should().NotBeNull();
+    policy!.CanBeSold.Should().BeTrue();
+    policy.TrackInventory.Should().BeFalse();
+    policy.ProductType.Should().Be("Service");
+  }
+
+  [Fact]
+  public async Task InventoryAvailabilityShouldRejectInsufficientStockWhenNegativeStockIsNotAllowed()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var productId = Guid.NewGuid();
+    await CreateInventoryHandler(
+        dbContext,
+        currentUser,
+        ProductInventoryPolicy(productId, currentUser.BusinessId!.Value))
+      .Handle(new AdjustInventoryCommand(productId, 3, "InitialLoad"));
+
+    var result = await new EfInventoryAvailabilityService(new EfInventoryRepository(dbContext))
+      .ValidateStockAsync(new InventoryAvailabilityRequest(
+        currentUser.BusinessId.Value,
+        currentUser.BranchId!.Value,
+        productId,
+        5,
+        true,
+        false));
+
+    result.IsAvailable.Should().BeFalse();
+    result.AvailableQuantity.Should().Be(3);
+    result.ReasonIfUnavailable.Should().Be("Insufficient stock.");
+  }
+
+  [Fact]
+  public async Task InventoryAvailabilityShouldAllowNonInventoryProducts()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+
+    var result = await new EfInventoryAvailabilityService(new EfInventoryRepository(dbContext))
+      .ValidateStockAsync(new InventoryAvailabilityRequest(
+        currentUser.BusinessId!.Value,
+        currentUser.BranchId!.Value,
+        Guid.NewGuid(),
+        100,
+        false,
+        false));
+
+    result.IsAvailable.Should().BeTrue();
+    result.AvailableQuantity.Should().Be(0);
   }
 
   private static CreateProductHandler CreateProductHandler(

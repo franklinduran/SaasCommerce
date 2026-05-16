@@ -24,6 +24,14 @@ using SaasCommerce.SharedKernel;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+const string accountTag = "Account";
+const string authTag = "Auth";
+const string catalogTag = "Catalog";
+const string identityTag = "Identity";
+const string inventoryTag = "Inventory";
+const string realtimeTag = "Realtime";
+const string systemTag = "System";
+const string tenancyTag = "Tenancy";
 
 builder.Host.UseSerilog((_, _, loggerConfiguration) =>
   loggerConfiguration
@@ -107,7 +115,7 @@ app.UseAuthorization();
 
 app.MapGet("/health/live", () =>
   Results.Ok(ApiResponse.Success("Live")))
-  .WithTags("System");
+  .WithTags(systemTag);
 
 app.MapGet("/health/ready", async (AppDbContext dbContext, CancellationToken cancellationToken) =>
 {
@@ -119,7 +127,7 @@ app.MapGet("/health/ready", async (AppDbContext dbContext, CancellationToken can
       ApiResponse.Failure<string>(new ApiError("DatabaseUnavailable", "PostgreSQL is not ready.")),
       statusCode: StatusCodes.Status503ServiceUnavailable);
 })
-  .WithTags("System");
+  .WithTags(systemTag);
 
 app.MapGet("/api/version", () =>
 {
@@ -132,7 +140,7 @@ app.MapGet("/api/version", () =>
 
   return Results.Ok(ApiResponse.Success<object>(version));
 })
-  .WithTags("System");
+  .WithTags(systemTag);
 
 app.MapPost(
   "/api/account/register-business",
@@ -159,7 +167,7 @@ app.MapPost(
     return ToApiResult(result, correlationIdProvider);
   })
   .AllowAnonymous()
-  .WithTags("Account");
+  .WithTags(accountTag);
 
 app.MapPost(
   "/api/auth/login",
@@ -176,7 +184,7 @@ app.MapPost(
     return ToApiResult(result, correlationIdProvider);
   })
   .AllowAnonymous()
-  .WithTags("Auth");
+  .WithTags(authTag);
 
 app.MapPost(
   "/api/auth/refresh",
@@ -193,7 +201,7 @@ app.MapPost(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
   .AllowAnonymous()
-  .WithTags("Auth");
+  .WithTags(authTag);
 
 app.MapGet(
   "/api/me",
@@ -207,7 +215,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Identity");
+  .WithTags(identityTag);
 
 app.MapPut(
   "/api/me/profile",
@@ -224,7 +232,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
   .RequireAuthorization()
-  .WithTags("Identity");
+  .WithTags(identityTag);
 
 app.MapPut(
   "/api/me/password",
@@ -241,7 +249,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status400BadRequest);
   })
   .RequireAuthorization()
-  .WithTags("Identity");
+  .WithTags(identityTag);
 
 app.MapGet(
   "/api/business/current",
@@ -255,7 +263,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
   .RequireAuthorization()
-  .WithTags("Tenancy");
+  .WithTags(tenancyTag);
 
 app.MapPut(
   "/api/business/current",
@@ -281,7 +289,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider, failureStatusCode);
   })
   .RequireAuthorization()
-  .WithTags("Tenancy");
+  .WithTags(tenancyTag);
 
 app.MapGet(
   "/api/branches/current",
@@ -295,7 +303,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
   })
   .RequireAuthorization()
-  .WithTags("Tenancy");
+  .WithTags(tenancyTag);
 
 app.MapPut(
   "/api/branches/current",
@@ -312,7 +320,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Tenancy");
+  .WithTags(tenancyTag);
 
 app.MapPost(
   "/api/catalog/products",
@@ -355,7 +363,7 @@ app.MapPost(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapPut(
   "/api/catalog/products/{id:guid}",
@@ -401,7 +409,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapGet(
   "/api/catalog/products/{id:guid}",
@@ -416,7 +424,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapPut(
   "/api/catalog/products/{id:guid}/activate",
@@ -431,7 +439,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapPut(
   "/api/catalog/products/{id:guid}/deactivate",
@@ -446,7 +454,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapGet(
   "/api/catalog/products",
@@ -471,7 +479,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapPost(
   "/api/catalog/categories",
@@ -488,7 +496,7 @@ app.MapPost(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapPut(
   "/api/catalog/categories/{id:guid}",
@@ -506,7 +514,7 @@ app.MapPut(
     return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapGet(
   "/api/catalog/categories",
@@ -520,7 +528,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Catalog");
+  .WithTags(catalogTag);
 
 app.MapPost(
   "/api/inventory/adjustments",
@@ -537,7 +545,7 @@ app.MapPost(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Inventory");
+  .WithTags(inventoryTag);
 
 app.MapGet(
   "/api/inventory/stock",
@@ -562,7 +570,7 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Inventory");
+  .WithTags(inventoryTag);
 
 app.MapGet(
   "/api/inventory/movements",
@@ -587,10 +595,10 @@ app.MapGet(
     return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
-  .WithTags("Inventory");
+  .WithTags(inventoryTag);
 
 app.MapHub<BusinessHub>("/hubs/business")
-  .WithTags("Realtime");
+  .WithTags(realtimeTag);
 
 if (app.Environment.IsDevelopment())
 {

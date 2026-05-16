@@ -318,6 +318,24 @@ GET  /api/inventory/movements
 - Las respuestas paginadas de inventario devuelven `items`, `page`, `pageSize`, `totalItems`, `totalPages`, `hasPreviousPage` y `hasNextPage`.
 - Tests frontend cubren render de stock, paginacion de inventario y validacion del drawer de ajuste.
 
+## Etapa 5.3: POS Readiness
+
+- `Simple`, `Service` y `Weighed` quedan soportados para el POS inicial.
+- `Composite`, `VariantParent` y `VariantChild` quedan preparados en el modelo, pero no funcionales completos en el MVP inicial.
+- Los combos con descuento automatico de componentes, matrices de variantes y atributos dinamicos avanzados quedan para una etapa posterior.
+- Producto inactivo no es vendible, conserva historial y puede reactivarse.
+- Servicio activo puede venderse aunque no controle inventario.
+- Producto no inventariable activo puede venderse sin stock.
+- Producto inventariable activo requiere validacion de stock en `Inventory`.
+- Producto pesado permite cantidades decimales.
+- Producto simple usa cantidades enteras por defecto; configuracion decimal avanzada queda para una etapa posterior.
+- `Sales` no debe consultar entidades internas ni `DbContext` de `Catalog`.
+- `Sales` debe consultar datos de venta mediante `IProductSalesPolicyReader`.
+- `Sales` no debe descontar inventario directamente.
+- `Sales` debe validar stock mediante `IInventoryAvailabilityService` y dejar la deduccion final preparada para flujo controlado/eventos.
+- `Inventory` sigue siendo dueno del stock y valida `BusinessId` y `BranchId`.
+- `InventoryMovementsPage` avanzada queda para etapa posterior; el minimo actual aceptado es `GET /api/inventory/movements` con filtros y paginacion.
+
 ## Definition Of Done
 
 - `dotnet build --no-restore` pasa con 0 warnings.

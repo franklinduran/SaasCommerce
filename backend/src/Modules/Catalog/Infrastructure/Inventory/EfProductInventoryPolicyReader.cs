@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
+using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Catalog.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -8,7 +9,8 @@ namespace SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 
 public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
   IProductInventoryPolicyReader,
-  IInventoryProductLookupReader
+  IInventoryProductLookupReader,
+  IProductSalesPolicyReader
 {
   public async Task<ProductInventoryPolicy?> GetAsync(
     Guid businessId,
@@ -87,5 +89,71 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
         product.MinimumStock,
         product.ReorderPoint))
       .ToArrayAsync(cancellationToken);
+  }
+
+  public async Task<ProductSalesPolicy?> GetSalesPolicyAsync(
+    Guid businessId,
+    Guid productId,
+    CancellationToken cancellationToken = default)
+  {
+    var tenantId = new BusinessId(businessId);
+    var product = await dbContext.Set<Product>()
+      .AsNoTracking()
+      .Where(candidate => candidate.BusinessId == tenantId && candidate.Id == productId)
+      .Select(candidate => new
+      {
+        candidate.Id,
+        BusinessId = candidate.BusinessId.Value,
+        candidate.Name,
+        candidate.Sku,
+        candidate.Barcode,
+        candidate.ProductType,
+        candidate.UnitOfMeasure,
+        candidate.SalePrice,
+        candidate.TaxCategory,
+        candidate.TaxRate,
+        candidate.IsTaxIncluded,
+        candidate.AllowsDiscount,
+        candidate.TrackInventory,
+        candidate.IsActive
+      })
+      .SingleOrDefaultAsync(cancellationToken);
+
+    if (product is null)
+    {
+      return null;
+    }
+
+    var blockedReason = GetBlockedReason(product.IsActive, product.SalePrice);
+
+    return new ProductSalesPolicy(
+      product.Id,
+      product.BusinessId,
+      product.Name,
+      product.Sku,
+      product.Barcode,
+      product.ProductType.ToString(),
+      product.UnitOfMeasure.ToString(),
+      product.SalePrice,
+      product.TaxCategory.ToString(),
+      product.TaxRate,
+      product.IsTaxIncluded,
+      product.AllowsDiscount,
+      product.TrackInventory,
+      product.IsActive,
+      blockedReason is null,
+      blockedReason);
+  }
+
+  private static string? GetBlockedReason(bool isActive, decimal salePrice)
+  {
+    if (!isActive)
+    {
+      return "Product is inactive.";
+    }
+
+    return salePrice < 0
+      ? "Product sale price is invalid."
+      : null;
   }
 }

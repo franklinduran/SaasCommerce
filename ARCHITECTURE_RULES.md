@@ -288,6 +288,11 @@ Cada modulo debe tratar sus datos como propios.
 No compartas entidades de dominio entre modulos.
 Si un modulo necesita reaccionar a otro, usa eventos.
 Si un modulo necesita leer datos de otro, usa query publica, contrato o read model.
+Sales no debe consultar entidades internas ni DbContext de Catalog.
+Sales no debe descontar inventario directamente ni consultar DbContext de Inventory.
+Sales debe consultar productos vendibles mediante contratos publicos de Catalog, como IProductSalesPolicyReader.
+Sales debe validar disponibilidad mediante contratos publicos de Inventory, como IInventoryAvailabilityService.
+Inventory conserva la propiedad del stock y toda deduccion debe pasar por flujo controlado o eventos.
 Los eventos de integracion deben vivir en Contracts del modulo dueño.
 Los eventos de integracion deben incluir EventId, CorrelationId, BusinessId, OccurredAt y Version.
 Los consumers criticos deben ser idempotentes usando Inbox.
