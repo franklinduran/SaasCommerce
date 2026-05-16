@@ -27,7 +27,7 @@ public sealed class AuthEndpointTests
     payload!.IsSuccess.Should().BeFalse();
     payload.Data.Should().BeNull();
     payload.Error.Should().NotBeNull();
-    payload.Error!.Code.Should().Be("unauthorized");
+    payload.Error!.Code.Should().Be("UNAUTHORIZED");
   }
 
   [Fact]
@@ -129,7 +129,7 @@ public sealed class AuthEndpointTests
     response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     payload.Should().NotBeNull();
     payload!.IsSuccess.Should().BeFalse();
-    payload.Error!.Code.Should().Be("identity.invalid_current_password");
+    payload.Error!.Code.Should().Be("IDENTITY_INVALID_CURRENT_PASSWORD");
   }
 
   [Fact]
@@ -153,7 +153,7 @@ public sealed class AuthEndpointTests
     response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     payload.Should().NotBeNull();
     payload!.IsSuccess.Should().BeFalse();
-    payload.Error!.Code.Should().Be("validation_error");
+    payload.Error!.Code.Should().Be("VALIDATION_ERROR");
   }
 
   [Fact]
@@ -178,7 +178,7 @@ public sealed class AuthEndpointTests
     response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     payload.Should().NotBeNull();
     payload!.IsSuccess.Should().BeFalse();
-    payload.Error!.Code.Should().Be("validation_error");
+    payload.Error!.Code.Should().Be("VALIDATION_ERROR");
   }
 
   [Fact]
@@ -236,7 +236,7 @@ public sealed class AuthEndpointTests
     payload.Should().NotBeNull();
     payload!.IsSuccess.Should().BeFalse();
     payload.Error.Should().NotBeNull();
-    payload.Error!.Code.Should().Be("validation_error");
+    payload.Error!.Code.Should().Be("VALIDATION_ERROR");
     payload.Error.ValidationErrors.Should().Contain(error =>
       error.Field == "phones" &&
       error.Message == "Phone numbers must not be duplicated.");
@@ -264,6 +264,7 @@ public sealed class AuthEndpointTests
           configuration.AddInMemoryCollection(new Dictionary<string, string?>
           {
             ["ConnectionStrings:DefaultConnection"] = "",
+            ["Database:InMemoryName"] = Guid.NewGuid().ToString("D"),
             ["RabbitMq:UseInMemory"] = "true",
             ["Jwt:Secret"] = "test-secret-with-at-least-32-characters",
             ["Jwt:Issuer"] = "SaasCommerce.Tests",

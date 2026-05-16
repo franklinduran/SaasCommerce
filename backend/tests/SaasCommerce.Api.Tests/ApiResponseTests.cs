@@ -20,7 +20,7 @@ public sealed class ApiResponseTests
   [Fact]
   public void FailureShouldCreateStandardResponse()
   {
-    var error = new ApiError("validation_error", "Invalid request.");
+    var error = new ApiError("VALIDATION_ERROR", "Invalid request.");
 
     var response = ApiResponse.Failure<object>(error, "correlation-id");
 

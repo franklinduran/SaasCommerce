@@ -34,7 +34,7 @@ public sealed class ErrorHandlingMiddleware(
       context.Response.ContentType = "application/json";
 
       var response = ApiResponse.Failure<object?>(
-        new ApiError("UnhandledError", "An unexpected error occurred."),
+        new ApiError("UNHANDLED_ERROR", "An unexpected error occurred."),
         correlationId);
 
       await context.Response.WriteAsJsonAsync(response);

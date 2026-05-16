@@ -91,6 +91,8 @@ public static class BuildingBlocksServiceCollectionExtensions
       return;
     }
 
-    options.UseInMemoryDatabase("SaasCommerceDevelopment");
+    var inMemoryDatabaseName = configuration["Database:InMemoryName"] ?? "SaasCommerceDevelopment";
+
+    options.UseInMemoryDatabase(inMemoryDatabaseName);
   }
 }

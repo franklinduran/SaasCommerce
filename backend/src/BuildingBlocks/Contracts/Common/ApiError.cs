@@ -11,7 +11,7 @@ public sealed record ApiError(
     ArgumentNullException.ThrowIfNull(errors);
 
     return new ApiError(
-      "validation_error",
+      "VALIDATION_ERROR",
       "One or more validation errors occurred.",
       ValidationErrors: errors
         .Select(error => new ValidationError(error.Target ?? error.Code, error.Message))

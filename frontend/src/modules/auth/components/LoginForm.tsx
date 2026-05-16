@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { CircleDollarSign, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
@@ -17,6 +17,7 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
+  const location = useLocation()
   const navigate = useNavigate()
   const loginMutation = useLoginMutation()
   const {
@@ -38,7 +39,7 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginFormValues) {
     await loginMutation.mutateAsync(values)
-    navigate('/', { replace: true })
+    navigate(getRedirectPath(location.state), { replace: true })
   }
 
   return (
@@ -137,4 +138,21 @@ export function LoginForm() {
       </div>
     </form>
   )
+}
+
+function getRedirectPath(state: unknown): string {
+  if (!state || typeof state !== 'object' || !('from' in state)) {
+    return '/'
+  }
+
+  const from = (state as { from?: { pathname?: unknown; search?: unknown } }).from
+  const pathname = from?.pathname
+
+  if (typeof pathname !== 'string' || !pathname.startsWith('/')) {
+    return '/'
+  }
+
+  const search = typeof from?.search === 'string' ? from.search : ''
+
+  return `${pathname}${search}`
 }

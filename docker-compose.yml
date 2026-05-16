@@ -28,7 +28,7 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping && rabbitmq-diagnostics -q check_port_connectivity"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,7 +82,7 @@ services:
         VITE_SIGNALR_HUB_URL: ${VITE_SIGNALR_HUB_URL:-http://localhost:8080/hubs/business}
     container_name: saascommerce-web
     ports:
-      - "5173:80"
+      - "5173:8080"
     depends_on:
       - api
 

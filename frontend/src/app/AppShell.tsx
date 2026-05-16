@@ -68,7 +68,7 @@ export function AppShell() {
 
   function handleLogout() {
     clearSession()
-    navigate('/auth', { replace: true })
+    navigate('/login', { replace: true })
   }
 
   return (

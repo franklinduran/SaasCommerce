@@ -24,6 +24,7 @@ function withPageLoading(element: ReactNode) {
 
 export const router = createBrowserRouter([
   { path: 'auth', element: withPageLoading(<AuthRoute />) },
+  { path: 'login', element: withPageLoading(<AuthRoute />) },
   { path: 'register-business', element: withPageLoading(<RegisterBusinessRoute />) },
   {
     element: (

@@ -176,7 +176,7 @@ export function RegisterBusinessPage() {
           )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button onClick={() => navigate('/auth')} type="button" variant="secondary">
+            <Button onClick={() => navigate('/login')} type="button" variant="secondary">
               Ya tengo cuenta
             </Button>
             <Button disabled={registerBusiness.isPending || !isValid} type="submit">

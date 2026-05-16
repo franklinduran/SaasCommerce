@@ -1,4 +1,7 @@
 using System.Globalization;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -32,6 +35,11 @@ const string inventoryTag = "Inventory";
 const string realtimeTag = "Realtime";
 const string systemTag = "System";
 const string tenancyTag = "Tenancy";
+const int generatedJwtSecretBytes = 32;
+const int rabbitMqDefaultPort = 5672;
+const int readyCheckTimeoutSeconds = 2;
+
+ConfigureDevelopmentJwtSecret(builder.Configuration, builder.Environment);
 
 builder.Host.UseSerilog((_, _, loggerConfiguration) =>
   loggerConfiguration
@@ -100,6 +108,7 @@ var app = builder.Build();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ErrorHandlingMiddleware>();
+app.UseStatusCodePages(WriteStatusCodeResponseAsync);
 
 if (app.Environment.IsDevelopment())
 {
@@ -117,14 +126,23 @@ app.MapGet("/health/live", () =>
   Results.Ok(ApiResponse.Success("Live")))
   .WithTags(systemTag);
 
-app.MapGet("/health/ready", async (AppDbContext dbContext, CancellationToken cancellationToken) =>
+app.MapGet("/health/ready", async (
+  AppDbContext dbContext,
+  IConfiguration configuration,
+  CancellationToken cancellationToken) =>
 {
-  var canConnect = await CanConnectToDatabaseAsync(dbContext, cancellationToken);
+  var databaseReady = await CanConnectToDatabaseAsync(dbContext, cancellationToken);
+  var rabbitMqReady = await CanConnectToRabbitMqAsync(configuration, cancellationToken);
+  var response = new HealthReadyResponse(
+    databaseReady && rabbitMqReady ? "Healthy" : "Unhealthy",
+    new HealthDependencyStatus("PostgreSQL", databaseReady ? "Healthy" : "Unhealthy"),
+    new HealthDependencyStatus("RabbitMQ", rabbitMqReady ? "Healthy" : "Unhealthy"));
 
-  return canConnect
-    ? Results.Ok(ApiResponse.Success("Ready"))
+  return databaseReady && rabbitMqReady
+    ? Results.Ok(ApiResponse.Success(response))
     : Results.Json(
-      ApiResponse.Failure<string>(new ApiError("DatabaseUnavailable", "PostgreSQL is not ready.")),
+      ApiResponse.Failure<HealthReadyResponse>(
+        new ApiError(ApiErrorCodes.ServiceUnavailable, "One or more dependencies are not ready.")),
       statusCode: StatusCodes.Status503ServiceUnavailable);
 })
   .WithTags(systemTag);
@@ -198,7 +216,7 @@ app.MapPost(
       new RefreshTokenCommand(request.RefreshToken),
       cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+    return ToApiResult(result, correlationIdProvider);
   })
   .AllowAnonymous()
   .WithTags(authTag);
@@ -229,7 +247,7 @@ app.MapPut(
       new UpdateMyProfileCommand(request.FullName, request.Phone),
       cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(identityTag);
@@ -246,7 +264,7 @@ app.MapPut(
       new ChangeMyPasswordCommand(request.CurrentPassword, request.NewPassword),
       cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status400BadRequest);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(identityTag);
@@ -260,7 +278,7 @@ app.MapGet(
   {
     var result = await handler.Handle(cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(tenancyTag);
@@ -282,11 +300,7 @@ app.MapPut(
           .Select(phone => new RegisterBusinessPhoneCommand(phone.Number, phone.Label, phone.IsPrimary))
           .ToArray()),
       cancellationToken);
-    var failureStatusCode = result.IsFailure && result.Error.Code == "forbidden"
-      ? StatusCodes.Status403Forbidden
-      : StatusCodes.Status400BadRequest;
-
-    return ToApiResult(result, correlationIdProvider, failureStatusCode);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(tenancyTag);
@@ -300,7 +314,7 @@ app.MapGet(
   {
     var result = await handler.Handle(cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status401Unauthorized);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(tenancyTag);
@@ -421,7 +435,7 @@ app.MapGet(
   {
     var result = await handler.Handle(new GetProductQuery(id), cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(catalogTag);
@@ -436,7 +450,7 @@ app.MapPut(
   {
     var result = await handler.Handle(new ActivateProductCommand(id), cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(catalogTag);
@@ -451,7 +465,7 @@ app.MapPut(
   {
     var result = await handler.Handle(new DeactivateProductCommand(id), cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(catalogTag);
@@ -511,7 +525,7 @@ app.MapPut(
       new UpdateCategoryCommand(id, request.Name, request.Description, request.IsActive),
       cancellationToken);
 
-    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+    return ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization()
   .WithTags(catalogTag);
@@ -627,19 +641,69 @@ static async Task<bool> CanConnectToDatabaseAsync(
   }
 }
 
+static async Task<bool> CanConnectToRabbitMqAsync(
+  IConfiguration configuration,
+  CancellationToken cancellationToken)
+{
+  if (configuration.GetValue<bool>("RabbitMq:UseInMemory"))
+  {
+    return true;
+  }
+
+  var host = configuration["RabbitMq:Host"] ?? "localhost";
+  var port = configuration.GetValue<int?>("RabbitMq:Port") ?? rabbitMqDefaultPort;
+
+  using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+  timeout.CancelAfter(TimeSpan.FromSeconds(readyCheckTimeoutSeconds));
+
+  try
+  {
+    using var client = new TcpClient();
+    await client.ConnectAsync(host, port, timeout.Token);
+
+    return client.Connected;
+  }
+  catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+  {
+    return false;
+  }
+  catch (SocketException)
+  {
+    return false;
+  }
+}
+
+static void ConfigureDevelopmentJwtSecret(
+  ConfigurationManager configuration,
+  IHostEnvironment environment)
+{
+  if (!environment.IsDevelopment() ||
+      !string.IsNullOrWhiteSpace(configuration["Jwt:Secret"]))
+  {
+    return;
+  }
+
+  configuration["Jwt:Secret"] = Convert.ToBase64String(
+    RandomNumberGenerator.GetBytes(generatedJwtSecretBytes));
+}
+
 static IResult ToApiResult<T>(
   Result<T> result,
   ICorrelationIdProvider correlationIdProvider,
-  int failureStatusCode = StatusCodes.Status400BadRequest)
+  int? failureStatusCode = null)
 {
   ArgumentNullException.ThrowIfNull(result);
   ArgumentNullException.ThrowIfNull(correlationIdProvider);
 
+  var apiError = result.IsFailure
+    ? ToApiError(result.Error)
+    : null;
+
   return result.IsSuccess
     ? Results.Ok(ApiResponse.Success(result.Value, correlationIdProvider.CorrelationId))
     : Results.Json(
-      ApiResponse.Failure<T>(ToApiError(result.Error), correlationIdProvider.CorrelationId),
-      statusCode: failureStatusCode);
+      ApiResponse.Failure<T>(apiError!, correlationIdProvider.CorrelationId),
+      statusCode: failureStatusCode ?? ToFailureStatusCode(apiError!.Code));
 }
 
 static ApiError ToApiError(DomainError error)
@@ -648,7 +712,93 @@ static ApiError ToApiError(DomainError error)
     .Select(detail => new ValidationError(detail.Code, detail.Message))
     .ToArray();
 
-  return new(error.Code, error.Message, ValidationErrors: validationErrors);
+  return new(ToPublicErrorCode(error.Code), error.Message, ValidationErrors: validationErrors);
+}
+
+static string ToPublicErrorCode(string code)
+  => code switch
+  {
+    "validation_error" or
+      "catalog.invalid_product" or
+      "inventory.invalid_adjustment" => ApiErrorCodes.ValidationError,
+    "identity.invalid_credentials" or
+      "identity.invalid_refresh_token" or
+      "identity.not_authenticated" => ApiErrorCodes.Unauthorized,
+    "forbidden" => ApiErrorCodes.Forbidden,
+    "identity.invalid_current_user" or
+      "catalog.user_context_required" or
+      "inventory.user_context_required" => ApiErrorCodes.TenantContextMissing,
+    "identity.user_not_found" or
+      "tenancy.business_not_found" or
+      "tenancy.branch_not_found" or
+      "catalog.category_not_found" => ApiErrorCodes.NotFound,
+    "account.duplicate_email" or
+      "account.duplicate_identification" or
+      "tenancy.duplicate_identification" or
+      "catalog.duplicate_category" => ApiErrorCodes.Conflict,
+    "catalog.product_not_found" or
+      "inventory.product_not_found" => ApiErrorCodes.ProductNotFound,
+    "catalog.duplicate_sku" => ApiErrorCodes.ProductSkuAlreadyExists,
+    "catalog.duplicate_barcode" => ApiErrorCodes.ProductBarcodeAlreadyExists,
+    "inventory.negative_stock" => ApiErrorCodes.InventoryStockInsufficient,
+    "inventory.product_does_not_track_inventory" => ApiErrorCodes.InventoryProductNotTracked,
+    _ => code.ToUpperInvariant().Replace('.', '_')
+  };
+
+static int ToFailureStatusCode(string publicErrorCode)
+  => publicErrorCode switch
+  {
+    ApiErrorCodes.Unauthorized or
+      ApiErrorCodes.TenantContextMissing or
+      ApiErrorCodes.AuthUserIdMissing or
+      ApiErrorCodes.AuthBusinessIdMissing => StatusCodes.Status401Unauthorized,
+    ApiErrorCodes.Forbidden => StatusCodes.Status403Forbidden,
+    ApiErrorCodes.NotFound or
+      ApiErrorCodes.ProductNotFound => StatusCodes.Status404NotFound,
+    ApiErrorCodes.Conflict or
+      ApiErrorCodes.ProductSkuAlreadyExists or
+      ApiErrorCodes.ProductBarcodeAlreadyExists or
+      ApiErrorCodes.InventoryStockInsufficient or
+      ApiErrorCodes.InventoryProductNotTracked => StatusCodes.Status409Conflict,
+    _ => StatusCodes.Status400BadRequest
+  };
+  
+static async Task WriteStatusCodeResponseAsync(StatusCodeContext statusCodeContext)
+{
+  var httpContext = statusCodeContext.HttpContext;
+
+  if (httpContext.Response.HasStarted)
+  {
+    return;
+  }
+
+  var error = httpContext.Response.StatusCode switch
+  {
+    StatusCodes.Status401Unauthorized => new ApiError(
+      ApiErrorCodes.Unauthorized,
+      "Authentication is required."),
+    StatusCodes.Status403Forbidden => new ApiError(
+      ApiErrorCodes.Forbidden,
+      "The current user is not allowed to perform this action."),
+    StatusCodes.Status404NotFound => new ApiError(
+      ApiErrorCodes.NotFound,
+      "The requested resource was not found."),
+    _ => null
+  };
+
+  if (error is null)
+  {
+    return;
+  }
+
+  httpContext.Response.ContentType = "application/json";
+
+  var correlationId = httpContext.RequestServices
+    .GetService<ICorrelationIdProvider>()?
+    .CorrelationId ?? httpContext.TraceIdentifier;
+
+  await httpContext.Response.WriteAsJsonAsync(
+    ApiResponse.Failure<object?>(error, correlationId));
 }
 
 static async Task MigrateDatabaseAsync(

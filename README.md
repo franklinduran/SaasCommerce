@@ -350,3 +350,261 @@ GET  /api/inventory/movements
 - Eventos criticos futuros deben pasar por Outbox.
 - Consumers criticos deben usar Inbox/idempotencia.
 - Cobertura objetivo para codigo nuevo: 80% o mas.
+
+## Etapa 6: Guia Operativa De Estabilizacion
+
+Esta guia permite levantar, probar y validar el sistema antes de avanzar a `Sales/POS`.
+
+### Levantar Todo Con Docker
+
+Desde la raiz del repositorio:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+Para dejarlo corriendo en segundo plano:
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Servicios locales esperados:
+
+```txt
+Web: http://localhost:5173
+Login: http://localhost:5173/login
+Registro de comercio: http://localhost:5173/register-business
+API: http://localhost:8080
+Swagger: http://localhost:8080/swagger
+RabbitMQ Management: http://localhost:15672
+PostgreSQL host: localhost:5433
+```
+
+`docker-compose.yml` no requiere secretos hardcodeados para desarrollo. Si `JWT_SECRET` no se define en `.env`, la API genera un secreto efimero solo en `Development`. Para sesiones persistentes entre reinicios, define `JWT_SECRET` en `.env` usando `.env.example` como base.
+
+### Registro, Login Y Settings
+
+Flujo manual minimo:
+
+```txt
+1. Abrir http://localhost:5173/register-business.
+2. Registrar un comercio con RNC, cedula o pasaporte valido y exactamente un telefono principal.
+3. Confirmar entrada al shell autenticado.
+4. Salir.
+5. Abrir http://localhost:5173/login.
+6. Iniciar sesion con el usuario registrado.
+7. Abrir /settings y validar Mi perfil, Negocio, Sucursal y Seguridad.
+```
+
+Validaciones esperadas:
+
+```txt
+GET /api/me devuelve el usuario actual.
+BusinessId, BranchId y UserId salen del JWT.
+El frontend no envia BusinessId ni BranchId como fuente de verdad.
+Logout limpia la sesion local.
+Una sesion expirada redirige a /login antes de consultar endpoints protegidos.
+```
+
+### Swagger JWT
+
+Para probar endpoints protegidos desde Swagger:
+
+```txt
+1. Abrir http://localhost:8080/swagger.
+2. Ejecutar POST /api/auth/login.
+3. Copiar data.accessToken.
+4. Pulsar Authorize.
+5. Pegar solo el JWT. Swagger agrega Bearer automaticamente.
+6. Ejecutar endpoints protegidos.
+```
+
+Endpoints minimos para validar:
+
+```txt
+GET /api/me
+GET /api/business/current
+GET /api/branches/current
+GET /api/catalog/products
+GET /api/inventory/stock
+GET /api/inventory/movements
+```
+
+Sin token deben responder `401` con `isSuccess=false`, `data=null` y `error.code=UNAUTHORIZED`.
+
+### Products
+
+Endpoints principales:
+
+```txt
+POST /api/catalog/categories
+GET  /api/catalog/categories
+POST /api/catalog/products
+PUT  /api/catalog/products/{id}
+PUT  /api/catalog/products/{id}/activate
+PUT  /api/catalog/products/{id}/deactivate
+GET  /api/catalog/products/{id}
+GET  /api/catalog/products
+```
+
+Validacion funcional:
+
+```txt
+/products muestra filtros, listado, empty state y paginacion.
+Crear y editar producto se abre en drawer.
+Categorias se cargan desde backend.
+SKU duplicado devuelve PRODUCT_SKU_ALREADY_EXISTS.
+Barcode duplicado devuelve PRODUCT_BARCODE_ALREADY_EXISTS.
+Producto inexistente devuelve PRODUCT_NOT_FOUND.
+```
+
+### Inventory
+
+Endpoints principales:
+
+```txt
+POST /api/inventory/adjustments
+GET  /api/inventory/stock
+GET  /api/inventory/movements
+```
+
+Validacion funcional:
+
+```txt
+Un ajuste valido crea o actualiza StockItem.
+Un ajuste valido genera InventoryMovement.
+PreviousStock y NewStock quedan correctos.
+Stock y movimientos filtran por BusinessId y BranchId.
+Ajuste que deja stock negativo devuelve INVENTORY_STOCK_INSUFFICIENT.
+Ajuste sobre servicio o producto no inventariable devuelve INVENTORY_PRODUCT_NOT_TRACKED.
+```
+
+### Health Checks
+
+Endpoints:
+
+```txt
+GET /health/live
+GET /health/ready
+```
+
+Uso:
+
+```bash
+curl http://localhost:8080/health/live
+curl http://localhost:8080/health/ready
+```
+
+`/health/live` valida que el proceso API esta vivo. `/health/ready` valida PostgreSQL y RabbitMQ cuando se usa broker real. Si una dependencia no esta lista, responde `503` con `error.code=SERVICE_UNAVAILABLE`.
+
+### Regresion Backend
+
+Desde la raiz del repositorio:
+
+```bash
+dotnet restore SaasCommerce.slnx
+dotnet build SaasCommerce.slnx --no-restore -m:1 /nr:false -v minimal
+dotnet test SaasCommerce.slnx --no-build -m:1 /nr:false -v minimal
+```
+
+Criterios:
+
+```txt
+Build OK.
+0 warnings.
+Api.Tests OK.
+Architecture.Tests OK.
+Modules.Tests OK.
+BuildingBlocks.Tests OK.
+SharedKernel.Tests OK.
+Worker.Tests OK.
+```
+
+### Regresion Frontend
+
+Desde `frontend`:
+
+```bash
+npm.cmd run lint
+npm.cmd run test
+npm.cmd run build
+```
+
+O desde la raiz:
+
+```bash
+npm.cmd --prefix frontend run lint
+npm.cmd --prefix frontend run test
+npm.cmd --prefix frontend run build
+```
+
+Criterios:
+
+```txt
+Lint OK.
+Tests OK.
+TypeScript OK.
+Build OK.
+Sin warning de chunks.
+Sin errores de consola en /settings, /products e /inventory.
+```
+
+### SonarQube Y Quality Gate
+
+Levantar SonarQube local:
+
+```powershell
+docker compose -f docker-compose.sonar.yml up -d
+```
+
+Configurar variables de usuario:
+
+```powershell
+[Environment]::SetEnvironmentVariable("SONAR_HOST_URL", "http://localhost:9000", "User")
+[Environment]::SetEnvironmentVariable("SONAR_PROJECT_KEY", "saascommerce", "User")
+[Environment]::SetEnvironmentVariable("SONAR_TOKEN", "tu-token", "User")
+```
+
+Ejecutar analisis:
+
+```powershell
+.\scripts\sonar.ps1
+```
+
+Criterios:
+
+```txt
+CE task SUCCESS.
+Quality Gate OK.
+Open issues = 0.
+New coverage >= 80%.
+New duplication <= 3%.
+Security Hotspots revisados al 100%.
+```
+
+### Troubleshooting
+
+Problemas comunes:
+
+```txt
+401 en endpoints protegidos:
+  Inicia sesion de nuevo o limpia localStorage si cambiaste JWT_SECRET.
+
+Swagger no autoriza:
+  Pega solo el JWT en Authorize. No escribas Bearer manualmente.
+
+/health/ready devuelve 503:
+  Revisa docker compose ps y logs de postgres/rabbitmq/api.
+
+Worker no conecta al broker:
+  Confirma que rabbitmq aparece healthy. El healthcheck valida ping y puerto AMQP.
+
+Registro de comercio devuelve VALIDATION_ERROR:
+  Revisa identificacion, telefono principal unico y formato de email/password.
+
+Docker muestra contenedores huerfanos de SonarQube:
+  Es solo un aviso si Sonar se levanto con docker-compose.sonar.yml.
+```

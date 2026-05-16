@@ -43,7 +43,12 @@ internal static class JwtServiceCollectionExtensions
     options.IncludeErrorDetails = environment.IsDevelopment();
     options.Events = new JwtBearerEvents
     {
-      OnChallenge = WriteUnauthorizedResponseAsync
+      OnChallenge = WriteUnauthorizedResponseAsync,
+      OnForbidden = context => WriteAuthErrorResponseAsync(
+        context.HttpContext,
+        StatusCodes.Status403Forbidden,
+        "FORBIDDEN",
+        "The current user is not allowed to perform this action.")
     };
 
     if (string.IsNullOrWhiteSpace(secret))
@@ -69,17 +74,29 @@ internal static class JwtServiceCollectionExtensions
   {
     context.HandleResponse();
 
-    var correlationIdProvider = context.HttpContext.RequestServices
+    await WriteAuthErrorResponseAsync(
+      context.HttpContext,
+      StatusCodes.Status401Unauthorized,
+      "UNAUTHORIZED",
+      "Authentication is required.");
+  }
+
+  private static async Task WriteAuthErrorResponseAsync(
+    HttpContext httpContext,
+    int statusCode,
+    string code,
+    string message)
+  {
+    var correlationIdProvider = httpContext.RequestServices
       .GetService<ICorrelationIdProvider>();
-    var correlationId = correlationIdProvider?.CorrelationId ??
-      context.HttpContext.TraceIdentifier;
+    var correlationId = correlationIdProvider?.CorrelationId ?? httpContext.TraceIdentifier;
 
-    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-    context.Response.ContentType = "application/json";
+    httpContext.Response.StatusCode = statusCode;
+    httpContext.Response.ContentType = "application/json";
 
-    await context.Response.WriteAsJsonAsync(
+    await httpContext.Response.WriteAsJsonAsync(
       ApiResponse.Failure<object?>(
-        new ApiError("unauthorized", "Authentication is required."),
+        new ApiError(code, message),
         correlationId));
   }
 }
