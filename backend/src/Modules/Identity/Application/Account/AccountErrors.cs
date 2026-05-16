@@ -4,6 +4,16 @@ namespace SaasCommerce.Modules.Identity.Application.Account;
 
 public static class AccountErrors
 {
+  public static DomainError InvalidRegistrationWith(IReadOnlyCollection<DomainError> validationErrors)
+  {
+    ArgumentNullException.ThrowIfNull(validationErrors);
+
+    return new DomainError(
+      InvalidRegistration.Code,
+      InvalidRegistration.Message,
+      validationErrors);
+  }
+
   public static readonly DomainError InvalidRegistration = new(
     "validation_error",
     "Registration data is invalid.");

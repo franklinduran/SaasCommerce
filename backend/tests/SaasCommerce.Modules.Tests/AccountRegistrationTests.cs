@@ -107,7 +107,7 @@ public sealed class AccountRegistrationTests
       branchName));
 
     result.IsFailure.Should().BeTrue();
-    result.Error.Should().Be(AccountErrors.InvalidRegistration);
+    result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
   }
 
   [Fact]
@@ -124,7 +124,7 @@ public sealed class AccountRegistrationTests
       []));
 
     result.IsFailure.Should().BeTrue();
-    result.Error.Should().Be(AccountErrors.InvalidRegistration);
+    result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
   }
 
   [Fact]
@@ -144,7 +144,7 @@ public sealed class AccountRegistrationTests
       "Sucursal principal"));
 
     result.IsFailure.Should().BeTrue();
-    result.Error.Should().Be(AccountErrors.InvalidRegistration);
+    result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
   }
 
   [Fact]
@@ -167,7 +167,10 @@ public sealed class AccountRegistrationTests
       "Sucursal principal"));
 
     result.IsFailure.Should().BeTrue();
-    result.Error.Should().Be(AccountErrors.InvalidRegistration);
+    result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
+    result.Error.Details.Should().Contain(error =>
+      error.Code == "phones" &&
+      error.Message == "Exactly one primary phone is required.");
   }
 
   [Theory]
@@ -192,7 +195,8 @@ public sealed class AccountRegistrationTests
       "Sucursal principal"));
 
     result.IsFailure.Should().BeTrue();
-    result.Error.Should().Be(AccountErrors.InvalidRegistration);
+    result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
+    result.Error.Details.Should().Contain(error => error.Code == "phones");
   }
 
   private static RegisterBusinessCommand Command(

@@ -487,7 +487,13 @@ static IResult ToApiResult<T>(
 }
 
 static ApiError ToApiError(DomainError error)
-  => new(error.Code, error.Message);
+{
+  var validationErrors = error.Details?
+    .Select(detail => new ValidationError(detail.Code, detail.Message))
+    .ToArray();
+
+  return new(error.Code, error.Message, ValidationErrors: validationErrors);
+}
 
 static async Task MigrateDatabaseAsync(
   IServiceProvider serviceProvider,

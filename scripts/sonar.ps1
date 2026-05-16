@@ -42,6 +42,20 @@ function Assert-EnvironmentVariable {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $solutionPath = Join-Path $repoRoot "SaasCommerce.slnx"
 $coverageExclusions = @(
+  "**/Contracts/**",
+  "**/*Request.cs",
+  "**/*Response.cs",
+  "**/*Command.cs",
+  "**/*Query.cs",
+  "**/*Errors.cs",
+  "**/*Marker.cs",
+  "**/*AssemblyReference.cs",
+  "**/Configurations/**",
+  "**/Migrations/**",
+  "**/DependencyInjection.cs",
+  "**/Program.cs",
+  "**/Worker.cs",
+  "**/Endpoints/**",
   "backend/src/**/Contracts/**",
   "backend/src/**/*Request.cs",
   "backend/src/**/*Response.cs",

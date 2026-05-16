@@ -37,9 +37,11 @@ public sealed class RegisterBusinessHandler(
       out var normalizedEmail,
       out var identificationType,
       out var identificationNumber,
-      out var phones))
+      out var phones,
+      out var validationErrors))
     {
-      return Result.Failure<RegisterBusinessResponse>(AccountErrors.InvalidRegistration);
+      return Result.Failure<RegisterBusinessResponse>(
+        AccountErrors.InvalidRegistrationWith(validationErrors));
     }
 
     var existingUser = await users.GetByEmailAsync(normalizedEmail, cancellationToken);
@@ -107,43 +109,83 @@ public sealed class RegisterBusinessHandler(
     out string normalizedEmail,
     out BusinessIdentificationType identificationType,
     out string identificationNumber,
-    out IReadOnlyCollection<RegisterBusinessPhoneCommand> phones)
+    out IReadOnlyCollection<RegisterBusinessPhoneCommand> phones,
+    out IReadOnlyCollection<DomainError> validationErrors)
   {
     normalizedEmail = string.Empty;
     identificationType = default;
     identificationNumber = string.Empty;
     phones = [];
+    var errors = new List<DomainError>();
 
-    if (string.IsNullOrWhiteSpace(command.BusinessName) ||
-        string.IsNullOrWhiteSpace(command.BranchName) ||
-        string.IsNullOrWhiteSpace(command.OwnerFullName) ||
-        string.IsNullOrWhiteSpace(command.Email) ||
-        !command.Email.Contains('@', StringComparison.Ordinal) ||
-        string.IsNullOrWhiteSpace(command.Password) ||
-        command.Password.Length < 8 ||
-        string.IsNullOrWhiteSpace(command.IdentificationType) ||
-        string.IsNullOrWhiteSpace(command.IdentificationNumber) ||
+    AddRequiredError(errors, command.BusinessName, "businessName", "Business name is required.");
+    AddRequiredError(errors, command.BranchName, "branchName", "Branch name is required.");
+    AddRequiredError(errors, command.OwnerFullName, "ownerFullName", "Owner full name is required.");
+    AddRequiredError(errors, command.Email, "email", "Email is required.");
+    AddRequiredError(errors, command.Password, "password", "Password is required.");
+    AddRequiredError(errors, command.IdentificationType, "identificationType", "Identification type is required.");
+    AddRequiredError(errors, command.IdentificationNumber, "identificationNumber", "Identification number is required.");
+
+    if (!string.IsNullOrWhiteSpace(command.Email) &&
+        !command.Email.Contains('@', StringComparison.Ordinal))
+    {
+      errors.Add(new DomainError("email", "Email format is invalid."));
+    }
+
+    if (!string.IsNullOrWhiteSpace(command.Password) && command.Password.Length < 8)
+    {
+      errors.Add(new DomainError("password", "Password must contain at least 8 characters."));
+    }
+
+    if (!string.IsNullOrWhiteSpace(command.IdentificationType) &&
         !Enum.TryParse(command.IdentificationType, true, out identificationType))
     {
+      errors.Add(new DomainError("identificationType", "Identification type must be Cedula, Rnc or Passport."));
+    }
+
+    if (errors.Count > 0)
+    {
+      validationErrors = errors;
+
       return false;
     }
 
-    identificationNumber = NormalizeIdentification(identificationType, command.IdentificationNumber);
+    identificationNumber = NormalizeIdentification(identificationType, command.IdentificationNumber!);
 
     if (!IsValidIdentification(identificationType, identificationNumber))
     {
+      errors.Add(new DomainError(
+        "identificationNumber",
+        GetIdentificationErrorMessage(identificationType)));
+      validationErrors = errors;
+
       return false;
     }
 
-    if (!TryNormalizePhones(command.Phones, out var normalizedPhones))
+    if (!TryNormalizePhones(command.Phones, out var normalizedPhones, out var phoneErrors))
     {
+      validationErrors = phoneErrors;
+
       return false;
     }
 
     normalizedEmail = command.Email.Trim().ToLowerInvariant();
     phones = normalizedPhones;
+    validationErrors = [];
 
     return true;
+  }
+
+  private static void AddRequiredError(
+    List<DomainError> errors,
+    string? value,
+    string field,
+    string message)
+  {
+    if (string.IsNullOrWhiteSpace(value))
+    {
+      errors.Add(new DomainError(field, message));
+    }
   }
 
   private static string NormalizeIdentification(
@@ -169,14 +211,37 @@ public sealed class RegisterBusinessHandler(
       _ => false
     };
 
+  private static string GetIdentificationErrorMessage(BusinessIdentificationType identificationType)
+    => identificationType switch
+    {
+      BusinessIdentificationType.Cedula => "Cedula must contain 11 digits.",
+      BusinessIdentificationType.Rnc => "RNC must contain 9 digits.",
+      BusinessIdentificationType.Passport => "Passport must contain at least 5 letters or digits.",
+      _ => "Identification number is invalid."
+    };
+
   private static bool TryNormalizePhones(
     IReadOnlyCollection<RegisterBusinessPhoneCommand>? phones,
-    out List<RegisterBusinessPhoneCommand> normalizedPhones)
+    out List<RegisterBusinessPhoneCommand> normalizedPhones,
+    out IReadOnlyCollection<DomainError> validationErrors)
   {
     normalizedPhones = [];
+    var errors = new List<DomainError>();
 
-    if (phones is null || phones.Count == 0 || phones.Count(phone => phone.IsPrimary) != 1)
+    if (phones is null || phones.Count == 0)
     {
+      validationErrors = [new DomainError("phones", "At least one phone is required.")];
+
+      return false;
+    }
+
+    if (phones.Count(phone => phone.IsPrimary) != 1)
+    {
+      validationErrors =
+      [
+        new DomainError("phones", "Exactly one primary phone is required.")
+      ];
+
       return false;
     }
 
@@ -187,15 +252,32 @@ public sealed class RegisterBusinessHandler(
     {
       var number = NormalizePhone(phone.Number);
 
-      if (string.IsNullOrWhiteSpace(number) || !seen.Add(number))
+      if (string.IsNullOrWhiteSpace(number))
       {
-        return false;
+        errors.Add(new DomainError("phones", "Phone number is required."));
+
+        continue;
+      }
+
+      if (!seen.Add(number))
+      {
+        errors.Add(new DomainError("phones", "Phone numbers must not be duplicated."));
+
+        continue;
       }
 
       normalized.Add(new RegisterBusinessPhoneCommand(number, phone.Label, phone.IsPrimary));
     }
 
+    if (errors.Count > 0)
+    {
+      validationErrors = errors;
+
+      return false;
+    }
+
     normalizedPhones = normalized;
+    validationErrors = [];
 
     return true;
   }

@@ -156,6 +156,92 @@ public sealed class AuthEndpointTests
     payload.Error!.Code.Should().Be("validation_error");
   }
 
+  [Fact]
+  public async Task BusinessUpdateShouldRejectDuplicatePhones()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+
+    var response = await client.PutAsJsonAsync(
+      "/api/business/current",
+      new UpdateCurrentBusinessRequest(
+        "Demo Business",
+        "Rnc",
+        "123456789",
+        [
+          new RegisterBusinessPhoneRequest("8090000000", "Principal", true),
+          new RegisterBusinessPhoneRequest("809-000-0000", "Secundario", false)
+        ]));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<CurrentBusinessResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
+    payload.Error!.Code.Should().Be("validation_error");
+  }
+
+  [Fact]
+  public async Task BusinessUpdateShouldAcceptValidBusinessData()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+
+    var response = await client.PutAsJsonAsync(
+      "/api/business/current",
+      new UpdateCurrentBusinessRequest(
+        "Demo Business Actualizado",
+        "Cedula",
+        "001-1234567-8",
+        [
+          new RegisterBusinessPhoneRequest("8090000000", "Principal", true),
+          new RegisterBusinessPhoneRequest("8290000000", "Secundario", false)
+        ]));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<CurrentBusinessResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Name.Should().Be("Demo Business Actualizado");
+    payload.Data.IdentificationType.Should().Be("Cedula");
+    payload.Data.IdentificationNumber.Should().Be("00112345678");
+    payload.Data.Phones.Should().HaveCount(2);
+    payload.Data.Phones.Should().ContainSingle(phone => phone.IsPrimary);
+  }
+
+  [Fact]
+  public async Task RegisterBusinessShouldReturnValidationErrorsForDuplicatePhones()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+
+    var response = await client.PostAsJsonAsync(
+      "/api/account/register-business",
+      new RegisterBusinessRequest(
+        "Inderiva",
+        "Franklin De Jesus Duran",
+        "info@inderiva.com",
+        "Admin123!",
+        "Cedula",
+        "40231756822",
+        [
+          new RegisterBusinessPhoneRequest("8493564360", "Principal", true),
+          new RegisterBusinessPhoneRequest("8493564360", "Secundario", false)
+        ],
+        "Sucursal principal"));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterBusinessResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
+    payload.Error.Should().NotBeNull();
+    payload.Error!.Code.Should().Be("validation_error");
+    payload.Error.ValidationErrors.Should().Contain(error =>
+      error.Field == "phones" &&
+      error.Message == "Phone numbers must not be duplicated.");
+  }
+
   private static async Task AuthenticateAsync(HttpClient client)
   {
     var loginResponse = await client.PostAsJsonAsync(
