@@ -11,6 +11,8 @@ public sealed class GetProductsHandler(
   ICatalogProductRepository products,
   ICurrentUserService currentUser)
 {
+  private static readonly int[] AllowedPageSizes = [10, 25, 50];
+
   public Task<Result<ProductListResponse>> Handle(
     GetProductsQuery query,
     CancellationToken cancellationToken = default)
@@ -29,8 +31,13 @@ public sealed class GetProductsHandler(
       return Result.Failure<ProductListResponse>(CatalogErrors.UserContextRequired);
     }
 
-    var page = Math.Max(1, query.Page);
-    var pageSize = Math.Clamp(query.PageSize, 1, 100);
+    if (query.Page < 1 || !AllowedPageSizes.Contains(query.PageSize))
+    {
+      return Result.Failure<ProductListResponse>(CatalogErrors.InvalidProduct);
+    }
+
+    var page = query.Page;
+    var pageSize = query.PageSize;
     ProductType? productType = null;
 
     if (!string.IsNullOrWhiteSpace(query.ProductType))
@@ -43,6 +50,11 @@ public sealed class GetProductsHandler(
       productType = parsedType;
     }
 
+    if (!TryParseSort(query.SortBy, query.SortDirection, out var sortBy, out var sortDirection))
+    {
+      return Result.Failure<ProductListResponse>(CatalogErrors.InvalidProduct);
+    }
+
     var tenantId = new BusinessId(businessId);
     var criteria = new ProductSearchCriteria(
       query.Query,
@@ -50,7 +62,9 @@ public sealed class GetProductsHandler(
       query.CategoryId,
       query.IsActive,
       page,
-      pageSize);
+      pageSize,
+      sortBy,
+      sortDirection);
     var totalItems = await products.CountAsync(
       tenantId,
       criteria,
@@ -66,6 +80,27 @@ public sealed class GetProductsHandler(
       page,
       pageSize,
       totalItems,
-      totalPages));
+      totalPages,
+      page > 1,
+      totalPages > 0 && page < totalPages));
+  }
+
+  private static bool TryParseSort(
+    string? sortByValue,
+    string? sortDirectionValue,
+    out ProductSortOption sortBy,
+    out SortDirection sortDirection)
+  {
+    sortBy = ProductSortOption.Name;
+    sortDirection = SortDirection.Asc;
+
+    if (!string.IsNullOrWhiteSpace(sortByValue) &&
+        !Enum.TryParse(sortByValue, true, out sortBy))
+    {
+      return false;
+    }
+
+    return string.IsNullOrWhiteSpace(sortDirectionValue) ||
+      Enum.TryParse(sortDirectionValue, true, out sortDirection);
   }
 }

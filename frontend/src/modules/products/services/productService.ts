@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/modules/auth/authStore'
 import type {
+  Category,
   CreateProductRequest,
   ProductFilters,
   ProductListResponse,
@@ -30,12 +31,28 @@ export async function getProducts(filters: ProductFilters): Promise<ProductListR
     params.set('categoryId', filters.categoryId.trim())
   }
 
+  if (filters.sortBy) {
+    params.set('sortBy', filters.sortBy)
+  }
+
+  if (filters.sortDirection) {
+    params.set('sortDirection', filters.sortDirection)
+  }
+
   const response = await httpClient<ProductListResponse>(
     `/api/catalog/products?${params.toString()}`,
     { accessToken: token },
   )
 
   return response.data!
+}
+
+export async function getCategories(): Promise<Category[]> {
+  const response = await httpClient<Category[]>('/api/catalog/categories', {
+    accessToken: getAccessToken(),
+  })
+
+  return response.data ?? []
 }
 
 export async function createProduct(request: CreateProductRequest) {
@@ -52,6 +69,24 @@ export async function updateProduct(productId: string, request: UpdateProductReq
   const response = await httpClient(`/api/catalog/products/${productId}`, {
     accessToken: getAccessToken(),
     body: JSON.stringify(request),
+    method: 'PUT',
+  })
+
+  return response.data
+}
+
+export async function activateProduct(productId: string) {
+  const response = await httpClient(`/api/catalog/products/${productId}/activate`, {
+    accessToken: getAccessToken(),
+    method: 'PUT',
+  })
+
+  return response.data
+}
+
+export async function deactivateProduct(productId: string) {
+  const response = await httpClient(`/api/catalog/products/${productId}/deactivate`, {
+    accessToken: getAccessToken(),
     method: 'PUT',
   })
 

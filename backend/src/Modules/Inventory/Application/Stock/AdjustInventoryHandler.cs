@@ -30,7 +30,9 @@ public sealed class AdjustInventoryHandler(
     AdjustInventoryCommand command,
     CancellationToken cancellationToken)
   {
-    if (currentUser.BusinessId is not Guid businessId || currentUser.UserId is not Guid userId)
+    if (currentUser.BusinessId is not Guid businessId ||
+        currentUser.BranchId is not Guid branchId ||
+        currentUser.UserId is not Guid userId)
     {
       return Result.Failure<InventoryAdjustmentResponse>(InventoryErrors.UserContextRequired);
     }
@@ -43,6 +45,7 @@ public sealed class AdjustInventoryHandler(
     }
 
     var tenantId = new BusinessId(businessId);
+    var currentBranchId = new BranchId(branchId);
     var productPolicy = await productPolicies.GetAsync(businessId, command.ProductId, cancellationToken);
 
     if (productPolicy is null)
@@ -55,10 +58,14 @@ public sealed class AdjustInventoryHandler(
       return Result.Failure<InventoryAdjustmentResponse>(InventoryErrors.ProductDoesNotTrackInventory);
     }
 
-    var stockItem = await inventory.GetStockItemAsync(tenantId, command.ProductId, cancellationToken);
+    var stockItem = await inventory.GetStockItemAsync(
+      tenantId,
+      currentBranchId,
+      command.ProductId,
+      cancellationToken);
     var isNewStockItem = stockItem is null;
 
-    stockItem ??= new StockItem(Guid.NewGuid(), tenantId, command.ProductId, clock.UtcNow);
+    stockItem ??= new StockItem(Guid.NewGuid(), tenantId, currentBranchId, command.ProductId, clock.UtcNow);
 
     InventoryMovement movement;
 

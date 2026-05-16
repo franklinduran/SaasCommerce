@@ -39,4 +39,20 @@ public sealed record ProductSearchCriteria(
   Guid? CategoryId,
   bool? IsActive,
   int Page,
-  int PageSize);
+  int PageSize,
+  ProductSortOption SortBy,
+  SortDirection SortDirection);
+
+public enum ProductSortOption
+{
+  Name,
+  Sku,
+  SalePrice,
+  CreatedAt
+}
+
+public enum SortDirection
+{
+  Asc,
+  Desc
+}

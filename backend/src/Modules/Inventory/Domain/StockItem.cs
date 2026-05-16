@@ -11,11 +11,13 @@ public sealed class StockItem
   public StockItem(
     Guid id,
     BusinessId businessId,
+    BranchId branchId,
     Guid productId,
     DateTimeOffset createdAt)
   {
     Id = id;
     BusinessId = businessId;
+    BranchId = branchId;
     ProductId = productId;
     CreatedAt = createdAt;
   }
@@ -23,6 +25,8 @@ public sealed class StockItem
   public Guid Id { get; private set; }
 
   public BusinessId BusinessId { get; private set; }
+
+  public BranchId BranchId { get; private set; }
 
   public Guid ProductId { get; private set; }
 
@@ -54,6 +58,7 @@ public sealed class StockItem
       Guid.NewGuid(),
       new InventoryMovementSnapshot(
         BusinessId,
+        BranchId,
         ProductId,
         previousStock,
         newStock,

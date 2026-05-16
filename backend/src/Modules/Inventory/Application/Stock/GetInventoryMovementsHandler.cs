@@ -23,17 +23,24 @@ public sealed class GetInventoryMovementsHandler(
     GetInventoryMovementsQuery query,
     CancellationToken cancellationToken)
   {
-    if (currentUser.BusinessId is not Guid businessId)
+    if (currentUser.BusinessId is not Guid businessId ||
+        currentUser.BranchId is not Guid branchId)
     {
       return Result.Failure<InventoryMovementListResponse>(InventoryErrors.UserContextRequired);
     }
 
     var tenantId = new BusinessId(businessId);
+    var currentBranchId = new BranchId(branchId);
     var page = Math.Max(1, query.Page);
     var pageSize = Math.Clamp(query.PageSize, 1, 100);
-    var total = await inventory.CountMovementsAsync(tenantId, query.ProductId, cancellationToken);
+    var total = await inventory.CountMovementsAsync(
+      tenantId,
+      currentBranchId,
+      query.ProductId,
+      cancellationToken);
     var items = await inventory.ListMovementsAsync(
       tenantId,
+      currentBranchId,
       query.ProductId,
       page,
       pageSize,

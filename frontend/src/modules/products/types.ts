@@ -37,6 +37,8 @@ export type ProductListResponse = {
   pageSize: number
   totalItems: number
   totalPages: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
 }
 
 export type ProductFilters = {
@@ -46,6 +48,16 @@ export type ProductFilters = {
   categoryId: string
   page: number
   pageSize: number
+  sortBy: string
+  sortDirection: string
+}
+
+export type Category = {
+  id: string
+  businessId: string
+  name: string
+  description: string | null
+  isActive: boolean
 }
 
 export type CreateProductRequest = {

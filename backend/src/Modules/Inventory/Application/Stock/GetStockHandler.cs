@@ -23,16 +23,18 @@ public sealed class GetStockHandler(
     GetStockQuery query,
     CancellationToken cancellationToken)
   {
-    if (currentUser.BusinessId is not Guid businessId)
+    if (currentUser.BusinessId is not Guid businessId ||
+        currentUser.BranchId is not Guid branchId)
     {
       return Result.Failure<StockListResponse>(InventoryErrors.UserContextRequired);
     }
 
     var tenantId = new BusinessId(businessId);
+    var currentBranchId = new BranchId(branchId);
     var page = Math.Max(1, query.Page);
     var pageSize = Math.Clamp(query.PageSize, 1, 100);
-    var total = await inventory.CountStockAsync(tenantId, cancellationToken);
-    var items = await inventory.ListStockAsync(tenantId, page, pageSize, cancellationToken);
+    var total = await inventory.CountStockAsync(tenantId, currentBranchId, cancellationToken);
+    var items = await inventory.ListStockAsync(tenantId, currentBranchId, page, pageSize, cancellationToken);
 
     return Result.Success(new StockListResponse(
       items.Select(InventoryResponseMapper.ToResponse).ToArray(),

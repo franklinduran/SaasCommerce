@@ -6,4 +6,6 @@ public sealed record GetProductsQuery(
   Guid? CategoryId,
   bool? IsActive,
   int Page,
-  int PageSize);
+  int PageSize,
+  string? SortBy,
+  string? SortDirection);

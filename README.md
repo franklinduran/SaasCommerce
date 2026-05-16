@@ -276,6 +276,7 @@ La base modular queda protegida con pruebas ejecutables:
 - `Product` administra datos comerciales reales: descripcion, SKU, barcode, unidad de medida, precio venta, costo, mayorista, precio minimo, impuestos, codigos internos/proveedor, variantes y atributos JSON.
 - `Product` define su politica de inventario: `TrackInventory`, `MinimumStock`, `MaximumStock`, `ReorderPoint` y `AllowNegativeStock`.
 - `Inventory` administra existencias y movimientos: cantidad anterior, cantidad nueva, cantidad del ajuste, razon, usuario y tenant.
+- `Inventory` separa stock y movimientos por `BusinessId` y `BranchId`; un producto puede tener stock independiente por sucursal.
 - `Inventory` consulta la politica publica de inventario del producto antes de ajustar stock; servicios y productos sin `TrackInventory` no aceptan ajustes.
 - `Inventory` no referencia infraestructura de `Catalog`; usa contratos publicos/read models como frontera.
 - La API expone endpoints autenticados:
@@ -285,6 +286,9 @@ POST /api/catalog/products
 PUT  /api/catalog/products/{id}
 GET  /api/catalog/products/{id}
 GET  /api/catalog/products
+POST /api/catalog/categories
+PUT  /api/catalog/categories/{id}
+GET  /api/catalog/categories
 POST /api/inventory/adjustments
 GET  /api/inventory/stock
 GET  /api/inventory/movements
@@ -299,7 +303,10 @@ GET  /api/inventory/movements
 - `/products` prioriza busqueda, filtros, listado y paginacion; no muestra formularios grandes en el flujo principal.
 - Crear y editar productos se hace en un drawer lateral reutilizando el mismo formulario por secciones.
 - El listado soporta filtros por `query`, `productType`, `isActive`, `categoryId`, `page` y `pageSize`.
-- `GET /api/catalog/products` devuelve `items`, `page`, `pageSize`, `totalItems` y `totalPages`.
+- `GET /api/catalog/products` soporta `sortBy` y `sortDirection` con ordenamiento seguro.
+- `GET /api/catalog/products` devuelve `items`, `page`, `pageSize`, `totalItems`, `totalPages`, `hasPreviousPage` y `hasNextPage`.
+- `pageSize` permitido: 10, 25 o 50.
+- El filtro de categoria consume `GET /api/catalog/categories`; no se escribe el `categoryId` manualmente en la UI.
 - La tabla incluye producto, tipo, SKU/barcode, unidad, precio, politica de stock, estado y acciones.
 - La UI incluye skeleton de tabla, empty state, error state con reintento, paginacion anterior/siguiente y selector de 10, 25 o 50 registros.
 

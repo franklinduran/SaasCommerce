@@ -12,6 +12,7 @@ internal static class InventoryResponseMapper
     return new StockItemResponse(
       stockItem.Id,
       stockItem.BusinessId.Value,
+      stockItem.BranchId.Value,
       stockItem.ProductId,
       stockItem.Quantity);
   }
@@ -23,6 +24,7 @@ internal static class InventoryResponseMapper
     return new InventoryMovementResponse(
       movement.Id,
       movement.BusinessId.Value,
+      movement.BranchId.Value,
       movement.ProductId,
       movement.PreviousStock,
       movement.NewStock,

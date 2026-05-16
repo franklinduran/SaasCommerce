@@ -22,6 +22,10 @@ public sealed class StockItemConfiguration : IEntityTypeConfiguration<StockItem>
       .HasConversion(id => id.Value, value => new BusinessId(value))
       .IsRequired();
 
+    builder.Property(stockItem => stockItem.BranchId)
+      .HasConversion(id => id.Value, value => new BranchId(value))
+      .IsRequired();
+
     builder.Property(stockItem => stockItem.Quantity)
       .HasPrecision(18, 3)
       .IsRequired();
@@ -29,7 +33,7 @@ public sealed class StockItemConfiguration : IEntityTypeConfiguration<StockItem>
     builder.Property(stockItem => stockItem.CreatedAt)
       .IsRequired();
 
-    builder.HasIndex(stockItem => new { stockItem.BusinessId, stockItem.ProductId })
+    builder.HasIndex(stockItem => new { stockItem.BusinessId, stockItem.BranchId, stockItem.ProductId })
       .IsUnique();
   }
 }

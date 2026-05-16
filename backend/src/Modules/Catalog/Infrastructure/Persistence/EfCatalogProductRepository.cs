@@ -48,15 +48,14 @@ public sealed class EfCatalogProductRepository(AppDbContext dbContext) : ICatalo
     BusinessId businessId,
     ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => ApplyFilters(Products(businessId), criteria)
+    => ApplyFilters(Products(businessId).AsNoTracking(), criteria)
       .CountAsync(cancellationToken);
 
   public async Task<IReadOnlyCollection<Product>> ListAsync(
     BusinessId businessId,
     ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default)
-    => await ApplyFilters(Products(businessId), criteria)
-      .OrderBy(product => product.Name)
+    => await ApplySorting(ApplyFilters(Products(businessId).AsNoTracking(), criteria), criteria)
       .Skip((criteria.Page - 1) * criteria.PageSize)
       .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
@@ -97,4 +96,19 @@ public sealed class EfCatalogProductRepository(AppDbContext dbContext) : ICatalo
 
     return query;
   }
+
+  private static IOrderedQueryable<Product> ApplySorting(
+    IQueryable<Product> query,
+    ProductSearchCriteria criteria)
+    => (criteria.SortBy, criteria.SortDirection) switch
+    {
+      (ProductSortOption.Sku, SortDirection.Desc) => query.OrderByDescending(product => product.Sku),
+      (ProductSortOption.Sku, _) => query.OrderBy(product => product.Sku),
+      (ProductSortOption.SalePrice, SortDirection.Desc) => query.OrderByDescending(product => product.SalePrice),
+      (ProductSortOption.SalePrice, _) => query.OrderBy(product => product.SalePrice),
+      (ProductSortOption.CreatedAt, SortDirection.Desc) => query.OrderByDescending(product => product.CreatedAt),
+      (ProductSortOption.CreatedAt, _) => query.OrderBy(product => product.CreatedAt),
+      (ProductSortOption.Name, SortDirection.Desc) => query.OrderByDescending(product => product.Name),
+      _ => query.OrderBy(product => product.Name),
+    };
 }

@@ -20,6 +20,14 @@ public static class CatalogErrors
     "catalog.duplicate_barcode",
     "A product with the same barcode already exists for this business.");
 
+  public static readonly DomainError CategoryNotFound = new(
+    "catalog.category_not_found",
+    "Category was not found.");
+
+  public static readonly DomainError DuplicateCategory = new(
+    "catalog.duplicate_category",
+    "A category with the same name already exists for this business.");
+
   public static readonly DomainError InvalidProduct = new(
     "catalog.invalid_product",
     "Product data is invalid for its type, pricing, unit or inventory policy.");

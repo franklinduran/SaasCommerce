@@ -22,6 +22,10 @@ public sealed class InventoryMovementConfiguration : IEntityTypeConfiguration<In
       .HasConversion(id => id.Value, value => new BusinessId(value))
       .IsRequired();
 
+    builder.Property(movement => movement.BranchId)
+      .HasConversion(id => id.Value, value => new BranchId(value))
+      .IsRequired();
+
     builder.Property(movement => movement.PreviousStock)
       .HasPrecision(18, 3)
       .IsRequired();
@@ -42,6 +46,6 @@ public sealed class InventoryMovementConfiguration : IEntityTypeConfiguration<In
     builder.Property(movement => movement.CreatedAt)
       .IsRequired();
 
-    builder.HasIndex(movement => new { movement.BusinessId, movement.ProductId, movement.CreatedAt });
+    builder.HasIndex(movement => new { movement.BusinessId, movement.BranchId, movement.ProductId, movement.CreatedAt });
   }
 }

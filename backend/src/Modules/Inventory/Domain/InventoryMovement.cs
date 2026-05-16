@@ -16,6 +16,7 @@ public sealed class InventoryMovement
   {
     Id = id;
     BusinessId = snapshot.BusinessId;
+    BranchId = snapshot.BranchId;
     ProductId = snapshot.ProductId;
     PreviousStock = snapshot.PreviousStock;
     NewStock = snapshot.NewStock;
@@ -28,6 +29,8 @@ public sealed class InventoryMovement
   public Guid Id { get; private set; }
 
   public BusinessId BusinessId { get; private set; }
+
+  public BranchId BranchId { get; private set; }
 
   public Guid ProductId { get; private set; }
 
@@ -46,6 +49,7 @@ public sealed class InventoryMovement
 
 public sealed record InventoryMovementSnapshot(
   BusinessId BusinessId,
+  BranchId BranchId,
   Guid ProductId,
   decimal PreviousStock,
   decimal NewStock,

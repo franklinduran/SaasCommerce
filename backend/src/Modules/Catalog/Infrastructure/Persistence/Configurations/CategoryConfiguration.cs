@@ -26,11 +26,16 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
       .HasMaxLength(120)
       .IsRequired();
 
+    builder.Property(category => category.Description)
+      .HasMaxLength(300);
+
     builder.Property(category => category.IsActive)
       .IsRequired();
 
     builder.Property(category => category.CreatedAt)
       .IsRequired();
+
+    builder.Property(category => category.UpdatedAt);
 
     builder.HasIndex(category => new { category.BusinessId, category.Name })
       .IsUnique();

@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using SaasCommerce.Modules.Catalog.Application.Abstractions;
+using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
@@ -25,6 +26,7 @@ public static class ModulesServiceCollectionExtensions
     ArgumentNullException.ThrowIfNull(services);
 
     services.AddValidatorsFromAssembly(ModulesAssemblyReference.Assembly);
+    services.AddScoped<ICatalogCategoryRepository, EfCatalogCategoryRepository>();
     services.AddScoped<ICatalogProductRepository, EfCatalogProductRepository>();
     services.AddScoped<IProductInventoryPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
@@ -36,8 +38,13 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
     services.AddScoped<CreateProductHandler>();
     services.AddScoped<UpdateProductHandler>();
+    services.AddScoped<ActivateProductHandler>();
+    services.AddScoped<DeactivateProductHandler>();
     services.AddScoped<GetProductHandler>();
     services.AddScoped<GetProductsHandler>();
+    services.AddScoped<CreateCategoryHandler>();
+    services.AddScoped<UpdateCategoryHandler>();
+    services.AddScoped<GetCategoriesHandler>();
     services.AddScoped<AdjustInventoryHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();

@@ -1,6 +1,7 @@
 export type StockItem = {
   id: string
   businessId: string
+  branchId: string
   productId: string
   quantity: number
 }
@@ -8,6 +9,7 @@ export type StockItem = {
 export type InventoryMovement = {
   id: string
   businessId: string
+  branchId: string
   productId: string
   previousStock: number
   newStock: number

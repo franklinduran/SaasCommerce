@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
@@ -115,7 +116,9 @@ public sealed class CatalogInventoryTests
       null,
       true,
       2,
-      10));
+      10,
+      "name",
+      "asc"));
 
     result.IsSuccess.Should().BeTrue();
     result.Value.Items.Should().HaveCount(2);
@@ -123,6 +126,168 @@ public sealed class CatalogInventoryTests
     result.Value.PageSize.Should().Be(10);
     result.Value.TotalItems.Should().Be(12);
     result.Value.TotalPages.Should().Be(2);
+    result.Value.HasPreviousPage.Should().BeTrue();
+    result.Value.HasNextPage.Should().BeFalse();
+  }
+
+  [Fact]
+  public async Task CreateCategoryShouldPersistCategoryForCurrentBusiness()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = CreateCategoryHandler(dbContext, currentUser);
+
+    var result = await handler.Handle(new CreateCategoryCommand("Bebidas", "Productos liquidos"));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.BusinessId.Should().Be(currentUser.BusinessId!.Value);
+    result.Value.Name.Should().Be("Bebidas");
+    result.Value.Description.Should().Be("Productos liquidos");
+    result.Value.IsActive.Should().BeTrue();
+  }
+
+  [Fact]
+  public async Task CreateCategoryShouldRejectDuplicateNameInsideSameBusiness()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = CreateCategoryHandler(dbContext, currentUser);
+
+    await handler.Handle(new CreateCategoryCommand("Bebidas", null));
+    var duplicate = await handler.Handle(new CreateCategoryCommand("Bebidas", null));
+
+    duplicate.IsFailure.Should().BeTrue();
+    duplicate.Error.Should().Be(CatalogErrors.DuplicateCategory);
+  }
+
+  [Fact]
+  public async Task UpdateCategoryShouldUpdateOnlyCurrentBusinessCategory()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var createHandler = CreateCategoryHandler(dbContext, currentUser);
+    var updateHandler = UpdateCategoryHandler(dbContext, currentUser);
+
+    var created = await createHandler.Handle(new CreateCategoryCommand("Bebidas", null));
+    var result = await updateHandler.Handle(new UpdateCategoryCommand(
+      created.Value.Id,
+      "Bebidas frias",
+      "Nevera",
+      false));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Name.Should().Be("Bebidas frias");
+    result.Value.Description.Should().Be("Nevera");
+    result.Value.IsActive.Should().BeFalse();
+  }
+
+  [Fact]
+  public async Task GetCategoriesShouldReturnOnlyCurrentBusinessCategories()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var otherUser = TestCurrentUser.Create();
+
+    await CreateCategoryHandler(dbContext, currentUser)
+      .Handle(new CreateCategoryCommand("Bebidas", null));
+    await CreateCategoryHandler(dbContext, otherUser)
+      .Handle(new CreateCategoryCommand("Ferreteria", null));
+
+    var result = await new GetCategoriesHandler(
+        new EfCatalogCategoryRepository(dbContext),
+        currentUser)
+      .Handle();
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Should().ContainSingle();
+    result.Value.Single().Name.Should().Be("Bebidas");
+  }
+
+  [Fact]
+  public async Task GetProductsShouldRejectUnsupportedPageSize()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = new GetProductsHandler(new EfCatalogProductRepository(dbContext), currentUser);
+
+    var result = await handler.Handle(new GetProductsQuery(null, null, null, true, 1, 20, "name", "asc"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CatalogErrors.InvalidProduct);
+  }
+
+  [Fact]
+  public async Task GetProductsShouldSortBySalePriceDescending()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var createHandler = CreateProductHandler(dbContext, currentUser);
+    var listHandler = new GetProductsHandler(new EfCatalogProductRepository(dbContext), currentUser);
+
+    await createHandler.Handle(CreateProductCommand("Producto barato", "SKU-LOW", salePrice: 100));
+    await createHandler.Handle(CreateProductCommand("Producto caro", "SKU-HIGH", salePrice: 300));
+
+    var result = await listHandler.Handle(new GetProductsQuery(null, null, null, true, 1, 10, "salePrice", "desc"));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Items.First().Name.Should().Be("Producto caro");
+  }
+
+  [Fact]
+  public async Task DeactivateProductShouldSetProductInactive()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var createHandler = CreateProductHandler(dbContext, currentUser);
+    var created = await createHandler.Handle(CreateProductCommand("Cafe", "SKU-001"));
+    var handler = new DeactivateProductHandler(
+      new EfCatalogProductRepository(dbContext),
+      currentUser,
+      new FixedClock(),
+      new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new DeactivateProductCommand(created.Value.Id));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.IsActive.Should().BeFalse();
+  }
+
+  [Fact]
+  public async Task ActivateProductShouldSetProductActive()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var createHandler = CreateProductHandler(dbContext, currentUser);
+    var created = await createHandler.Handle(CreateProductCommand("Cafe", "SKU-001"));
+    var repository = new EfCatalogProductRepository(dbContext);
+    await new DeactivateProductHandler(repository, currentUser, new FixedClock(), new EfUnitOfWork(dbContext))
+      .Handle(new DeactivateProductCommand(created.Value.Id));
+
+    var result = await new ActivateProductHandler(repository, currentUser, new FixedClock(), new EfUnitOfWork(dbContext))
+      .Handle(new ActivateProductCommand(created.Value.Id));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.IsActive.Should().BeTrue();
+  }
+
+  [Fact]
+  public async Task DeactivateProductShouldNotUpdateOtherTenantProduct()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var otherUser = TestCurrentUser.Create();
+    var created = await CreateProductHandler(dbContext, otherUser)
+      .Handle(CreateProductCommand("Cafe", "SKU-001"));
+    var handler = new DeactivateProductHandler(
+      new EfCatalogProductRepository(dbContext),
+      currentUser,
+      new FixedClock(),
+      new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new DeactivateProductCommand(created.Value.Id));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CatalogErrors.ProductNotFound);
   }
 
   [Fact]
@@ -143,9 +308,11 @@ public sealed class CatalogInventoryTests
 
     result.IsSuccess.Should().BeTrue();
     result.Value.StockItem.ProductId.Should().Be(productId);
+    result.Value.StockItem.BranchId.Should().Be(currentUser.BranchId!.Value);
     result.Value.StockItem.Quantity.Should().Be(12);
     result.Value.Movement.PreviousStock.Should().Be(0);
     result.Value.Movement.NewStock.Should().Be(12);
+    result.Value.Movement.BranchId.Should().Be(currentUser.BranchId!.Value);
     result.Value.Movement.UserId.Should().Be(currentUser.UserId!.Value);
   }
 
@@ -191,11 +358,57 @@ public sealed class CatalogInventoryTests
     result.Error.Should().Be(InventoryErrors.ProductDoesNotTrackInventory);
   }
 
+  [Fact]
+  public async Task GetStockShouldFilterByCurrentBranch()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var otherBranchUser = currentUser with { BranchId = Guid.NewGuid() };
+    var firstProductId = Guid.NewGuid();
+    var secondProductId = Guid.NewGuid();
+
+    await CreateInventoryHandler(
+        dbContext,
+        currentUser,
+        ProductInventoryPolicy(firstProductId, currentUser.BusinessId!.Value))
+      .Handle(new AdjustInventoryCommand(firstProductId, 5, "InitialLoad"));
+    await CreateInventoryHandler(
+        dbContext,
+        otherBranchUser,
+        ProductInventoryPolicy(secondProductId, currentUser.BusinessId!.Value))
+      .Handle(new AdjustInventoryCommand(secondProductId, 8, "InitialLoad"));
+
+    var result = await new GetStockHandler(new EfInventoryRepository(dbContext), currentUser)
+      .Handle(new GetStockQuery(1, 10));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Items.Should().ContainSingle();
+    result.Value.Items.Single().ProductId.Should().Be(firstProductId);
+  }
+
   private static CreateProductHandler CreateProductHandler(
     AppDbContext dbContext,
     ICurrentUserService currentUser)
     => new(
       new EfCatalogProductRepository(dbContext),
+      currentUser,
+      new FixedClock(),
+      new EfUnitOfWork(dbContext));
+
+  private static CreateCategoryHandler CreateCategoryHandler(
+    AppDbContext dbContext,
+    ICurrentUserService currentUser)
+    => new(
+      new EfCatalogCategoryRepository(dbContext),
+      currentUser,
+      new FixedClock(),
+      new EfUnitOfWork(dbContext));
+
+  private static UpdateCategoryHandler UpdateCategoryHandler(
+    AppDbContext dbContext,
+    ICurrentUserService currentUser)
+    => new(
+      new EfCatalogCategoryRepository(dbContext),
       currentUser,
       new FixedClock(),
       new EfUnitOfWork(dbContext));
@@ -217,7 +430,8 @@ public sealed class CatalogInventoryTests
     string? barcode = null,
     string productType = "Simple",
     string unitOfMeasure = "Unit",
-    bool trackInventory = true)
+    bool trackInventory = true,
+    decimal salePrice = 250)
     => new(
       productType,
       name,
@@ -227,7 +441,7 @@ public sealed class CatalogInventoryTests
       null,
       null,
       unitOfMeasure,
-      250,
+      salePrice,
       150,
       null,
       null,
@@ -289,17 +503,17 @@ public sealed class CatalogInventoryTests
           : null);
   }
 
-  private sealed class TestCurrentUser : ICurrentUserService
+  private sealed record TestCurrentUser : ICurrentUserService
   {
-    public Guid? UserId { get; private init; }
+    public Guid? UserId { get; init; }
 
-    public Guid? BusinessId { get; private init; }
+    public Guid? BusinessId { get; init; }
 
-    public Guid? BranchId { get; private init; }
+    public Guid? BranchId { get; init; }
 
-    public IReadOnlyCollection<string> Roles { get; private init; } = [];
+    public IReadOnlyCollection<string> Roles { get; init; } = [];
 
-    public bool IsAuthenticated { get; private init; }
+    public bool IsAuthenticated { get; init; }
 
     public static TestCurrentUser Create()
       => new()

@@ -111,6 +111,12 @@ public sealed class Product
     UpdatedAt = updatedAt;
   }
 
+  public void Activate(DateTimeOffset updatedAt)
+  {
+    IsActive = true;
+    UpdatedAt = updatedAt;
+  }
+
   private void ApplyDetails(
     ProductIdentity identity,
     ProductCodes codes,

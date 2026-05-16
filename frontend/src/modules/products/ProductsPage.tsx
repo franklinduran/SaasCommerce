@@ -6,12 +6,19 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
+  ToggleLeft,
+  ToggleRight,
   X,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { ProductForm } from '@/modules/products/components/ProductForm'
-import { useProductsQuery } from '@/modules/products/hooks/useProducts'
+import {
+  useActivateProductMutation,
+  useCategoriesQuery,
+  useDeactivateProductMutation,
+  useProductsQuery,
+} from '@/modules/products/hooks/useProducts'
 import type { Product, ProductFilters } from '@/modules/products/types'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardHeader } from '@/shared/components/ui/card'
@@ -36,16 +43,21 @@ export function ProductsPage() {
     pageSize: 10,
     productType: '',
     query: '',
+    sortBy: 'name',
+    sortDirection: 'asc',
   })
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const products = useProductsQuery(filters)
+  const categories = useCategoriesQuery()
+  const activateProduct = useActivateProductMutation()
+  const deactivateProduct = useDeactivateProductMutation()
   const items = products.data?.items ?? []
   const totalItems = products.data?.totalItems ?? 0
   const totalPages = products.data?.totalPages ?? 0
-  const canGoPrevious = filters.page > 1
-  const canGoNext = totalPages > 0 && filters.page < totalPages
+  const canGoPrevious = products.data?.hasPreviousPage ?? filters.page > 1
+  const canGoNext = products.data?.hasNextPage ?? (totalPages > 0 && filters.page < totalPages)
 
   const drawerTitle = useMemo(
     () => (drawerMode === 'edit' ? 'Editar producto' : 'Crear producto'),
@@ -80,6 +92,25 @@ export function ProductsPage() {
   function handleSaved() {
     closeDrawer()
     setSavedMessage('Producto guardado correctamente.')
+  }
+
+  async function handleToggleStatus(product: Product) {
+    if (product.isActive) {
+      const confirmed = window.confirm(
+        `Desactivar ${product.name}? El producto no se eliminara, pero no debe venderse mientras este inactivo.`,
+      )
+
+      if (!confirmed) {
+        return
+      }
+
+      await deactivateProduct.mutateAsync(product.id)
+      setSavedMessage('Producto desactivado correctamente.')
+      return
+    }
+
+    await activateProduct.mutateAsync(product.id)
+    setSavedMessage('Producto activado correctamente.')
   }
 
   return (
@@ -136,12 +167,18 @@ export function ProductsPage() {
               <option value="true">Activos</option>
               <option value="false">Inactivos</option>
             </select>
-            <input
-              className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/15"
+            <select
+              className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
               onChange={(event) => updateFilters({ categoryId: event.target.value })}
-              placeholder="Categoria ID"
               value={filters.categoryId}
-            />
+            >
+              <option value="">Todas las categorias</option>
+              {categories.data?.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
             <Button onClick={() => products.refetch()} type="button" variant="secondary">
               <SlidersHorizontal size={16} />
               Filtrar
@@ -227,10 +264,22 @@ export function ProductsPage() {
                     <StatusBadge isActive={product.isActive} />
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <Button onClick={() => openEditDrawer(product)} size="sm" type="button" variant="secondary">
-                      <Pencil size={14} />
-                      Editar
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button onClick={() => openEditDrawer(product)} size="sm" type="button" variant="secondary">
+                        <Pencil size={14} />
+                        Editar
+                      </Button>
+                      <Button
+                        disabled={activateProduct.isPending || deactivateProduct.isPending}
+                        onClick={() => void handleToggleStatus(product)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        {product.isActive ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
+                        {product.isActive ? 'Desactivar' : 'Activar'}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

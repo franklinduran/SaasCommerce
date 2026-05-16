@@ -10,11 +10,14 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
 {
   public Task<StockItem?> GetStockItemAsync(
     BusinessId businessId,
+    BranchId branchId,
     Guid productId,
     CancellationToken cancellationToken = default)
     => dbContext.Set<StockItem>()
       .SingleOrDefaultAsync(
-        stockItem => stockItem.BusinessId == businessId && stockItem.ProductId == productId,
+        stockItem => stockItem.BusinessId == businessId &&
+          stockItem.BranchId == branchId &&
+          stockItem.ProductId == productId,
         cancellationToken);
 
   public Task AddStockItemAsync(
@@ -35,17 +38,24 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
     return dbContext.Set<InventoryMovement>().AddAsync(movement, cancellationToken).AsTask();
   }
 
-  public Task<int> CountStockAsync(BusinessId businessId, CancellationToken cancellationToken = default)
+  public Task<int> CountStockAsync(
+    BusinessId businessId,
+    BranchId branchId,
+    CancellationToken cancellationToken = default)
     => dbContext.Set<StockItem>()
-      .CountAsync(stockItem => stockItem.BusinessId == businessId, cancellationToken);
+      .CountAsync(
+        stockItem => stockItem.BusinessId == businessId && stockItem.BranchId == branchId,
+        cancellationToken);
 
   public async Task<IReadOnlyCollection<StockItem>> ListStockAsync(
     BusinessId businessId,
+    BranchId branchId,
     int page,
     int pageSize,
     CancellationToken cancellationToken = default)
     => await dbContext.Set<StockItem>()
-      .Where(stockItem => stockItem.BusinessId == businessId)
+      .AsNoTracking()
+      .Where(stockItem => stockItem.BusinessId == businessId && stockItem.BranchId == branchId)
       .OrderBy(stockItem => stockItem.ProductId)
       .Skip((page - 1) * pageSize)
       .Take(pageSize)
@@ -53,18 +63,20 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
 
   public Task<int> CountMovementsAsync(
     BusinessId businessId,
+    BranchId branchId,
     Guid? productId,
     CancellationToken cancellationToken = default)
-    => ApplyMovementFilters(dbContext.Set<InventoryMovement>(), businessId, productId)
+    => ApplyMovementFilters(dbContext.Set<InventoryMovement>().AsNoTracking(), businessId, branchId, productId)
       .CountAsync(cancellationToken);
 
   public async Task<IReadOnlyCollection<InventoryMovement>> ListMovementsAsync(
     BusinessId businessId,
+    BranchId branchId,
     Guid? productId,
     int page,
     int pageSize,
     CancellationToken cancellationToken = default)
-    => await ApplyMovementFilters(dbContext.Set<InventoryMovement>(), businessId, productId)
+    => await ApplyMovementFilters(dbContext.Set<InventoryMovement>().AsNoTracking(), businessId, branchId, productId)
       .OrderByDescending(movement => movement.CreatedAt)
       .Skip((page - 1) * pageSize)
       .Take(pageSize)
@@ -73,9 +85,10 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
   private static IQueryable<InventoryMovement> ApplyMovementFilters(
     IQueryable<InventoryMovement> query,
     BusinessId businessId,
+    BranchId branchId,
     Guid? productId)
   {
-    query = query.Where(movement => movement.BusinessId == businessId);
+    query = query.Where(movement => movement.BusinessId == businessId && movement.BranchId == branchId);
 
     if (productId.HasValue)
     {

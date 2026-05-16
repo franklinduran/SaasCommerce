@@ -9,6 +9,7 @@ using SaasCommerce.BuildingBlocks.Contracts.Common;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.Modules;
+using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Requests;
 using SaasCommerce.Modules.Identity.Application.Account;
@@ -369,6 +370,34 @@ app.MapGet(
   })
   .RequireAuthorization();
 
+app.MapPut(
+  "/api/catalog/products/{id:guid}/activate",
+  async (
+    Guid id,
+    ActivateProductHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new ActivateProductCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+  })
+  .RequireAuthorization();
+
+app.MapPut(
+  "/api/catalog/products/{id:guid}/deactivate",
+  async (
+    Guid id,
+    DeactivateProductHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new DeactivateProductCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+  })
+  .RequireAuthorization();
+
 app.MapGet(
   "/api/catalog/products",
   async (
@@ -384,8 +413,56 @@ app.MapGet(
         request.CategoryId,
         request.IsActive,
         request.Page ?? 1,
-        request.PageSize ?? 10),
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
       cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapPost(
+  "/api/catalog/categories",
+  async (
+    CreateCategoryRequest request,
+    CreateCategoryHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new CreateCategoryCommand(request.Name, request.Description),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization();
+
+app.MapPut(
+  "/api/catalog/categories/{id:guid}",
+  async (
+    Guid id,
+    UpdateCategoryRequest request,
+    UpdateCategoryHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new UpdateCategoryCommand(id, request.Name, request.Description, request.IsActive),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider, StatusCodes.Status404NotFound);
+  })
+  .RequireAuthorization();
+
+app.MapGet(
+  "/api/catalog/categories",
+  async (
+    GetCategoriesHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(cancellationToken);
 
     return ToApiResult(result, correlationIdProvider);
   })

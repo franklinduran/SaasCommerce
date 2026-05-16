@@ -5,4 +5,6 @@ public sealed record ProductListResponse(
   int Page,
   int PageSize,
   int TotalItems,
-  int TotalPages);
+  int TotalPages,
+  bool HasPreviousPage,
+  bool HasNextPage);
