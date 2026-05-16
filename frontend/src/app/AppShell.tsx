@@ -5,8 +5,9 @@ import {
   CircleDollarSign,
   LayoutDashboard,
   LogOut,
-  Menu,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   ReceiptText,
   Search,
   Settings,
@@ -63,6 +64,7 @@ export function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const pageTitle = pageTitles[location.pathname] ?? 'Inicio'
+  const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
 
   function handleLogout() {
     clearSession()
@@ -78,7 +80,14 @@ export function AppShell() {
             sidebarCollapsed ? 'lg:w-[88px]' : 'lg:w-[260px]',
           )}
         >
-          <div className="flex h-16 shrink-0 items-center justify-between px-4">
+          <div
+            className={cn(
+              'flex shrink-0 items-center px-4',
+              sidebarCollapsed
+                ? 'h-[104px] flex-col justify-center gap-3 lg:px-0'
+                : 'h-16 justify-between',
+            )}
+          >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white">
                 <CircleDollarSign aria-hidden="true" size={19} />
@@ -93,14 +102,17 @@ export function AppShell() {
               )}
             </div>
             <Button
-              className="text-stone-700 hover:bg-stone-200 hover:text-stone-900"
-              aria-label="Alternar menu"
+              className={cn(
+                'h-9 w-9 shrink-0 rounded-md p-0 text-stone-700 hover:bg-stone-200 hover:text-stone-950',
+                sidebarCollapsed && 'bg-white shadow-sm ring-1 ring-stone-200',
+              )}
+              aria-label={sidebarCollapsed ? 'Expandir menu' : 'Contraer menu'}
               onClick={toggleSidebar}
               size="icon"
-              title="Alternar menu"
+              title={sidebarCollapsed ? 'Expandir menu' : 'Contraer menu'}
               variant="ghost"
             >
-              <Menu size={18} />
+              <ToggleSidebarIcon aria-hidden="true" size={17} strokeWidth={2} />
             </Button>
           </div>
 
