@@ -14,6 +14,7 @@ internal static class InventoryResponseMapper
       stockItem.Id,
       stockItem.BusinessId.Value,
       stockItem.BranchId.Value,
+      null,
       stockItem.ProductId,
       product?.Name ?? "Producto no encontrado",
       product?.Sku ?? string.Empty,
@@ -22,7 +23,10 @@ internal static class InventoryResponseMapper
       stockItem.Quantity,
       product?.MinimumStock,
       product?.ReorderPoint,
-      product?.MinimumStock is decimal minimumStock && stockItem.Quantity <= minimumStock);
+      product?.MinimumStock is decimal minimumStock && stockItem.Quantity <= minimumStock,
+      stockItem.Quantity <= 0,
+      GetStockStatus(stockItem.Quantity, product?.MinimumStock),
+      stockItem.UpdatedAt ?? stockItem.CreatedAt);
   }
 
   public static InventoryMovementResponse ToResponse(InventoryMovement movement)
@@ -33,12 +37,28 @@ internal static class InventoryResponseMapper
       movement.Id,
       movement.BusinessId.Value,
       movement.BranchId.Value,
+      null,
       movement.ProductId,
+      null,
       movement.PreviousStock,
       movement.NewStock,
       movement.Quantity,
       movement.Reason.ToString(),
+      movement.SaleId,
+      movement.Note,
       movement.UserId,
       movement.CreatedAt);
+  }
+
+  public static string GetStockStatus(decimal quantity, decimal? minimumStock)
+  {
+    if (quantity <= 0)
+    {
+      return "OutOfStock";
+    }
+
+    return minimumStock is decimal threshold && quantity <= threshold
+      ? "LowStock"
+      : "Available";
   }
 }

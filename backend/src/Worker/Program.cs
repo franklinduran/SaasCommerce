@@ -35,6 +35,9 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<GenerateInvoiceConsumer>();
     massTransit.AddConsumer<SaleCompletedConsumer>();
     massTransit.AddConsumer<SaleFailedConsumer>();
+    massTransit.AddConsumer<InventoryAdjustedConsumer>();
+    massTransit.AddConsumer<InventoryDeductedConsumer>();
+    massTransit.AddConsumer<LowStockDetectedConsumer>();
     massTransit.AddSagaStateMachine<SaleStateMachine, SaleSagaState>()
       .EntityFrameworkRepository(repository =>
       {

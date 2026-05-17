@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
@@ -182,6 +183,112 @@ public sealed class SalesConsumerTests
     await useCase.Received(1).ExecuteAsync(message, Arg.Any<CancellationToken>());
   }
 
+  [Fact]
+  public async Task InventoryDeductedConsumer_ShouldProcessEvent_WhenMessageIsValid()
+  {
+    var message = InventoryDeducted();
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new InventoryDeductedConsumer(
+      InboxStore(message.EventId, nameof(InventoryDeductedConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<InventoryDeductedConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "inventory.stockChanged",
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task InventoryAdjustedConsumer_ShouldNotifyAdjustedAndStockChanged()
+  {
+    var message = new InventoryAdjustedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      3,
+      7,
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new InventoryAdjustedConsumer(
+      InboxStore(message.EventId, nameof(InventoryAdjustedConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<InventoryAdjustedConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "inventory.adjusted",
+      message,
+      Arg.Any<CancellationToken>());
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "inventory.stockChanged",
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task InventoryDeductedConsumer_ShouldNotDeductTwice_WhenMessageIsDuplicated()
+  {
+    var message = InventoryDeducted();
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new InventoryDeductedConsumer(
+      InboxStore(message.EventId, nameof(InventoryDeductedConsumer), alreadyProcessed: true),
+      Clock(),
+      realtime,
+      NullLogger<InventoryDeductedConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.DidNotReceive().NotifyBusinessAsync(
+      Arg.Any<Guid>(),
+      Arg.Any<string>(),
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task LowStockDetectedConsumer_ShouldNotifyBusinessGroup()
+  {
+    var message = new LowStockDetectedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      "Cafe",
+      2,
+      5,
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new LowStockDetectedConsumer(
+      InboxStore(message.EventId, nameof(LowStockDetectedConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<LowStockDetectedConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "inventory.lowStockDetected",
+      Arg.Is<LowStockDetectedNotificationV1>(notification =>
+        notification.BusinessId == message.BusinessId &&
+        notification.ProductId == message.ProductId &&
+        notification.CurrentStock == 2),
+      Arg.Any<CancellationToken>());
+  }
+
   private static StockValidationRequestedEventV1 StockValidationRequested()
     => new(
       Guid.NewGuid(),
@@ -196,6 +303,19 @@ public sealed class SalesConsumerTests
       Now);
 
   private static InventoryDeductionRequestedEventV1 InventoryDeductionRequested()
+    => new(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      [new SaleItemV1(Guid.NewGuid(), 2, 100)],
+      200,
+      "Cash",
+      Now);
+
+  private static InventoryDeductedEventV1 InventoryDeducted()
     => new(
       Guid.NewGuid(),
       Guid.NewGuid(),

@@ -1,3 +1,5 @@
+#pragma warning disable CA1707
+
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -183,6 +185,52 @@ public sealed class StabilizationEndpointTests
     payload.Error!.Code.Should().Be("INVENTORY_STOCK_INSUFFICIENT");
   }
 
+  [Fact]
+  public async Task GetInventory_ShouldReturnAdjustedStockRows()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var created = await CreateProductAsync(
+      client,
+      ProductRequest("Cafe", $"SKU-{Guid.NewGuid():N}", null));
+    await client.PostAsJsonAsync(
+      "/api/inventory/adjustments",
+      new CreateInventoryAdjustmentRequest(created.Id, 1, "InitialStock"));
+
+    var response = await client.GetAsync("/api/inventory?lowStockOnly=true");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<InventoryListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(item => item.ProductId == created.Id && item.IsLowStock);
+  }
+
+  [Fact]
+  public async Task GetInventoryProductDetail_ShouldReturnStockAndMovements()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var created = await CreateProductAsync(
+      client,
+      ProductRequest("Cafe detalle", $"SKU-{Guid.NewGuid():N}", null));
+    await client.PostAsJsonAsync(
+      "/api/inventory/adjustments",
+      new CreateInventoryAdjustmentRequest(created.Id, 3, "InitialStock"));
+
+    var response = await client.GetAsync($"/api/inventory/products/{created.Id}");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<InventoryProductDetailResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.ProductId.Should().Be(created.Id);
+    payload.Data.Branches.Should().Contain(branch => branch.CurrentStock == 3);
+    payload.Data.RecentMovements.Should().Contain(movement => movement.NewStock == 3);
+  }
+
   private static async Task AuthenticateAsync(HttpClient client)
   {
     var loginResponse = await client.PostAsJsonAsync(
@@ -265,3 +313,5 @@ public sealed class StabilizationEndpointTests
         });
       });
 }
+
+#pragma warning restore CA1707

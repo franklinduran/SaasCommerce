@@ -34,7 +34,9 @@ public sealed class GetStockHandler(
     }
 
     var tenantId = new BusinessId(businessId);
-    var currentBranchId = new BranchId(branchId);
+    var requestedBranchId = query.BranchId.HasValue
+      ? new BranchId(query.BranchId.Value)
+      : new BranchId(branchId);
     var page = Math.Max(1, query.Page);
     var pageSize = NormalizePageSize(query.PageSize);
     var products = await productLookupReader.SearchAsync(
@@ -44,18 +46,26 @@ public sealed class GetStockHandler(
         query.ProductType,
         query.CategoryId),
       cancellationToken);
+    if (query.ProductId.HasValue)
+    {
+      products = products
+        .Where(product => product.ProductId == query.ProductId.Value)
+        .ToArray();
+    }
+
     var productsById = products.ToDictionary(product => product.ProductId);
     var criteria = new StockSearchCriteria(
       productsById.Keys.ToArray(),
       RestrictToProductIds: true,
       query.LowStockOnly,
+      query.OutOfStockOnly,
       productsById.ToDictionary(product => product.Key, product => product.Value.MinimumStock),
       page,
       pageSize,
       ParseStockSort(query.SortBy),
       ParseSortDirection(query.SortDirection, InventorySortDirection.Asc));
-    var total = await inventory.CountStockAsync(tenantId, currentBranchId, criteria, cancellationToken);
-    var items = await inventory.ListStockAsync(tenantId, currentBranchId, criteria, cancellationToken);
+    var total = await inventory.CountStockAsync(tenantId, requestedBranchId, criteria, cancellationToken);
+    var items = await inventory.ListStockAsync(tenantId, requestedBranchId, criteria, cancellationToken);
     var totalPages = CalculateTotalPages(total, pageSize);
 
     return Result.Success(new StockListResponse(

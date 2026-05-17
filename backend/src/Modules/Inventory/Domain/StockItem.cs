@@ -41,8 +41,15 @@ public sealed class StockItem
     InventoryMovementReason reason,
     Guid userId,
     bool allowNegativeStock,
-    DateTimeOffset occurredAt)
+    DateTimeOffset occurredAt,
+    Guid? saleId = null,
+    string? note = null)
   {
+    if (quantity == 0)
+    {
+      throw new InvalidOperationException("Movement quantity cannot be zero.");
+    }
+
     var previousStock = Quantity;
     var newStock = previousStock + quantity;
 
@@ -63,8 +70,13 @@ public sealed class StockItem
         previousStock,
         newStock,
         quantity,
-        reason),
+        reason,
+        saleId,
+        note),
       userId,
       occurredAt);
   }
+
+  public bool IsLowStock(decimal? minimumStock)
+    => minimumStock.HasValue && Quantity <= minimumStock.Value;
 }

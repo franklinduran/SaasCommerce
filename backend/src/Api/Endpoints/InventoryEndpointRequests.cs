@@ -1,8 +1,11 @@
 namespace SaasCommerce.Api.Endpoints;
 
 public sealed record InventoryStockEndpointRequest(
+  Guid? ProductId,
+  Guid? BranchId,
   string? Search,
   bool? LowStockOnly,
+  bool? OutOfStockOnly,
   string? ProductType,
   Guid? CategoryId,
   int? Page,

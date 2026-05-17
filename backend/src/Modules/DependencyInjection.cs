@@ -41,6 +41,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IInventoryProductLookupReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IProductSalesPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
+    services.AddScoped<IInventoryReadRepository, EfInventoryReadRepository>();
     services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
     services.AddScoped<ICustomerRepository, EfCustomerRepository>();
     services.AddScoped<ISaleRepository, EfSaleRepository>();
@@ -61,6 +62,8 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateCategoryHandler>();
     services.AddScoped<GetCategoriesHandler>();
     services.AddScoped<AdjustInventoryHandler>();
+    services.AddScoped<GetInventoryHandler>();
+    services.AddScoped<GetInventoryProductDetailHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();
     services.AddScoped<ICreateCustomerUseCase, CreateCustomerUseCase>();

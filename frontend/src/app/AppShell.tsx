@@ -66,8 +66,7 @@ export function AppShell() {
   const clearSession = useAuthStore((state) => state.clearSession)
   const location = useLocation()
   const navigate = useNavigate()
-  const pageTitle = pageTitles[location.pathname] ??
-    (location.pathname.startsWith('/sales/') ? 'Detalle de venta' : 'Inicio')
+  const pageTitle = getPageTitle(location.pathname)
   const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
 
   function handleLogout() {
@@ -192,6 +191,22 @@ export function AppShell() {
       </div>
     </div>
   )
+}
+
+function getPageTitle(pathname: string) {
+  if (pageTitles[pathname]) {
+    return pageTitles[pathname]
+  }
+
+  if (pathname.startsWith('/sales/')) {
+    return 'Detalle de venta'
+  }
+
+  if (pathname.startsWith('/inventory/products/')) {
+    return 'Detalle de inventario'
+  }
+
+  return 'Inicio'
 }
 
 type NavigationSectionProps = {

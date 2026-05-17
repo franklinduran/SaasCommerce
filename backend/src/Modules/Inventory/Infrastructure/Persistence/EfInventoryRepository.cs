@@ -38,9 +38,22 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
     return dbContext.Set<InventoryMovement>().AddAsync(movement, cancellationToken).AsTask();
   }
 
-  public async Task<int> CountStockAsync(
+  public Task<bool> HasSaleMovementAsync(
     BusinessId businessId,
     BranchId branchId,
+    Guid saleId,
+    CancellationToken cancellationToken = default)
+    => dbContext.Set<InventoryMovement>()
+      .AsNoTracking()
+      .AnyAsync(
+        movement => movement.BusinessId == businessId &&
+          movement.BranchId == branchId &&
+          movement.SaleId == saleId,
+        cancellationToken);
+
+  public async Task<int> CountStockAsync(
+    BusinessId businessId,
+    BranchId? branchId,
     StockSearchCriteria criteria,
     CancellationToken cancellationToken = default)
   {
@@ -63,7 +76,7 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
 
   public async Task<IReadOnlyCollection<StockItem>> ListStockAsync(
     BusinessId businessId,
-    BranchId branchId,
+    BranchId? branchId,
     StockSearchCriteria criteria,
     CancellationToken cancellationToken = default)
   {
@@ -129,14 +142,24 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
   private static IQueryable<StockItem> ApplyStockBaseFilters(
     IQueryable<StockItem> query,
     BusinessId businessId,
-    BranchId branchId,
+    BranchId? branchId,
     StockSearchCriteria criteria)
   {
-    query = query.Where(stockItem => stockItem.BusinessId == businessId && stockItem.BranchId == branchId);
+    query = query.Where(stockItem => stockItem.BusinessId == businessId);
+
+    if (branchId.HasValue)
+    {
+      query = query.Where(stockItem => stockItem.BranchId == branchId.Value);
+    }
 
     if (criteria.RestrictToProductIds)
     {
       query = query.Where(stockItem => criteria.ProductIds.Contains(stockItem.ProductId));
+    }
+
+    if (criteria.OutOfStockOnly)
+    {
+      query = query.Where(stockItem => stockItem.Quantity <= 0);
     }
 
     return query;

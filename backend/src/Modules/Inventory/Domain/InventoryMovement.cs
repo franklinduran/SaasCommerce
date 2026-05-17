@@ -14,6 +14,11 @@ public sealed class InventoryMovement
     Guid userId,
     DateTimeOffset createdAt)
   {
+    if (snapshot.Quantity == 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(snapshot), "Movement quantity cannot be zero.");
+    }
+
     Id = id;
     BusinessId = snapshot.BusinessId;
     BranchId = snapshot.BranchId;
@@ -22,6 +27,8 @@ public sealed class InventoryMovement
     NewStock = snapshot.NewStock;
     Quantity = snapshot.Quantity;
     Reason = snapshot.Reason;
+    SaleId = snapshot.SaleId;
+    Note = NormalizeNote(snapshot.Note);
     UserId = userId;
     CreatedAt = createdAt;
   }
@@ -42,9 +49,16 @@ public sealed class InventoryMovement
 
   public InventoryMovementReason Reason { get; private set; }
 
+  public Guid? SaleId { get; private set; }
+
+  public string? Note { get; private set; }
+
   public Guid UserId { get; private set; }
 
   public DateTimeOffset CreatedAt { get; private set; }
+
+  private static string? NormalizeNote(string? note)
+    => string.IsNullOrWhiteSpace(note) ? null : note.Trim();
 }
 
 public sealed record InventoryMovementSnapshot(
@@ -54,4 +68,6 @@ public sealed record InventoryMovementSnapshot(
   decimal PreviousStock,
   decimal NewStock,
   decimal Quantity,
-  InventoryMovementReason Reason);
+  InventoryMovementReason Reason,
+  Guid? SaleId = null,
+  string? Note = null);

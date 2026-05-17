@@ -2,11 +2,28 @@ import { useAuthStore } from '@/modules/auth/authStore'
 import type {
   CreateInventoryAdjustmentRequest,
   InventoryMovementListResponse,
+  InventoryProductDetail,
   MovementFilters,
   StockListResponse,
   StockFilters,
 } from '@/modules/inventory/types'
 import { httpClient } from '@/shared/services/httpClient'
+
+export async function getInventory(filters: StockFilters): Promise<StockListResponse> {
+  const response = await httpClient<StockListResponse>(`/api/inventory?${toQueryString(filters)}`, {
+    accessToken: getAccessToken(),
+  })
+
+  return response.data!
+}
+
+export async function getInventoryProductDetail(productId: string): Promise<InventoryProductDetail> {
+  const response = await httpClient<InventoryProductDetail>(`/api/inventory/products/${productId}`, {
+    accessToken: getAccessToken(),
+  })
+
+  return response.data!
+}
 
 export async function getStock(filters: StockFilters): Promise<StockListResponse> {
   const response = await httpClient<StockListResponse>(`/api/inventory/stock?${toQueryString(filters)}`, {

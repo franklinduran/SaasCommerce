@@ -734,7 +734,50 @@ app.MapPost(
     CancellationToken cancellationToken) =>
   {
     var result = await handler.Handle(
-      new AdjustInventoryCommand(request.ProductId, request.Quantity, request.Reason),
+      new AdjustInventoryCommand(request.ProductId, request.Quantity, request.Reason, request.BranchId, request.Note),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(inventoryTag);
+
+app.MapGet(
+  "/api/inventory",
+  async (
+    [AsParameters] InventoryStockEndpointRequest request,
+    GetInventoryHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetInventoryQuery(
+        request.ProductId,
+        request.BranchId,
+        request.Search,
+        request.LowStockOnly ?? false,
+        request.OutOfStockOnly ?? false,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(inventoryTag);
+
+app.MapGet(
+  "/api/inventory/products/{productId:guid}",
+  async (
+    Guid productId,
+    GetInventoryProductDetailHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetInventoryProductDetailQuery(productId),
       cancellationToken);
 
     return ToApiResult(result, correlationIdProvider);
@@ -752,8 +795,11 @@ app.MapGet(
   {
     var result = await handler.Handle(
       new GetStockQuery(
+        request.ProductId,
+        request.BranchId,
         request.Search,
         request.LowStockOnly ?? false,
+        request.OutOfStockOnly ?? false,
         request.ProductType,
         request.CategoryId,
         request.Page ?? 1,

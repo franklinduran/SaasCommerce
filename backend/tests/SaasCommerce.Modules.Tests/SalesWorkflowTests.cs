@@ -183,7 +183,7 @@ public sealed class SalesWorkflowTests
       new BranchId(scenario.BranchId),
       scenario.ProductId,
       Now);
-    stockItem.ApplyAdjustment(10, InventoryMovementReason.InitialLoad, scenario.UserId, false, Now);
+    stockItem.ApplyAdjustment(10, InventoryMovementReason.InitialStock, scenario.UserId, false, Now);
     await scenario.Inventory.AddStockItemAsync(stockItem);
     var useCase = new DeductSaleInventoryUseCase(
       scenario.ProductPolicies,
@@ -197,8 +197,83 @@ public sealed class SalesWorkflowTests
 
     result.IsSuccess.Should().BeTrue();
     stockItem.Quantity.Should().Be(8);
-    scenario.Inventory.Movements.Should().ContainSingle(movement => movement.Reason == InventoryMovementReason.Sale);
+    scenario.Inventory.Movements.Should().ContainSingle(movement => movement.Reason == InventoryMovementReason.SaleDeduction);
     scenario.Outbox.Events.Should().ContainSingle(@event => @event is InventoryDeductedEventV1);
+  }
+
+  [Fact]
+  public async Task DeductInventoryForSale_ShouldBeIdempotent_WhenSaleWasAlreadyProcessed()
+  {
+    var scenario = TestScenario.Create();
+    scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, true));
+    scenario.InventoryAvailability.Results[scenario.ProductId] = Availability(scenario, true, available: 10);
+    var stockItem = new StockItem(
+      Guid.NewGuid(),
+      new BusinessId(scenario.BusinessId),
+      new BranchId(scenario.BranchId),
+      scenario.ProductId,
+      Now);
+    stockItem.ApplyAdjustment(10, InventoryMovementReason.InitialStock, scenario.UserId, false, Now);
+    await scenario.Inventory.AddStockItemAsync(stockItem);
+    var useCase = new DeductSaleInventoryUseCase(
+      scenario.ProductPolicies,
+      scenario.InventoryAvailability,
+      scenario.Inventory,
+      scenario.Outbox,
+      scenario.Clock,
+      scenario.UnitOfWork);
+    var request = InventoryDeductionRequested(scenario);
+
+    var first = await useCase.ExecuteAsync(request);
+    var second = await useCase.ExecuteAsync(request);
+
+    first.IsSuccess.Should().BeTrue();
+    second.IsSuccess.Should().BeTrue();
+    stockItem.Quantity.Should().Be(8);
+    scenario.Inventory.Movements
+      .Where(movement => movement.SaleId == scenario.SaleId)
+      .Should()
+      .ContainSingle();
+  }
+
+  [Fact]
+  public async Task DeductInventoryForSale_ShouldPublishLowStockDetectedEvent_WhenStockFallsBelowMinimum()
+  {
+    var scenario = TestScenario.Create();
+    scenario.ProductPolicies.Add(Policy(
+      scenario.ProductId,
+      scenario.BusinessId,
+      trackInventory: true,
+      minimumStock: 9));
+    scenario.InventoryAvailability.Results[scenario.ProductId] = Availability(scenario, true, available: 10);
+    var stockItem = new StockItem(
+      Guid.NewGuid(),
+      new BusinessId(scenario.BusinessId),
+      new BranchId(scenario.BranchId),
+      scenario.ProductId,
+      Now);
+    stockItem.ApplyAdjustment(10, InventoryMovementReason.InitialStock, scenario.UserId, false, Now);
+    await scenario.Inventory.AddStockItemAsync(stockItem);
+    var useCase = new DeductSaleInventoryUseCase(
+      scenario.ProductPolicies,
+      scenario.InventoryAvailability,
+      scenario.Inventory,
+      scenario.Outbox,
+      scenario.Clock,
+      scenario.UnitOfWork);
+
+    var result = await useCase.ExecuteAsync(InventoryDeductionRequested(scenario));
+
+    result.IsSuccess.Should().BeTrue();
+    scenario.Outbox.Events
+      .OfType<LowStockDetectedEventV1>()
+      .Should()
+      .ContainSingle(@event =>
+        @event.BusinessId == scenario.BusinessId &&
+        @event.BranchId == scenario.BranchId &&
+        @event.ProductId == scenario.ProductId &&
+        @event.CurrentStock == 8 &&
+        @event.MinimumStock == 9);
   }
 
   [Fact]
@@ -522,7 +597,11 @@ public sealed class SalesWorkflowTests
       "Cash",
       Now);
 
-  private static ProductSalesPolicy Policy(Guid productId, Guid businessId, bool trackInventory)
+  private static ProductSalesPolicy Policy(
+    Guid productId,
+    Guid businessId,
+    bool trackInventory,
+    decimal? minimumStock = null)
     => new(
       productId,
       businessId,
@@ -540,7 +619,8 @@ public sealed class SalesWorkflowTests
       false,
       true,
       true,
-      null);
+      null,
+      minimumStock);
 
   private static InventoryAvailabilityResult Availability(
     TestScenario scenario,
@@ -717,16 +797,26 @@ public sealed class SalesWorkflowTests
       return Task.CompletedTask;
     }
 
-    public Task<int> CountStockAsync(
+    public Task<bool> HasSaleMovementAsync(
       BusinessId businessId,
       BranchId branchId,
+      Guid saleId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Movements.Any(movement =>
+        movement.BusinessId == businessId &&
+        movement.BranchId == branchId &&
+        movement.SaleId == saleId));
+
+    public Task<int> CountStockAsync(
+      BusinessId businessId,
+      BranchId? branchId,
       StockSearchCriteria criteria,
       CancellationToken cancellationToken = default)
       => Task.FromResult(0);
 
     public Task<IReadOnlyCollection<StockItem>> ListStockAsync(
       BusinessId businessId,
-      BranchId branchId,
+      BranchId? branchId,
       StockSearchCriteria criteria,
       CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<StockItem>>([]);

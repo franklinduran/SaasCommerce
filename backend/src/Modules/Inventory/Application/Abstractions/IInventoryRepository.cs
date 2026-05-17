@@ -15,15 +15,21 @@ public interface IInventoryRepository
 
   Task AddMovementAsync(InventoryMovement movement, CancellationToken cancellationToken = default);
 
-  Task<int> CountStockAsync(
+  Task<bool> HasSaleMovementAsync(
     BusinessId businessId,
     BranchId branchId,
+    Guid saleId,
+    CancellationToken cancellationToken = default);
+
+  Task<int> CountStockAsync(
+    BusinessId businessId,
+    BranchId? branchId,
     StockSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 
   Task<IReadOnlyCollection<StockItem>> ListStockAsync(
     BusinessId businessId,
-    BranchId branchId,
+    BranchId? branchId,
     StockSearchCriteria criteria,
     CancellationToken cancellationToken = default);
 
@@ -44,6 +50,7 @@ public sealed record StockSearchCriteria(
   IReadOnlyCollection<Guid> ProductIds,
   bool RestrictToProductIds,
   bool LowStockOnly,
+  bool OutOfStockOnly,
   IReadOnlyDictionary<Guid, decimal?> MinimumStockByProduct,
   int Page,
   int PageSize,

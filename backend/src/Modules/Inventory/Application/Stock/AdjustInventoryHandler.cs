@@ -1,8 +1,10 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
+using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Responses;
 using SaasCommerce.Modules.Inventory.Domain;
 using SaasCommerce.SharedKernel;
@@ -14,6 +16,7 @@ public sealed class AdjustInventoryHandler(
   IInventoryRepository inventory,
   IProductInventoryPolicyReader productPolicies,
   ICurrentUserService currentUser,
+  IOutboxWriter outbox,
   IClock clock,
   IUnitOfWork unitOfWork)
 {
@@ -31,21 +34,27 @@ public sealed class AdjustInventoryHandler(
     CancellationToken cancellationToken)
   {
     if (currentUser.BusinessId is not Guid businessId ||
-        currentUser.BranchId is not Guid branchId ||
         currentUser.UserId is not Guid userId)
+    {
+      return Result.Failure<InventoryAdjustmentResponse>(InventoryErrors.UserContextRequired);
+    }
+
+    var branchId = command.BranchId ?? currentUser.BranchId;
+
+    if (branchId is null)
     {
       return Result.Failure<InventoryAdjustmentResponse>(InventoryErrors.UserContextRequired);
     }
 
     if (command.ProductId == Guid.Empty ||
         command.Quantity == 0 ||
-        !Enum.TryParse<InventoryMovementReason>(command.Reason, true, out var reason))
+        !TryParseMovementReason(command.Reason, out var reason))
     {
       return Result.Failure<InventoryAdjustmentResponse>(InventoryErrors.InvalidAdjustment);
     }
 
     var tenantId = new BusinessId(businessId);
-    var currentBranchId = new BranchId(branchId);
+    var currentBranchId = new BranchId(branchId.Value);
     var productPolicy = await productPolicies.GetAsync(businessId, command.ProductId, cancellationToken);
 
     if (productPolicy is null)
@@ -76,7 +85,8 @@ public sealed class AdjustInventoryHandler(
         reason,
         userId,
         productPolicy.AllowNegativeStock,
-        clock.UtcNow);
+        clock.UtcNow,
+        note: command.Note);
     }
     catch (InvalidOperationException)
     {
@@ -89,10 +99,61 @@ public sealed class AdjustInventoryHandler(
     }
 
     await inventory.AddMovementAsync(movement, cancellationToken);
+    await outbox.AddAsync(
+      new InventoryAdjustedEventV1(
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        businessId,
+        branchId.Value,
+        command.ProductId,
+        movement.Id,
+        movement.PreviousStock,
+        movement.NewStock,
+        clock.UtcNow),
+      cancellationToken);
+
+    if (stockItem.IsLowStock(productPolicy.MinimumStock) &&
+        productPolicy.MinimumStock is decimal minimumStock)
+    {
+      await outbox.AddAsync(
+        new LowStockDetectedEventV1(
+          Guid.NewGuid(),
+          Guid.NewGuid(),
+          businessId,
+          branchId.Value,
+          command.ProductId,
+          command.ProductId.ToString("D"),
+          stockItem.Quantity,
+          minimumStock,
+          clock.UtcNow),
+        cancellationToken);
+    }
+
     await unitOfWork.SaveChangesAsync(cancellationToken);
 
     return Result.Success(new InventoryAdjustmentResponse(
       InventoryResponseMapper.ToResponse(stockItem, null),
       InventoryResponseMapper.ToResponse(movement)));
+  }
+
+  private static bool TryParseMovementReason(
+    string? value,
+    out InventoryMovementReason reason)
+  {
+    if (Enum.TryParse(value, true, out reason))
+    {
+      return true;
+    }
+
+    reason = value?.Trim().ToLowerInvariant() switch
+    {
+      "initialload" or "initialstock" or "initial_stock" => InventoryMovementReason.InitialStock,
+      "sale" or "salededuction" or "sale_deduction" => InventoryMovementReason.SaleDeduction,
+      "adjustment" or "manualcorrection" or "manualadjustment" or "manual_adjustment" => InventoryMovementReason.ManualAdjustment,
+      "purchase" or "purchaseentry" or "purchase_entry" => InventoryMovementReason.PurchaseEntry,
+      _ => default
+    };
+
+    return reason != default;
   }
 }

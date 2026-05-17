@@ -27,7 +27,8 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
         candidate.ProductType,
         candidate.TrackInventory,
         candidate.AllowNegativeStock,
-        candidate.UnitOfMeasure
+        candidate.UnitOfMeasure,
+        candidate.MinimumStock
       })
       .SingleOrDefaultAsync(cancellationToken);
 
@@ -39,7 +40,8 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
         product.ProductType.ToString(),
         product.TrackInventory,
         product.AllowNegativeStock,
-        product.UnitOfMeasure.ToString());
+        product.UnitOfMeasure.ToString(),
+        product.MinimumStock);
   }
 
   public async Task<IReadOnlyCollection<InventoryProductLookup>> SearchAsync(
@@ -116,6 +118,7 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
         candidate.AllowsDiscount,
         candidate.TrackInventory,
         candidate.AllowNegativeStock,
+        candidate.MinimumStock,
         candidate.IsActive
       })
       .SingleOrDefaultAsync(cancellationToken);
@@ -144,7 +147,8 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
       product.AllowNegativeStock,
       product.IsActive,
       blockedReason is null,
-      blockedReason);
+      blockedReason,
+      product.MinimumStock);
   }
 
   private static string? GetBlockedReason(bool isActive, decimal salePrice)

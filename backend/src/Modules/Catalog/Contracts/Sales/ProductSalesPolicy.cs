@@ -17,4 +17,5 @@ public sealed record ProductSalesPolicy(
   bool AllowNegativeStock,
   bool IsActive,
   bool CanBeSold,
-  string? ReasonIfCannotBeSold);
+  string? ReasonIfCannotBeSold,
+  decimal? MinimumStock = null);

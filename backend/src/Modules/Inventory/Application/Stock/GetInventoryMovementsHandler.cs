@@ -75,9 +75,21 @@ public sealed class GetInventoryMovementsHandler(
     => totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
 
   private static InventoryMovementReason? ParseMovementType(string? movementType)
-    => Enum.TryParse<InventoryMovementReason>(movementType, true, out var parsed)
-      ? parsed
-      : null;
+  {
+    if (Enum.TryParse<InventoryMovementReason>(movementType, true, out var parsed))
+    {
+      return parsed;
+    }
+
+    return movementType?.Trim().ToLowerInvariant() switch
+    {
+      "initialload" => InventoryMovementReason.InitialStock,
+      "purchase" => InventoryMovementReason.PurchaseEntry,
+      "sale" => InventoryMovementReason.SaleDeduction,
+      "adjustment" or "manualcorrection" => InventoryMovementReason.ManualAdjustment,
+      _ => null
+    };
+  }
 
   private static InventoryMovementSortOption ParseMovementSort(string? sortBy)
   {

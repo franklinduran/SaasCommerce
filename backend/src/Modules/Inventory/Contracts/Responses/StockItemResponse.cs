@@ -4,6 +4,7 @@ public sealed record StockItemResponse(
   Guid Id,
   Guid BusinessId,
   Guid BranchId,
+  string? BranchName,
   Guid ProductId,
   string ProductName,
   string Sku,
@@ -12,4 +13,7 @@ public sealed record StockItemResponse(
   decimal Quantity,
   decimal? MinimumStock,
   decimal? ReorderPoint,
-  bool IsLowStock);
+  bool IsLowStock,
+  bool IsOutOfStock,
+  string Status,
+  DateTimeOffset? LastUpdatedAt);

@@ -43,12 +43,31 @@ public sealed class DeductSaleInventoryUseCase(
     {
       var movement = workItem.StockItem.ApplyAdjustment(
         -workItem.SaleItem.Quantity,
-        InventoryMovementReason.Sale,
+        InventoryMovementReason.SaleDeduction,
         inventoryDeductionRequested.UserId,
         workItem.AllowNegativeStock,
-        clock.UtcNow);
+        clock.UtcNow,
+        inventoryDeductionRequested.SaleId,
+        $"Sale {inventoryDeductionRequested.SaleId:D}");
 
       await inventory.AddMovementAsync(movement, cancellationToken);
+
+      if (workItem.StockItem.IsLowStock(workItem.MinimumStock) &&
+          workItem.MinimumStock is decimal minimumStock)
+      {
+        await outbox.AddAsync(
+          new LowStockDetectedEventV1(
+            Guid.NewGuid(),
+            inventoryDeductionRequested.CorrelationId,
+            inventoryDeductionRequested.BusinessId,
+            inventoryDeductionRequested.BranchId,
+            workItem.SaleItem.ProductId,
+            workItem.ProductName,
+            workItem.StockItem.Quantity,
+            minimumStock,
+            clock.UtcNow),
+          cancellationToken);
+      }
     }
 
     await outbox.AddAsync(
@@ -80,6 +99,16 @@ public sealed class DeductSaleInventoryUseCase(
 
     var businessId = new BusinessId(request.BusinessId);
     var branchId = new BranchId(request.BranchId);
+
+    if (await inventory.HasSaleMovementAsync(
+        businessId,
+        branchId,
+        request.SaleId,
+        cancellationToken))
+    {
+      return DeductionWorkItems.Success([]);
+    }
+
     var workItems = new List<DeductionWorkItem>();
 
     foreach (var item in request.Items)
@@ -132,7 +161,12 @@ public sealed class DeductSaleInventoryUseCase(
         await inventory.AddStockItemAsync(stockItem, cancellationToken);
       }
 
-      workItems.Add(new DeductionWorkItem(stockItem, item, policy.AllowNegativeStock));
+      workItems.Add(new DeductionWorkItem(
+        stockItem,
+        item,
+        policy.AllowNegativeStock,
+        policy.MinimumStock,
+        policy.Name));
     }
 
     return DeductionWorkItems.Success(workItems);
@@ -160,7 +194,9 @@ public sealed class DeductSaleInventoryUseCase(
   private sealed record DeductionWorkItem(
     StockItem StockItem,
     SaleItemV1 SaleItem,
-    bool AllowNegativeStock);
+    bool AllowNegativeStock,
+    decimal? MinimumStock,
+    string ProductName);
 
   private sealed record DeductionWorkItems(
     IReadOnlyCollection<DeductionWorkItem> Items,

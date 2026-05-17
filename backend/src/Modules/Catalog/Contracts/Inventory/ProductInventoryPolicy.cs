@@ -6,7 +6,8 @@ public sealed record ProductInventoryPolicy(
   string ProductType,
   bool TrackInventory,
   bool AllowNegativeStock,
-  string UnitOfMeasure);
+  string UnitOfMeasure,
+  decimal? MinimumStock = null);
 
 public sealed record InventoryProductLookup(
   Guid ProductId,
