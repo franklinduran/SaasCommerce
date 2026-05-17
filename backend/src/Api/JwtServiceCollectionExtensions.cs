@@ -43,6 +43,7 @@ internal static class JwtServiceCollectionExtensions
     options.IncludeErrorDetails = environment.IsDevelopment();
     options.Events = new JwtBearerEvents
     {
+      OnMessageReceived = ReadSignalRAccessTokenAsync,
       OnChallenge = WriteUnauthorizedResponseAsync,
       OnForbidden = context => WriteAuthErrorResponseAsync(
         context.HttpContext,
@@ -68,6 +69,19 @@ internal static class JwtServiceCollectionExtensions
       ValidateLifetime = true,
       ClockSkew = TimeSpan.FromMinutes(1)
     };
+  }
+
+  private static Task ReadSignalRAccessTokenAsync(MessageReceivedContext context)
+  {
+    var accessToken = context.Request.Query["access_token"];
+
+    if (!string.IsNullOrWhiteSpace(accessToken) &&
+        context.HttpContext.Request.Path.StartsWithSegments("/hubs/realtime"))
+    {
+      context.Token = accessToken;
+    }
+
+    return Task.CompletedTask;
   }
 
   private static async Task WriteUnauthorizedResponseAsync(JwtBearerChallengeContext context)

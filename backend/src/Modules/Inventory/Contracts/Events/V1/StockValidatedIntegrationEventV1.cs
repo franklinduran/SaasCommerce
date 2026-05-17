@@ -7,5 +7,7 @@ public sealed record StockValidatedIntegrationEventV1(
   Guid CorrelationId,
   Guid BusinessId,
   Guid SaleId,
+  Guid BranchId,
+  Guid UserId,
   DateTimeOffset OccurredAt,
   int Version = 1) : IIntegrationEvent;

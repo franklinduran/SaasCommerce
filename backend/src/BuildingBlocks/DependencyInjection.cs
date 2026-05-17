@@ -10,6 +10,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
 using SaasCommerce.BuildingBlocks.Infrastructure.Observability;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
@@ -30,10 +31,13 @@ public static class BuildingBlocksServiceCollectionExtensions
     services.AddHttpContextAccessor();
     services.AddSignalR();
     services.AddDbContext<AppDbContext>(options => ConfigureDbContext(options, configuration));
+    services.Configure<OutboxPublisherOptions>(configuration.GetSection("OutboxPublisher"));
 
     services.AddScoped<IUnitOfWork, EfUnitOfWork>();
     services.AddScoped<IEventBus, MassTransitEventBus>();
     services.AddScoped<IInboxStore, EfInboxStore>();
+    services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+    services.AddScoped<OutboxPublisher>();
     services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
     services.AddScoped<ICurrentUserService, CurrentUserService>();
     services.AddScoped<ICorrelationIdProvider, CorrelationIdProvider>();

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Inbox;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Sagas.Sales;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 
@@ -10,6 +11,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
   public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
 
   public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+  public DbSet<SaleSagaState> SaleSagaStates => Set<SaleSagaState>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

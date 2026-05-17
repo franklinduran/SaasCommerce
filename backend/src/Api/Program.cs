@@ -611,7 +611,8 @@ app.MapGet(
   .RequireAuthorization()
   .WithTags(inventoryTag);
 
-app.MapHub<BusinessHub>("/hubs/business")
+app.MapHub<RealtimeHub>("/hubs/realtime")
+  .RequireAuthorization()
   .WithTags(realtimeTag);
 
 if (app.Environment.IsDevelopment())

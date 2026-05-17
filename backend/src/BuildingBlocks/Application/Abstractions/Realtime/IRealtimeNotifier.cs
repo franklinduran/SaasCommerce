@@ -7,4 +7,16 @@ public interface IRealtimeNotifier
     string eventName,
     object payload,
     CancellationToken cancellationToken = default);
+
+  Task NotifyBranchAsync(
+    Guid branchId,
+    string eventName,
+    object payload,
+    CancellationToken cancellationToken = default);
+
+  Task NotifyUserAsync(
+    Guid userId,
+    string eventName,
+    object payload,
+    CancellationToken cancellationToken = default);
 }

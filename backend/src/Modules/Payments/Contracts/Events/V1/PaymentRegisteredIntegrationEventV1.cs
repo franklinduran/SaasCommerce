@@ -7,6 +7,8 @@ public sealed record PaymentRegisteredIntegrationEventV1(
   Guid CorrelationId,
   Guid BusinessId,
   Guid SaleId,
+  Guid BranchId,
+  Guid UserId,
   Guid PaymentId,
   decimal Amount,
   DateTimeOffset OccurredAt,

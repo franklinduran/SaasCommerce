@@ -7,6 +7,8 @@ public sealed record SaleCreatedIntegrationEventV1(
   Guid CorrelationId,
   Guid BusinessId,
   Guid SaleId,
+  Guid BranchId,
+  Guid UserId,
   decimal Total,
   DateTimeOffset OccurredAt,
   int Version = 1) : IIntegrationEvent;

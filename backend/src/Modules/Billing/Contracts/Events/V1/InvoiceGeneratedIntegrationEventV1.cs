@@ -7,6 +7,8 @@ public sealed record InvoiceGeneratedIntegrationEventV1(
   Guid CorrelationId,
   Guid BusinessId,
   Guid SaleId,
+  Guid BranchId,
+  Guid UserId,
   Guid InvoiceId,
   DateTimeOffset OccurredAt,
   int Version = 1) : IIntegrationEvent;

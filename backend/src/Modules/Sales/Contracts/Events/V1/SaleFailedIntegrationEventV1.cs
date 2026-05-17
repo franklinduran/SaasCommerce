@@ -7,6 +7,8 @@ public sealed record SaleFailedIntegrationEventV1(
   Guid CorrelationId,
   Guid BusinessId,
   Guid SaleId,
+  Guid BranchId,
+  Guid UserId,
   string Reason,
   DateTimeOffset OccurredAt,
   int Version = 1) : IIntegrationEvent;

@@ -5,4 +5,5 @@ public sealed record TechnicalPingIntegrationEventV1(
   Guid CorrelationId,
   Guid BusinessId,
   DateTimeOffset OccurredAt,
+  string Message,
   int Version = 1) : IIntegrationEvent;

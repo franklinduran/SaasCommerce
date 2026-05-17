@@ -7,33 +7,68 @@ public sealed class OutboxMessage
   }
 
   public OutboxMessage(
+    Guid eventId,
+    Guid correlationId,
     Guid businessId,
-    string type,
-    string content,
-    DateTimeOffset occurredOnUtc)
+    string eventType,
+    string payload,
+    DateTimeOffset occurredAt,
+    DateTimeOffset createdAt)
   {
-    ArgumentException.ThrowIfNullOrWhiteSpace(type);
-    ArgumentException.ThrowIfNullOrWhiteSpace(content);
-
     Id = Guid.NewGuid();
+    EventId = eventId;
+    CorrelationId = correlationId;
     BusinessId = businessId;
-    Type = type;
-    Content = content;
-    OccurredOnUtc = occurredOnUtc;
+    EventType = eventType;
+    Payload = payload;
+    OccurredAt = occurredAt;
+    CreatedAt = createdAt;
+    Status = OutboxMessageStatus.Pending;
   }
 
   public Guid Id { get; private set; }
 
+  public Guid EventId { get; private set; }
+
+  public Guid CorrelationId { get; private set; }
+
   public Guid BusinessId { get; private set; }
 
-  public string Type { get; private set; } = string.Empty;
+  public string EventType { get; private set; } = string.Empty;
 
-  public string Content { get; private set; } = string.Empty;
+  public string Payload { get; private set; } = string.Empty;
 
-  public DateTimeOffset OccurredOnUtc { get; private set; }
+  public DateTimeOffset OccurredAt { get; private set; }
 
-  public DateTimeOffset? ProcessedOnUtc { get; private set; }
+  public DateTimeOffset? PublishedAt { get; private set; }
 
-  public void MarkProcessed(DateTimeOffset processedOnUtc)
-    => ProcessedOnUtc = processedOnUtc;
+  public int Attempts { get; private set; }
+
+  public string? LastError { get; private set; }
+
+  public OutboxMessageStatus Status { get; private set; }
+
+  public DateTimeOffset CreatedAt { get; private set; }
+
+  public void StartAttempt()
+  {
+    Attempts++;
+    Status = OutboxMessageStatus.Processing;
+    LastError = null;
+  }
+
+  public void MarkPublished(DateTimeOffset publishedAt)
+  {
+    PublishedAt = publishedAt;
+    Status = OutboxMessageStatus.Published;
+    LastError = null;
+  }
+
+  public void MarkFailed(string error)
+  {
+    LastError = string.IsNullOrWhiteSpace(error)
+      ? "Event publication failed."
+      : error;
+    Status = OutboxMessageStatus.Failed;
+  }
 }

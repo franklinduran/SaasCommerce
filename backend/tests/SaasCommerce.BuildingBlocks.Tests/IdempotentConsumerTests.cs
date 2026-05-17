@@ -20,7 +20,7 @@ public sealed class IdempotentConsumerTests
     var consumer = new TestIdempotentConsumer(inboxStore, clock);
 
     inboxStore
-      .HasProcessedAsync(message.EventId, context.CancellationToken)
+      .HasProcessedAsync(message.EventId, nameof(TestIdempotentConsumer), context.CancellationToken)
       .Returns(true);
 
     await consumer.Consume(context);
@@ -40,7 +40,7 @@ public sealed class IdempotentConsumerTests
 
     clock.UtcNow.Returns(processedAt);
     inboxStore
-      .HasProcessedAsync(message.EventId, context.CancellationToken)
+      .HasProcessedAsync(message.EventId, nameof(TestIdempotentConsumer), context.CancellationToken)
       .Returns(false);
 
     await consumer.Consume(context);
@@ -48,8 +48,9 @@ public sealed class IdempotentConsumerTests
     consumer.ConsumeCount.Should().Be(1);
     await inboxStore.Received(1).MarkProcessedAsync(
       message.EventId,
+      nameof(TestIdempotentConsumer),
       message.BusinessId,
-      typeof(TechnicalPingIntegrationEventV1).FullName!,
+      message.CorrelationId,
       processedAt,
       context.CancellationToken);
   }
@@ -64,7 +65,7 @@ public sealed class IdempotentConsumerTests
     var consumer = new FailingIdempotentConsumer(inboxStore, clock);
 
     inboxStore
-      .HasProcessedAsync(message.EventId, context.CancellationToken)
+      .HasProcessedAsync(message.EventId, nameof(FailingIdempotentConsumer), context.CancellationToken)
       .Returns(false);
 
     var act = () => consumer.Consume(context);
@@ -72,8 +73,9 @@ public sealed class IdempotentConsumerTests
     await act.Should().ThrowAsync<InvalidOperationException>();
     await inboxStore.DidNotReceive().MarkProcessedAsync(
       Arg.Any<Guid>(),
-      Arg.Any<Guid>(),
       Arg.Any<string>(),
+      Arg.Any<Guid>(),
+      Arg.Any<Guid>(),
       Arg.Any<DateTimeOffset>(),
       Arg.Any<CancellationToken>());
   }
@@ -83,7 +85,8 @@ public sealed class IdempotentConsumerTests
       Guid.NewGuid(),
       Guid.NewGuid(),
       Guid.NewGuid(),
-      DateTimeOffset.UtcNow);
+      DateTimeOffset.UtcNow,
+      "ping");
 
   private static ConsumeContext<TechnicalPingIntegrationEventV1> CreateContext(
     TechnicalPingIntegrationEventV1 message)

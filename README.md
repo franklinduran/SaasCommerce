@@ -608,3 +608,282 @@ Registro de comercio devuelve VALIDATION_ERROR:
 Docker muestra contenedores huerfanos de SonarQube:
   Es solo un aviso si Sonar se levanto con docker-compose.sonar.yml.
 ```
+
+## Etapa 7: Event-Driven Foundation
+
+Etapa 7 deja lista la infraestructura previa a `Sales/POS`. No implementa POS, carrito, pago real, descuento real de inventario ni facturacion real. El objetivo es que los flujos criticos futuros puedan usar eventos, idempotencia, saga, trazabilidad y realtime sin acoplar Application o Domain a infraestructura.
+
+### MassTransit Y RabbitMQ
+
+- `Worker` registra consumers, saga y hosted services.
+- `Api` publica y expone endpoints, pero no contiene consumers.
+- `Application` y `Domain` no referencian MassTransit.
+- `BuildingBlocks.Infrastructure` contiene la integracion tecnica con MassTransit, RabbitMQ, Outbox, Inbox y SignalR.
+- RabbitMQ se configura desde `RabbitMq:Host`, `RabbitMq:Username`, `RabbitMq:Password` y `RabbitMq:UseInMemory`.
+- En tests y ambientes sin broker puede usarse `RabbitMq:UseInMemory=true`.
+
+### Outbox Pattern
+
+Entidad tecnica:
+
+```txt
+OutboxMessage
+- Id
+- EventId
+- CorrelationId
+- BusinessId
+- EventType
+- Payload
+- OccurredAt
+- PublishedAt
+- Attempts
+- LastError
+- Status
+- CreatedAt
+```
+
+Uso esperado:
+
+```txt
+1. Application crea o recibe un IIntegrationEvent.
+2. Handler registra el evento con IOutboxWriter.
+3. La entidad de negocio y el Outbox se guardan en la misma transaccion.
+4. Worker ejecuta OutboxPublisherHostedService.
+5. OutboxPublisher publica pendientes por lotes.
+6. Si publica, marca Published.
+7. Si falla, incrementa Attempts, guarda LastError y permite retry.
+```
+
+Reglas:
+
+```txt
+No publicar eventos criticos antes de confirmar la base de datos.
+No marcar Published si falla RabbitMQ.
+No guardar tokens, passwords ni secretos en Payload.
+EventType debe incluir contrato/version.
+```
+
+### Inbox E Idempotencia
+
+Entidad tecnica:
+
+```txt
+InboxMessage
+- Id
+- EventId
+- ConsumerName
+- BusinessId
+- CorrelationId
+- ProcessedAt
+- CreatedAt
+```
+
+`EfInboxStore` usa indice unico por `EventId + ConsumerName`. Esto permite que dos consumers distintos procesen el mismo evento, pero evita que el mismo consumer ejecute dos veces la misma logica.
+
+Consumers criticos deben heredar de `IdempotentConsumer<TMessage>` o de una base que derive de el. El consumer consulta Inbox antes de ejecutar y marca procesado solo despues de exito.
+
+### Evento Tecnico
+
+Contrato para validar publicacion/consumo sin tocar ventas reales:
+
+```txt
+TechnicalPingIntegrationEventV1
+- EventId
+- CorrelationId
+- BusinessId
+- OccurredAt
+- Message
+- Version
+```
+
+`TechnicalPingConsumer` registra `EventId`, `CorrelationId`, `BusinessId` y `Message`.
+
+### Eventos Sales V1
+
+Eventos propios de Sales:
+
+```txt
+SaleCreatedIntegrationEventV1
+SaleProcessingStartedIntegrationEventV1
+SaleCompletedIntegrationEventV1
+SaleFailedIntegrationEventV1
+SaleStatusChangedIntegrationEventV1
+```
+
+Eventos cuyo dueno es Inventory:
+
+```txt
+StockValidationRequestedIntegrationEventV1
+StockValidatedIntegrationEventV1
+StockValidationFailedIntegrationEventV1
+InventoryDeductionRequestedIntegrationEventV1
+InventoryDeductedIntegrationEventV1
+InventoryDeductionFailedIntegrationEventV1
+```
+
+Eventos cuyo dueno es Payments:
+
+```txt
+PaymentRegistrationRequestedIntegrationEventV1
+PaymentRegisteredIntegrationEventV1
+PaymentFailedIntegrationEventV1
+```
+
+Eventos cuyo dueno es Billing:
+
+```txt
+InvoiceGenerationRequestedIntegrationEventV1
+InvoiceGeneratedIntegrationEventV1
+InvoiceGenerationFailedIntegrationEventV1
+```
+
+Todos implementan `IIntegrationEvent` y exponen `EventId`, `CorrelationId`, `BusinessId`, `OccurredAt` y `Version`.
+
+### Sale Saga State Machine Base
+
+Estado persistible:
+
+```txt
+SaleSagaState
+- CorrelationId
+- SaleId
+- BusinessId
+- BranchId
+- UserId
+- CurrentState
+- CreatedAt
+- UpdatedAt
+- CompletedAt
+- FailedAt
+- FailureReason
+```
+
+Estados base:
+
+```txt
+Received
+Processing
+StockValidated
+InventoryDeducted
+PaymentRegistered
+InvoiceGenerated
+Completed
+Failed
+Cancelled
+```
+
+`SaleStateMachine` coordina transiciones, duplicados y eventos fuera de orden. No descuenta inventario, no registra pagos y no genera facturas directamente.
+
+### Consumers Base
+
+Consumers tecnicos preparados:
+
+```txt
+SaleCreatedConsumer
+StockValidationRequestedConsumer
+InventoryDeductionRequestedConsumer
+PaymentRegistrationRequestedConsumer
+InvoiceGenerationRequestedConsumer
+SaleStatusChangedConsumer
+```
+
+Estos consumers son delgados, idempotentes y registran `EventId`, `MessageId`, `CorrelationId`, `BusinessId`, `ConsumerName`, `EventName` y `ElapsedMilliseconds`.
+
+### SignalR Seguro
+
+Endpoint:
+
+```txt
+/hubs/realtime
+```
+
+Reglas:
+
+```txt
+Requiere JWT.
+El token puede llegar por query access_token solo para /hubs/realtime.
+Backend lee UserId, BusinessId y BranchId desde claims.
+Frontend no envia BusinessId para unirse a grupos.
+No usar Clients.All para datos de negocio.
+```
+
+Grupos seguros:
+
+```txt
+business-{BusinessId}
+branch-{BranchId}
+user-{UserId}
+```
+
+`IRealtimeNotifier` expone:
+
+```txt
+NotifyBusinessAsync
+NotifyBranchAsync
+NotifyUserAsync
+```
+
+Eventos realtime iniciales esperados:
+
+```txt
+realtime.ping
+product.created
+product.updated
+inventory.adjusted
+inventory.lowStock
+sale.statusChanged
+sale.completed
+sale.failed
+```
+
+### Frontend SignalR
+
+Archivos:
+
+```txt
+frontend/src/shared/services/signalrClient.ts
+frontend/src/shared/hooks/useRealtime.ts
+```
+
+Comportamiento:
+
+```txt
+No conecta sin token.
+Conecta despues del login mediante accessTokenFactory.
+Usa VITE_SIGNALR_HUB_URL o http://localhost:5000/hubs/realtime por defecto.
+Activa reconexion automatica.
+Desconecta al logout o al desmontar sesion.
+No envia BusinessId ni BranchId.
+```
+
+### Probar Eventos Localmente
+
+Validaciones automatizadas:
+
+```bash
+dotnet test SaasCommerce.slnx --no-build -m:1 /nr:false -v minimal
+```
+
+Pruebas cubiertas:
+
+```txt
+IntegrationEvent contract tests.
+Outbox writer y publisher.
+InboxStore e IdempotentConsumer.
+MassTransit Test Harness para TechnicalPingConsumer.
+SaleStateMachine con MassTransit Test Harness.
+RealtimeHub y SignalRRealtimeNotifier.
+Frontend signalrClient.
+```
+
+Validacion manual:
+
+```txt
+1. docker compose up --build -d
+2. Confirmar RabbitMQ healthy.
+3. Confirmar API healthy con /health/ready.
+4. Confirmar Worker sin errores criticos.
+5. Intentar /hubs/realtime/negotiate sin token: debe responder 401.
+6. Login desde frontend: SignalR debe conectar despues de obtener accessToken.
+7. Logout: SignalR debe desconectar.
+```

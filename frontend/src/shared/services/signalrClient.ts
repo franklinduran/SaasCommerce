@@ -1,16 +1,66 @@
 import * as signalR from '@microsoft/signalr'
 
-const hubUrl = import.meta.env.VITE_SIGNALR_HUB_URL ?? 'http://localhost:5000/hubs/business'
+const hubUrl = import.meta.env.VITE_SIGNALR_HUB_URL ?? 'http://localhost:5000/hubs/realtime'
 
-export function createSignalRConnection(accessTokenFactory?: () => string | Promise<string>) {
-  const builder = new signalR.HubConnectionBuilder()
+let connection: signalR.HubConnection | null = null
+let currentAccessToken: string | null = null
 
-  if (accessTokenFactory) {
-    return builder
-      .withUrl(hubUrl, { accessTokenFactory })
-      .withAutomaticReconnect()
-      .build()
+export function createSignalRConnection(accessTokenFactory: () => string | Promise<string>) {
+  return new signalR.HubConnectionBuilder()
+    .withUrl(hubUrl, { accessTokenFactory })
+    .withAutomaticReconnect()
+    .build()
+}
+
+export async function startRealtimeConnection(accessToken?: string) {
+  if (!accessToken) {
+    return null
   }
 
-  return builder.withUrl(hubUrl).withAutomaticReconnect().build()
+  if (connection && currentAccessToken === accessToken) {
+    return connection
+  }
+
+  await stopRealtimeConnection()
+
+  currentAccessToken = accessToken
+  connection = createSignalRConnection(() => accessToken)
+
+  try {
+    await connection.start()
+    return connection
+  } catch (error) {
+    connection = null
+    currentAccessToken = null
+    throw error
+  }
+}
+
+export async function stopRealtimeConnection() {
+  if (!connection) {
+    currentAccessToken = null
+    return
+  }
+
+  const activeConnection = connection
+  connection = null
+  currentAccessToken = null
+
+  if (activeConnection.state !== signalR.HubConnectionState.Disconnected) {
+    await activeConnection.stop()
+  }
+}
+
+export function onRealtimeEvent<TPayload>(
+  eventName: string,
+  handler: (payload: TPayload) => void,
+) {
+  connection?.on(eventName, handler)
+}
+
+export function offRealtimeEvent<TPayload>(
+  eventName: string,
+  handler: (payload: TPayload) => void,
+) {
+  connection?.off(eventName, handler)
 }

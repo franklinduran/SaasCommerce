@@ -6,7 +6,7 @@ RUN npm ci --ignore-scripts
 
 COPY frontend/ ./
 ARG VITE_API_BASE_URL=http://localhost:8080
-ARG VITE_SIGNALR_HUB_URL=http://localhost:8080/hubs/business
+ARG VITE_SIGNALR_HUB_URL=http://localhost:8080/hubs/realtime
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SIGNALR_HUB_URL=$VITE_SIGNALR_HUB_URL
 RUN npm run build

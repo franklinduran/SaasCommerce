@@ -8,23 +8,32 @@ public sealed class InboxMessage
 
   public InboxMessage(
     Guid eventId,
+    string consumerName,
     Guid businessId,
-    string type,
-    DateTimeOffset processedAt)
+    Guid correlationId,
+    DateTimeOffset processedAt,
+    DateTimeOffset createdAt)
   {
-    ArgumentException.ThrowIfNullOrWhiteSpace(type);
-
+    Id = Guid.NewGuid();
     EventId = eventId;
+    ConsumerName = consumerName;
     BusinessId = businessId;
-    Type = type;
+    CorrelationId = correlationId;
     ProcessedAt = processedAt;
+    CreatedAt = createdAt;
   }
+
+  public Guid Id { get; private set; }
 
   public Guid EventId { get; private set; }
 
+  public string ConsumerName { get; private set; } = string.Empty;
+
   public Guid BusinessId { get; private set; }
 
-  public string Type { get; private set; } = string.Empty;
+  public Guid CorrelationId { get; private set; }
 
   public DateTimeOffset ProcessedAt { get; private set; }
+
+  public DateTimeOffset CreatedAt { get; private set; }
 }

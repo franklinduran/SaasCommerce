@@ -3,7 +3,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 
-public sealed class SignalRRealtimeNotifier(IHubContext<BusinessHub> hubContext) : IRealtimeNotifier
+public sealed class SignalRRealtimeNotifier(IHubContext<RealtimeHub> hubContext) : IRealtimeNotifier
 {
   public Task NotifyBusinessAsync(
     Guid businessId,
@@ -14,11 +14,36 @@ public sealed class SignalRRealtimeNotifier(IHubContext<BusinessHub> hubContext)
     ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
     ArgumentNullException.ThrowIfNull(payload);
 
-    var groupName = $"{BusinessHub.BusinessGroupPrefix}:{businessId:D}";
+    return hubContext.Clients
+      .Group(RealtimeGroupNames.Business(businessId))
+      .SendAsync(eventName, payload, cancellationToken);
+  }
 
-    return hubContext
-      .Clients
-      .Group(groupName)
+  public Task NotifyBranchAsync(
+    Guid branchId,
+    string eventName,
+    object payload,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+    ArgumentNullException.ThrowIfNull(payload);
+
+    return hubContext.Clients
+      .Group(RealtimeGroupNames.Branch(branchId))
+      .SendAsync(eventName, payload, cancellationToken);
+  }
+
+  public Task NotifyUserAsync(
+    Guid userId,
+    string eventName,
+    object payload,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+    ArgumentNullException.ThrowIfNull(payload);
+
+    return hubContext.Clients
+      .Group(RealtimeGroupNames.User(userId))
       .SendAsync(eventName, payload, cancellationToken);
   }
 }

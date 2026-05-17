@@ -8,24 +8,39 @@ public sealed class EfInboxStore(AppDbContext dbContext) : IInboxStore
 {
   public Task<bool> HasProcessedAsync(
     Guid eventId,
+    string consumerName,
     CancellationToken cancellationToken = default)
-    => dbContext.InboxMessages.AnyAsync(message => message.EventId == eventId, cancellationToken);
+  {
+    ArgumentException.ThrowIfNullOrWhiteSpace(consumerName);
+
+    return dbContext.InboxMessages.AnyAsync(
+      message => message.EventId == eventId && message.ConsumerName == consumerName,
+      cancellationToken);
+  }
 
   public async Task MarkProcessedAsync(
     Guid eventId,
+    string consumerName,
     Guid businessId,
-    string messageType,
+    Guid correlationId,
     DateTimeOffset processedAt,
     CancellationToken cancellationToken = default)
   {
-    ArgumentException.ThrowIfNullOrWhiteSpace(messageType);
+    ArgumentException.ThrowIfNullOrWhiteSpace(consumerName);
 
-    if (await HasProcessedAsync(eventId, cancellationToken).ConfigureAwait(false))
+    if (await HasProcessedAsync(eventId, consumerName, cancellationToken).ConfigureAwait(false))
     {
       return;
     }
 
-    dbContext.InboxMessages.Add(new InboxMessage(eventId, businessId, messageType, processedAt));
+    dbContext.InboxMessages.Add(
+      new InboxMessage(
+        eventId,
+        consumerName,
+        businessId,
+        correlationId,
+        processedAt,
+        processedAt));
 
     await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
   }

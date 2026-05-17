@@ -84,6 +84,14 @@ if ([string]::IsNullOrWhiteSpace($sonarOrganization)) {
   $sonarOrganization = [Environment]::GetEnvironmentVariable("SONAR_ORGANIZATION", "User")
 }
 
+if ([string]::IsNullOrWhiteSpace($env:NUGET_PACKAGES) -and -not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+  $defaultNuGetPackages = Join-Path $env:USERPROFILE ".nuget\packages"
+
+  if (Test-Path $defaultNuGetPackages) {
+    $env:NUGET_PACKAGES = $defaultNuGetPackages
+  }
+}
+
 Set-Location $repoRoot
 
 $beginArgs = @(

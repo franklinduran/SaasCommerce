@@ -1,8 +1,14 @@
 using System.Globalization;
+using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
 using SaasCommerce.BuildingBlocks;
+using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Sagas.Sales;
 using SaasCommerce.Modules;
 using SaasCommerce.Worker;
 using SaasCommerce.Worker.Consumers;
+using SaasCommerce.Worker.Sagas.Sales;
 using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -14,7 +20,24 @@ builder.Services.AddSerilog((_, loggerConfiguration) =>
 builder.Services.AddModules();
 builder.Services.AddBuildingBlocks(
   builder.Configuration,
-  massTransit => massTransit.AddConsumer<TechnicalPingConsumer>());
+  massTransit =>
+  {
+    massTransit.AddConsumer<TechnicalPingConsumer>();
+    massTransit.AddConsumer<SaleCreatedConsumer>();
+    massTransit.AddConsumer<StockValidationRequestedConsumer>();
+    massTransit.AddConsumer<InventoryDeductionRequestedConsumer>();
+    massTransit.AddConsumer<PaymentRegistrationRequestedConsumer>();
+    massTransit.AddConsumer<InvoiceGenerationRequestedConsumer>();
+    massTransit.AddConsumer<SaleStatusChangedConsumer>();
+    massTransit.AddSagaStateMachine<SaleStateMachine, SaleSagaState>()
+      .EntityFrameworkRepository(repository =>
+      {
+        repository.ConcurrencyMode = ConcurrencyMode.Pessimistic;
+        repository.ExistingDbContext<AppDbContext>();
+        repository.UsePostgres();
+      });
+  });
+builder.Services.AddHostedService<OutboxPublisherHostedService>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

@@ -14,4 +14,15 @@ public sealed class MassTransitEventBus(IPublishEndpoint publishEndpoint) : IEve
 
     return publishEndpoint.Publish(message, cancellationToken);
   }
+
+  public Task PublishAsync(
+    object message,
+    Type messageType,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(message);
+    ArgumentNullException.ThrowIfNull(messageType);
+
+    return publishEndpoint.Publish(message, messageType, cancellationToken);
+  }
 }
