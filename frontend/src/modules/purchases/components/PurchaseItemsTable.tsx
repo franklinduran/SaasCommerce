@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react'
 import type { Product } from '@/modules/products/types'
-import { formatMoney } from '@/modules/purchases/components/PurchaseTotalsSummary'
+import { formatMoney } from '@/modules/purchases/utils/formatMoney'
 import { Button } from '@/shared/components/ui/button'
 
 export type DraftPurchaseItem = {

@@ -1,3 +1,5 @@
+import { formatMoney } from '@/modules/purchases/utils/formatMoney'
+
 export function PurchaseTotalsSummary({
   itemCount,
   total,
@@ -17,11 +19,4 @@ export function PurchaseTotalsSummary({
       </div>
     </div>
   )
-}
-
-export function formatMoney(value: number) {
-  return `RD$ ${value.toLocaleString('es-DO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
 }

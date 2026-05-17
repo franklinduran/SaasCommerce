@@ -1,13 +1,14 @@
 import { ArrowLeft, Ban, CheckCircle2, RefreshCw } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { PurchaseStatusBadge } from '@/modules/purchases/components/PurchaseStatusBadge'
-import { formatMoney, PurchaseTotalsSummary } from '@/modules/purchases/components/PurchaseTotalsSummary'
+import { PurchaseTotalsSummary } from '@/modules/purchases/components/PurchaseTotalsSummary'
 import {
   useCancelPurchase,
   usePurchaseDetail,
   usePurchaseRealtimeInvalidation,
   useReceivePurchase,
 } from '@/modules/purchases/hooks/usePurchases'
+import { formatMoney } from '@/modules/purchases/utils/formatMoney'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 
