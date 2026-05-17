@@ -3,6 +3,7 @@ import {
   Boxes,
   ChevronDown,
   CircleDollarSign,
+  History,
   LayoutDashboard,
   LogOut,
   Package,
@@ -30,7 +31,8 @@ type NavigationItem = {
 
 const navigationItems: readonly NavigationItem[] = [
   { label: 'Inicio', path: '/', icon: LayoutDashboard },
-  { label: 'POS', path: '/sales', icon: ShoppingCart },
+  { label: 'POS', path: '/pos', icon: ShoppingCart },
+  { label: 'Ventas', path: '/sales', icon: History },
   { label: 'Productos', path: '/products', icon: Package },
   { label: 'Inventario', path: '/inventory', icon: Boxes },
   { label: 'Clientes', path: '/customers', icon: Users },
@@ -45,7 +47,8 @@ const growthTools = navigationItems.slice(5)
 
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
-  '/sales': 'POS',
+  '/pos': 'POS',
+  '/sales': 'Ventas',
   '/products': 'Productos',
   '/inventory': 'Inventario',
   '/customers': 'Clientes',
@@ -63,7 +66,8 @@ export function AppShell() {
   const clearSession = useAuthStore((state) => state.clearSession)
   const location = useLocation()
   const navigate = useNavigate()
-  const pageTitle = pageTitles[location.pathname] ?? 'Inicio'
+  const pageTitle = pageTitles[location.pathname] ??
+    (location.pathname.startsWith('/sales/') ? 'Detalle de venta' : 'Inicio')
   const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
 
   function handleLogout() {

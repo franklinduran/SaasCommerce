@@ -1,5 +1,1 @@
-import { POSPage } from '@/modules/pos/pages/POSPage'
-
-export function SalesPage() {
-  return <POSPage />
-}
+export { SalesPage } from '@/modules/sales/pages/SalesPage'

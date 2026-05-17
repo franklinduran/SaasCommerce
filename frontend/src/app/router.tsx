@@ -9,9 +9,11 @@ import {
   InventoryRoute,
   InvoicesRoute,
   ProductsRoute,
+  POSRoute,
   PurchasesRoute,
   RegisterBusinessRoute,
   ReportsRoute,
+  SaleDetailRoute,
   SalesRoute,
   SettingsRoute,
 } from '@/app/LazyPages'
@@ -34,7 +36,9 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: withPageLoading(<DashboardRoute />) },
+      { path: 'pos', element: withPageLoading(<POSRoute />) },
       { path: 'sales', element: withPageLoading(<SalesRoute />) },
+      { path: 'sales/:saleId', element: withPageLoading(<SaleDetailRoute />) },
       { path: 'products', element: withPageLoading(<ProductsRoute />) },
       { path: 'inventory', element: withPageLoading(<InventoryRoute />) },
       { path: 'customers', element: withPageLoading(<CustomersRoute />) },

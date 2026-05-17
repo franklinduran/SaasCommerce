@@ -15,12 +15,16 @@ internal static class SaleResponseMapper
       sale.BranchId.Value,
       sale.UserId,
       sale.CustomerId,
+      null,
+      null,
       sale.Status.ToString(),
       sale.PaymentMethod,
       sale.Total,
       sale.Items
         .Select(item => new SaleItemResponse(
           item.ProductId,
+          "Producto no disponible",
+          null,
           item.Quantity,
           item.UnitPrice,
           item.LineTotal))

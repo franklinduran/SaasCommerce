@@ -7,7 +7,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 namespace SaasCommerce.Modules.Sales.Application.Sales;
 
 public sealed class GetSaleByIdUseCase(
-  ISaleRepository sales,
+  ISaleReadRepository sales,
   ICurrentUserService currentUser) : IGetSaleByIdUseCase
 {
   public Task<Result<SaleResponse>> ExecuteAsync(
@@ -35,6 +35,6 @@ public sealed class GetSaleByIdUseCase(
 
     return sale is null
       ? Result.Failure<SaleResponse>(SalesErrors.SaleNotFound)
-      : Result.Success(SaleResponseMapper.ToResponse(sale));
+      : Result.Success(sale);
   }
 }

@@ -8,7 +8,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 namespace SaasCommerce.Modules.Sales.Application.Sales;
 
 public sealed class ListSalesUseCase(
-  ISaleRepository sales,
+  ISaleReadRepository sales,
   ICurrentUserService currentUser) : IListSalesUseCase
 {
   private static readonly int[] AllowedPageSizes = [10, 25, 50];
@@ -51,6 +51,7 @@ public sealed class ListSalesUseCase(
     var criteria = new SaleSearchCriteria(
       query.BranchId,
       query.Status,
+      query.Query,
       query.DateFrom,
       query.DateTo,
       query.Page,
@@ -62,7 +63,7 @@ public sealed class ListSalesUseCase(
     var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)query.PageSize);
 
     return Result.Success(new SaleListResponse(
-      items.Select(SaleResponseMapper.ToResponse).ToArray(),
+      items,
       query.Page,
       query.PageSize,
       totalItems,

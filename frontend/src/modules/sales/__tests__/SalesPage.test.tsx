@@ -1,0 +1,349 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import {
+  createMemoryRouter,
+  MemoryRouter,
+  RouterProvider,
+} from 'react-router-dom'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useAuthStore } from '@/modules/auth/authStore'
+import { SaleReceipt } from '@/modules/sales/components/SaleReceipt'
+import { SaleDetailPage } from '@/modules/sales/pages/SaleDetailPage'
+import { SalesPage } from '@/modules/sales/pages/SalesPage'
+import type { SaleDetail, SaleStatus } from '@/modules/sales/types/salesTypes'
+
+describe('SalesHistoryPage', () => {
+  afterEach(() => {
+    cleanup()
+    useAuthStore.getState().clearSession()
+    vi.unstubAllGlobals()
+  })
+
+  it('SalesHistoryPage should list sales from API', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ sales: [createApiSale()] }))
+    renderSalesPage()
+
+    expect(await screen.findByText('Maria Perez')).toBeTruthy()
+    expect(screen.getByText('A1B2C3D4')).toBeTruthy()
+    expect(screen.getByText('RD$250.00')).toBeTruthy()
+  })
+
+  it('SalesHistoryPage should show empty state when there are no sales', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ sales: [] }))
+    renderSalesPage()
+
+    expect(await screen.findByText('No hay ventas registradas.')).toBeTruthy()
+  })
+
+  it('SalesHistoryPage should show error state when API fails', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ failList: true }))
+    renderSalesPage()
+
+    expect(await screen.findByText('No se pudo cargar el historial de ventas.')).toBeTruthy()
+  })
+
+  it('SalesHistoryPage should filter sales by status', async () => {
+    const user = userEvent.setup()
+    const receivedSale = createApiSale({ code: 'RECIBIDA', status: 'Received' })
+    const completedSale = createApiSale({ code: 'COMPLETA', status: 'Completed' })
+    const fetchMock = createSalesFetchMock({ sales: [receivedSale, completedSale] })
+    vi.stubGlobal('fetch', fetchMock)
+    renderSalesPage()
+
+    await screen.findByText('RECIBIDA')
+    await user.selectOptions(screen.getByLabelText('Estado'), 'Completed')
+
+    expect(await screen.findByText('COMPLETA')).toBeTruthy()
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('status=Completed'),
+        expect.anything(),
+      )
+    })
+  })
+
+  it('SalesHistoryPage should navigate to sale detail', async () => {
+    const user = userEvent.setup()
+    const sale = createApiSale()
+    vi.stubGlobal('fetch', createSalesFetchMock({ detailSale: sale, sales: [sale] }))
+    const router = createMemoryRouter(
+      [
+        { element: <SalesPage />, path: '/sales' },
+        { element: <SaleDetailPage />, path: '/sales/:saleId' },
+      ],
+      { initialEntries: ['/sales'] },
+    )
+
+    renderWithQueryClient(<RouterProvider router={router} />)
+
+    await user.click(await screen.findByRole('link', { name: /Ver detalle/i }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(`/sales/${sale.saleId}`)
+    })
+    expect(await screen.findByText('Productos vendidos')).toBeTruthy()
+  })
+})
+
+describe('SaleDetailPage', () => {
+  afterEach(() => {
+    cleanup()
+    useAuthStore.getState().clearSession()
+    vi.unstubAllGlobals()
+  })
+
+  it('SaleDetailPage should show sale items', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ detailSale: createApiSale() }))
+    renderSaleDetailPage()
+
+    expect(await screen.findAllByText('Cafe molido')).toHaveLength(2)
+    expect(screen.getAllByText('SKU-001').length).toBeGreaterThan(0)
+  })
+
+  it('SaleDetailPage should show customer when present', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ detailSale: createApiSale() }))
+    renderSaleDetailPage()
+
+    expect((await screen.findAllByText('Maria Perez')).length).toBeGreaterThan(0)
+  })
+
+  it('SaleDetailPage should show failure reason when sale failed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createSalesFetchMock({
+        detailSale: createApiSale({
+          failureReason: 'Pago rechazado por el proveedor.',
+          status: 'Failed',
+        }),
+      }),
+    )
+    renderSaleDetailPage()
+
+    expect(await screen.findByText('Pago rechazado por el proveedor.')).toBeTruthy()
+  })
+})
+
+describe('SaleReceipt', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('SaleReceipt should render business name, items and total', () => {
+    render(<SaleReceipt businessName="Colmado Central" sale={createReceiptSale()} />)
+
+    expect(screen.getByText('Colmado Central')).toBeTruthy()
+    expect(screen.getByText('Cafe molido')).toBeTruthy()
+    expect(screen.getAllByText('RD$250.00').length).toBeGreaterThan(0)
+  })
+
+  it('SaleReceipt should show non fiscal receipt label', () => {
+    render(<SaleReceipt businessName="Colmado Central" sale={createReceiptSale()} />)
+
+    expect(screen.getByText('Recibo no fiscal')).toBeTruthy()
+  })
+
+  it('SaleReceipt should not expose internal technical fields', () => {
+    render(<SaleReceipt businessName="Colmado Central" sale={createReceiptSale()} />)
+
+    expect(screen.queryByText('product-internal-id')).toBeNull()
+    expect(screen.queryByText('11111111-1111-1111-1111-111111111111')).toBeNull()
+  })
+})
+
+function renderSalesPage() {
+  renderWithQueryClient(
+    <MemoryRouter initialEntries={['/sales']}>
+      <SalesPage />
+    </MemoryRouter>,
+  )
+}
+
+function renderSaleDetailPage() {
+  const router = createMemoryRouter(
+    [{ element: <SaleDetailPage />, path: '/sales/:saleId' }],
+    { initialEntries: ['/sales/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'] },
+  )
+
+  renderWithQueryClient(<RouterProvider router={router} />)
+}
+
+function renderWithQueryClient(element: React.ReactElement) {
+  setSession()
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      mutations: { retry: false },
+      queries: { retry: false },
+    },
+  })
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {element}
+    </QueryClientProvider>,
+  )
+}
+
+function setSession() {
+  useAuthStore.getState().setSession({
+    accessToken: 'jwt',
+    expiresAt: '2026-05-17T23:59:00Z',
+    refreshToken: 'refresh',
+    user: {
+      branchId: '22222222-2222-2222-2222-222222222222',
+      businessId: '11111111-1111-1111-1111-111111111111',
+      email: 'admin@test.com',
+      fullName: 'Admin',
+      id: '44444444-4444-4444-4444-444444444444',
+      roles: ['Admin'],
+    },
+  })
+}
+
+function createSalesFetchMock({
+  detailSale = createApiSale(),
+  failList = false,
+  sales = [createApiSale()],
+}: {
+  detailSale?: ApiSaleMock
+  failList?: boolean
+  sales?: ApiSaleMock[]
+} = {}) {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = input.toString()
+
+    if (url.includes('/api/business/current')) {
+      return createJsonResponse({
+        businessId: '11111111-1111-1111-1111-111111111111',
+        identificationNumber: null,
+        identificationType: null,
+        name: 'Colmado Central',
+        phones: [],
+      })
+    }
+
+    if (url.includes('/api/sales/') && !url.endsWith('/api/sales')) {
+      return createJsonResponse(detailSale)
+    }
+
+    if (url.includes('/api/sales')) {
+      if (failList) {
+        return createJsonResponse(null, false, 500, 'No se pudo cargar ventas')
+      }
+
+      const requestUrl = new URL(url)
+      const status = requestUrl.searchParams.get('status')
+      const filteredSales = status
+        ? sales.filter((sale) => sale.status === status)
+        : sales
+
+      return createJsonResponse({
+        hasNextPage: false,
+        hasPreviousPage: false,
+        items: filteredSales,
+        page: Number(requestUrl.searchParams.get('page') ?? '1'),
+        pageSize: Number(requestUrl.searchParams.get('pageSize') ?? '10'),
+        totalItems: filteredSales.length,
+        totalPages: filteredSales.length > 0 ? 1 : 0,
+      })
+    }
+
+    return createJsonResponse(null, false, 404, 'Not found')
+  })
+}
+
+type ApiSaleMock = {
+  branchName: string
+  cancellationReason: string | null
+  code: string
+  createdAt: string
+  customerName: string | null
+  failureReason: string | null
+  id: string
+  items: Array<{
+    lineTotal: number
+    productId: string
+    productName: string
+    quantity: number
+    sku: string
+    subtotal: number
+    unitPrice: number
+  }>
+  paymentMethod: string
+  saleId: string
+  status: SaleStatus
+  total: number
+}
+
+function createApiSale(overrides: Partial<ApiSaleMock> = {}): ApiSaleMock {
+  return {
+    ...createApiSaleBase(),
+    ...overrides,
+  }
+}
+
+function createApiSaleBase(): ApiSaleMock {
+  return {
+    branchName: 'Principal',
+    cancellationReason: null,
+    code: 'A1B2C3D4',
+    createdAt: '2026-05-17T14:00:00Z',
+    customerName: 'Maria Perez',
+    failureReason: null,
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    items: [
+      {
+        lineTotal: 250,
+        productId: 'product-internal-id',
+        productName: 'Cafe molido',
+        quantity: 2,
+        sku: 'SKU-001',
+        subtotal: 250,
+        unitPrice: 125,
+      },
+    ],
+    paymentMethod: 'Cash',
+    saleId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    status: 'Completed',
+    total: 250,
+  }
+}
+
+function createReceiptSale(): SaleDetail {
+  return {
+    branchName: 'Principal',
+    cancellationReason: null,
+    code: 'A1B2C3D4',
+    createdAt: '2026-05-17T14:00:00Z',
+    customerName: 'Maria Perez',
+    failureReason: null,
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    items: [
+      {
+        productId: 'product-internal-id',
+        productName: 'Cafe molido',
+        quantity: 2,
+        sku: 'SKU-001',
+        subtotal: 250,
+        unitPrice: 125,
+      },
+    ],
+    paymentMethod: 'Cash',
+    status: 'Completed',
+    total: 250,
+  }
+}
+
+function createJsonResponse(data: unknown, ok = true, status = 200, message = 'Request failed') {
+  return {
+    headers: new Headers({ 'content-type': 'application/json' }),
+    json: async () => ({
+      correlationId: 'test',
+      data,
+      error: ok ? null : { code: 'ERROR', message },
+      isSuccess: ok,
+    }),
+    ok,
+    status,
+  }
+}

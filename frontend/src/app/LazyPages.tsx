@@ -16,6 +16,14 @@ const DashboardPage = lazy(() =>
 const SalesPage = lazy(() =>
   import('@/modules/sales/SalesPage').then((module) => ({ default: module.SalesPage })),
 )
+const SaleDetailPage = lazy(() =>
+  import('@/modules/sales/pages/SaleDetailPage').then((module) => ({
+    default: module.SaleDetailPage,
+  })),
+)
+const POSPage = lazy(() =>
+  import('@/modules/pos/pages/POSPage').then((module) => ({ default: module.POSPage })),
+)
 const ProductsPage = lazy(() =>
   import('@/modules/products/ProductsPage').then((module) => ({
     default: module.ProductsPage,
@@ -66,6 +74,14 @@ export function DashboardRoute() {
 
 export function SalesRoute() {
   return <SalesPage />
+}
+
+export function SaleDetailRoute() {
+  return <SaleDetailPage />
+}
+
+export function POSRoute() {
+  return <POSPage />
 }
 
 export function ProductsRoute() {

@@ -26,6 +26,7 @@ public interface ISaleRepository
 public sealed record SaleSearchCriteria(
   Guid? BranchId,
   string? Status,
+  string? Query,
   DateTimeOffset? DateFrom,
   DateTimeOffset? DateTo,
   int Page,

@@ -6,6 +6,8 @@ public sealed record SaleResponse(
   Guid BranchId,
   Guid UserId,
   Guid? CustomerId,
+  string? CustomerName,
+  string? BranchName,
   string Status,
   string PaymentMethod,
   decimal Total,
@@ -16,4 +18,9 @@ public sealed record SaleResponse(
   DateTimeOffset? FailedAt,
   DateTimeOffset? CancelledAt,
   string? FailureReason,
-  string? CancellationReason);
+  string? CancellationReason)
+{
+  public Guid Id => SaleId;
+
+  public string Code => SaleId.ToString("N")[..8].ToUpperInvariant();
+}

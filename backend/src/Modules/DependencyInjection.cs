@@ -44,6 +44,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
     services.AddScoped<ICustomerRepository, EfCustomerRepository>();
     services.AddScoped<ISaleRepository, EfSaleRepository>();
+    services.AddScoped<ISaleReadRepository, EfSaleReadRepository>();
     services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
     services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();
     services.AddScoped<IIdentitySettingsRepository, EfIdentitySettingsRepository>();

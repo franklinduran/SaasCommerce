@@ -331,6 +331,203 @@ public sealed class CustomersSalesEndpointTests
   }
 
   [Fact]
+  public async Task GetSales_ShouldApplyStatusFilter_WhenProvided()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Filtro estado", 75);
+    var receivedSale = await CreateSaleAsync(client, product.Id);
+    var completedSale = await CreateSaleAsync(client, product.Id);
+    await CompleteSaleAsync(factory, completedSale.SaleId);
+
+    var response = await client.GetAsync("/api/sales?status=Completed&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(sale => sale.SaleId == completedSale.SaleId);
+    payload.Data.Items.Should().NotContain(sale => sale.SaleId == receivedSale.SaleId);
+    payload.Data.Items.Should().OnlyContain(sale => sale.Status == SaleStatus.Completed.ToString());
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldApplyBranchFilter_WhenProvided()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Filtro sucursal", 80);
+    var sale = await CreateSaleAsync(client, product.Id);
+
+    var response = await client.GetAsync($"/api/sales?branchId={SeedBranchId}&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(saleItem => saleItem.SaleId == sale.SaleId);
+    payload.Data.Items.Should().OnlyContain(saleItem => saleItem.BranchId == SeedBranchId);
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldApplyDateFilters_WhenProvided()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Filtro fecha", 90);
+    var oldSale = await CreateSaleAsync(client, product.Id);
+    var recentSale = await CreateSaleAsync(client, product.Id);
+    await SetSaleCreatedAtAsync(factory, oldSale.SaleId, new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero));
+    await SetSaleCreatedAtAsync(factory, recentSale.SaleId, new DateTimeOffset(2026, 5, 17, 10, 0, 0, TimeSpan.Zero));
+
+    var response = await client.GetAsync(
+      "/api/sales?dateFrom=2026-05-17T00:00:00Z&dateTo=2026-05-17T23:59:59Z&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(sale => sale.SaleId == recentSale.SaleId);
+    payload.Data.Items.Should().NotContain(sale => sale.SaleId == oldSale.SaleId);
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldApplySearchFilter_WhenProvided()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Filtro busqueda", 95);
+    var matchingCustomer = await CreateCustomerAsync(client, "Cliente Buscado");
+    var otherCustomer = await CreateCustomerAsync(client, "Cliente Ignorado");
+    var matchingSale = await CreateSaleAsync(client, product.Id, customerId: matchingCustomer.Id);
+    var otherSale = await CreateSaleAsync(client, product.Id, customerId: otherCustomer.Id);
+
+    var response = await client.GetAsync("/api/sales?query=Buscado&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(sale => sale.SaleId == matchingSale.SaleId);
+    payload.Data.Items.Should().NotContain(sale => sale.SaleId == otherSale.SaleId);
+    payload.Data.Items.Should().OnlyContain(sale => sale.CustomerName == matchingCustomer.FullName);
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldApplySearchFilterToShortSaleId_WhenProvided()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Filtro id corto", 95);
+    var matchingSale = await CreateSaleAsync(client, product.Id);
+    var otherSale = await CreateSaleAsync(client, product.Id);
+    var shortSaleId = matchingSale.SaleId.ToString()[..8];
+
+    var response = await client.GetAsync($"/api/sales?query={shortSaleId}&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(sale => sale.SaleId == matchingSale.SaleId);
+    payload.Data.Items.Should().NotContain(sale => sale.SaleId == otherSale.SaleId);
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldSortByTotal_WhenRequested()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var cheapProduct = await CreateProductAsync(client, "Venta menor", 25);
+    var expensiveProduct = await CreateProductAsync(client, "Venta mayor", 200);
+    var cheapSale = await CreateSaleAsync(client, cheapProduct.Id);
+    var expensiveSale = await CreateSaleAsync(client, expensiveProduct.Id);
+
+    var response = await client.GetAsync("/api/sales?sortBy=Total&sortDirection=Asc&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().Contain(sale => sale.SaleId == cheapSale.SaleId);
+    payload.Data.Items.Should().Contain(sale => sale.SaleId == expensiveSale.SaleId);
+    payload.Data.Items.First().SaleId.Should().Be(cheapSale.SaleId);
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldSortByTotalDescending_WhenRequested()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var cheapProduct = await CreateProductAsync(client, "Venta menor desc", 25);
+    var expensiveProduct = await CreateProductAsync(client, "Venta mayor desc", 200);
+    await CreateSaleAsync(client, cheapProduct.Id);
+    var expensiveSale = await CreateSaleAsync(client, expensiveProduct.Id);
+
+    var response = await client.GetAsync("/api/sales?sortBy=Total&sortDirection=Desc&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.First().SaleId.Should().Be(expensiveSale.SaleId);
+  }
+
+  [Fact]
+  public async Task GetSales_ShouldSortByCreatedAtAscending_WhenRequested()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Orden fecha", 60);
+    var oldSale = await CreateSaleAsync(client, product.Id);
+    var recentSale = await CreateSaleAsync(client, product.Id);
+    await SetSaleCreatedAtAsync(factory, oldSale.SaleId, new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero));
+    await SetSaleCreatedAtAsync(factory, recentSale.SaleId, new DateTimeOffset(2026, 5, 17, 10, 0, 0, TimeSpan.Zero));
+
+    var response = await client.GetAsync("/api/sales?sortBy=CreatedAt&sortDirection=Asc&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.First().SaleId.Should().Be(oldSale.SaleId);
+  }
+
+  [Fact]
+  public async Task GetSaleById_ShouldReturnSaleWithItems_WhenSaleExists()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Detalle cafe", 140);
+    var customer = await CreateCustomerAsync(client, "Cliente detalle");
+    var sale = await CreateSaleAsync(client, product.Id, customerId: customer.Id);
+
+    var response = await client.GetAsync($"/api/sales/{sale.SaleId}");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.SaleId.Should().Be(sale.SaleId);
+    payload.Data.CustomerName.Should().Be(customer.FullName);
+    payload.Data.BranchName.Should().NotBeNullOrWhiteSpace();
+    payload.Data.Items.Should().ContainSingle();
+    var item = payload.Data.Items.Single();
+    item.ProductName.Should().Be(product.Name);
+    item.Sku.Should().Be(product.Sku);
+    item.Subtotal.Should().Be(140);
+  }
+
+  [Fact]
   public async Task GetSaleById_ShouldReturnNotFound_WhenSaleBelongsToAnotherBusiness()
   {
     using var factory = CreateFactory();
@@ -349,6 +546,43 @@ public sealed class CustomersSalesEndpointTests
     payload!.IsSuccess.Should().BeFalse();
     payload.Data.Should().BeNull();
     payload.Error!.Code.Should().Be("NOT_FOUND");
+  }
+
+  [Fact]
+  public async Task GetSaleById_ShouldReturnNotFound_WhenSaleDoesNotExist()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+
+    var response = await client.GetAsync($"/api/sales/{Guid.NewGuid()}");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
+    payload.Data.Should().BeNull();
+    payload.Error!.Code.Should().Be("NOT_FOUND");
+  }
+
+  [Fact]
+  public async Task GetSaleById_ShouldIncludeFailureReason_WhenSaleFailed()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var product = await CreateProductAsync(client, "Venta fallida", 110);
+    var sale = await CreateSaleAsync(client, product.Id);
+    await FailSaleAsync(factory, sale.SaleId, "Payment provider rejected the sale.");
+
+    var response = await client.GetAsync($"/api/sales/{sale.SaleId}");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Status.Should().Be(SaleStatus.Failed.ToString());
+    payload.Data.FailureReason.Should().Be("Payment provider rejected the sale.");
   }
 
   [Fact]
@@ -476,11 +710,12 @@ public sealed class CustomersSalesEndpointTests
   private static async Task<SaleResponse> CreateSaleAsync(
     HttpClient client,
     Guid productId,
-    Guid? branchId = null)
+    Guid? branchId = null,
+    Guid? customerId = null)
   {
     var response = await client.PostAsJsonAsync(
       "/api/sales",
-      SaleRequest(productId, quantity: 1, branchId));
+      SaleRequest(productId, quantity: 1, branchId, customerId));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<SaleResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -505,13 +740,51 @@ public sealed class CustomersSalesEndpointTests
     await dbContext.SaveChangesAsync(CancellationToken.None);
   }
 
+  private static async Task FailSaleAsync(
+    WebApplicationFactory<Program> factory,
+    Guid saleId,
+    string reason)
+  {
+    using var scope = factory.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var sale = await dbContext.Set<Sale>().SingleAsync(
+      candidate => candidate.Id == saleId,
+      CancellationToken.None);
+
+    var now = DateTimeOffset.UtcNow;
+    if (sale.Status == SaleStatus.Received)
+    {
+      sale.MarkAsProcessing(now);
+    }
+
+    sale.Fail(reason, now.AddSeconds(1));
+    await dbContext.SaveChangesAsync(CancellationToken.None);
+  }
+
+  private static async Task SetSaleCreatedAtAsync(
+    WebApplicationFactory<Program> factory,
+    Guid saleId,
+    DateTimeOffset createdAt)
+  {
+    using var scope = factory.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var sale = await dbContext.Set<Sale>().SingleAsync(
+      candidate => candidate.Id == saleId,
+      CancellationToken.None);
+
+    dbContext.Entry(sale).Property(nameof(Sale.CreatedAt)).CurrentValue = createdAt;
+    dbContext.Entry(sale).Property(nameof(Sale.UpdatedAt)).CurrentValue = createdAt;
+    await dbContext.SaveChangesAsync(CancellationToken.None);
+  }
+
   private static CreateSaleRequest SaleRequest(
     Guid productId,
     decimal quantity,
-    Guid? branchId = null)
+    Guid? branchId = null,
+    Guid? customerId = null)
     => new(
       branchId ?? SeedBranchId,
-      null,
+      customerId,
       "Cash",
       [new CreateSaleItemRequest(productId, quantity)]);
 

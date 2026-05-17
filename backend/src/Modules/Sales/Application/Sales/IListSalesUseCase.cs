@@ -13,6 +13,7 @@ public interface IListSalesUseCase
 public sealed record ListSalesQuery(
   Guid? BranchId,
   string? Status,
+  string? Query,
   DateTimeOffset? DateFrom,
   DateTimeOffset? DateTo,
   int Page,

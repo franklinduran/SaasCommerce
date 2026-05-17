@@ -472,6 +472,7 @@ app.MapGet(
       new ListSalesQuery(
         request.BranchId,
         request.Status,
+        request.Query,
         request.DateFrom,
         request.DateTo,
         request.Page ?? 1,
