@@ -1,0 +1,97 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+@runId = {{$timestamp}}
+
+### Login
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Create category
+# @name createCategory
+POST {{apiBase}}/api/catalog/categories
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Idempotencia 8.5 {{runId}}",
+  "description": "Categoria temporal"
+}
+
+### Create product
+# @name createProduct
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Simple",
+  "name": "Agua 16 oz {{runId}}",
+  "description": "Producto para pruebas de idempotencia",
+  "sku": "AGUA-{{runId}}",
+  "barcode": "777{{runId}}",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Unit",
+  "salePrice": 25.00,
+  "costPrice": 15.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 10,
+  "maximumStock": 500,
+  "reorderPoint": 25,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Duplicate product request with same SKU; expected 409 PRODUCT_SKU_ALREADY_EXISTS
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Simple",
+  "name": "Agua duplicada {{runId}}",
+  "description": "Debe fallar por SKU duplicado",
+  "sku": "AGUA-{{runId}}",
+  "barcode": null,
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Unit",
+  "salePrice": 25.00,
+  "costPrice": 15.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 10,
+  "maximumStock": 500,
+  "reorderPoint": 25,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Consumer-level idempotency is validated by backend tests and by querying inbox_messages after saga technical run.
+# See docs/testing/Etapa-8.5-validacion-local-integral.md.

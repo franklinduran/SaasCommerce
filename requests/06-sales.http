@@ -1,0 +1,36 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+
+### Login
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Sales HTTP endpoint is not exposed yet; expected 404 ApiResponse
+GET {{apiBase}}/api/sales
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Future create sale placeholder; expected 404 until POS/API is implemented
+POST {{apiBase}}/api/sales
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "items": [],
+  "paymentMethod": "Cash"
+}
+
+### Future cancel sale placeholder; expected 404 until Sales API is implemented
+POST {{apiBase}}/api/sales/00000000-0000-0000-0000-000000000000/cancel
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "reason": "Validacion local"
+}

@@ -1,0 +1,186 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+@runId = {{$timestamp}}
+
+### Login
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Create category
+# @name createCategory
+POST {{apiBase}}/api/catalog/categories
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Validacion 8.5 {{runId}}",
+  "description": "Categoria temporal para validacion local integral"
+}
+
+### List categories
+GET {{apiBase}}/api/catalog/categories
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Create Simple product
+# @name createProduct
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Simple",
+  "name": "Arroz selecto 5 lb {{runId}}",
+  "description": "Producto de validacion local",
+  "sku": "ARROZ-{{runId}}",
+  "barcode": "779{{runId}}",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Unit",
+  "salePrice": 245.00,
+  "costPrice": 190.00,
+  "wholesalePrice": null,
+  "minSalePrice": 230.00,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 5,
+  "maximumStock": 100,
+  "reorderPoint": 10,
+  "allowNegativeStock": false,
+  "internalCode": "INT-{{runId}}",
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Create Service product; inventory disabled
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Service",
+  "name": "Delivery local {{runId}}",
+  "description": "Servicio de prueba",
+  "sku": "SERV-{{runId}}",
+  "barcode": null,
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Service",
+  "salePrice": 100.00,
+  "costPrice": 0.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Exempt",
+  "taxRate": 0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": false,
+  "minimumStock": null,
+  "maximumStock": null,
+  "reorderPoint": null,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Create Weighed product; unit is Pound
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Weighed",
+  "name": "Salami al peso {{runId}}",
+  "description": "Producto pesado de prueba",
+  "sku": "SALAMI-{{runId}}",
+  "barcode": null,
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Pound",
+  "salePrice": 135.00,
+  "costPrice": 100.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 2,
+  "maximumStock": 50,
+  "reorderPoint": 5,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Get product by id
+GET {{apiBase}}/api/catalog/products/{{createProduct.response.body.$.data.id}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List products. Current allowed page sizes: 10, 25, 50.
+GET {{apiBase}}/api/catalog/products?query=Arroz&page=1&pageSize=10&sortBy=name&sortDirection=asc
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Invalid page size; expected 400 VALIDATION_ERROR
+GET {{apiBase}}/api/catalog/products?page=1&pageSize=5
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Duplicate SKU; expected 409 PRODUCT_SKU_ALREADY_EXISTS
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Simple",
+  "name": "Arroz duplicado {{runId}}",
+  "description": "Debe fallar por SKU duplicado",
+  "sku": "ARROZ-{{runId}}",
+  "barcode": null,
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Unit",
+  "salePrice": 245.00,
+  "costPrice": 190.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 5,
+  "maximumStock": 100,
+  "reorderPoint": 10,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Deactivate product
+PUT {{apiBase}}/api/catalog/products/{{createProduct.response.body.$.data.id}}/deactivate
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Activate product
+PUT {{apiBase}}/api/catalog/products/{{createProduct.response.body.$.data.id}}/activate
+Authorization: Bearer {{login.response.body.$.data.accessToken}}

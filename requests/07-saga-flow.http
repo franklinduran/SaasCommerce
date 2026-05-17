@@ -1,0 +1,12 @@
+@apiBase = http://localhost:8080
+
+### Saga flow note
+# Sales saga is implemented internally, but there is no public POST /api/sales yet.
+# For local Etapa 8.5, stimulate the saga through Outbox using the SQL recipe in:
+# docs/testing/Etapa-8.5-validacion-local-integral.md
+
+### Health check before saga technical run
+GET {{apiBase}}/health/ready
+
+### API version
+GET {{apiBase}}/api/version

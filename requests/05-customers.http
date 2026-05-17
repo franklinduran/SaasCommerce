@@ -1,0 +1,27 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+
+### Login
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Customers backend endpoint is not exposed yet; expected 404 ApiResponse
+GET {{apiBase}}/api/customers
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Future create customer contract placeholder; expected 404 until Customers API is implemented
+POST {{apiBase}}/api/customers
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Maria Perez",
+  "phone": "8095550102"
+}

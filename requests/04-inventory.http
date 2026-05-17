@@ -1,0 +1,121 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+@runId = {{$timestamp}}
+
+### Login
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Create category
+# @name createCategory
+POST {{apiBase}}/api/catalog/categories
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Inventario 8.5 {{runId}}",
+  "description": "Categoria temporal para inventario"
+}
+
+### Create inventory-tracked product
+# @name createProduct
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Simple",
+  "name": "Aceite 16 oz {{runId}}",
+  "description": "Producto inventariable de prueba",
+  "sku": "ACEITE-{{runId}}",
+  "barcode": "778{{runId}}",
+  "categoryId": "{{createCategory.response.body.$.data.id}}",
+  "brandId": null,
+  "unitOfMeasure": "Unit",
+  "salePrice": 95.00,
+  "costPrice": 70.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 5,
+  "maximumStock": 100,
+  "reorderPoint": 10,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Initial inventory load
+# @name initialLoad
+POST {{apiBase}}/api/inventory/adjustments
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{createProduct.response.body.$.data.id}}",
+  "quantity": 15,
+  "reason": "InitialLoad"
+}
+
+### Positive adjustment
+POST {{apiBase}}/api/inventory/adjustments
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{createProduct.response.body.$.data.id}}",
+  "quantity": 5,
+  "reason": "Adjustment"
+}
+
+### Negative adjustment allowed while stock remains non-negative
+POST {{apiBase}}/api/inventory/adjustments
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{createProduct.response.body.$.data.id}}",
+  "quantity": -3,
+  "reason": "ManualCorrection"
+}
+
+### Negative adjustment that leaves stock below zero; expected 409 INVENTORY_STOCK_INSUFFICIENT
+POST {{apiBase}}/api/inventory/adjustments
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{createProduct.response.body.$.data.id}}",
+  "quantity": -9999,
+  "reason": "ManualCorrection"
+}
+
+### Stock list
+GET {{apiBase}}/api/inventory/stock?search=Aceite&page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Low stock filter
+GET {{apiBase}}/api/inventory/stock?lowStockOnly=true&page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Movement list by product
+GET {{apiBase}}/api/inventory/movements?productId={{createProduct.response.body.$.data.id}}&page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Movement list by type
+GET {{apiBase}}/api/inventory/movements?movementType=Adjustment&page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.data.accessToken}}

@@ -1,0 +1,64 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+
+### Login
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Current user
+GET {{apiBase}}/api/me
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Current business
+GET {{apiBase}}/api/business/current
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Current branch
+GET {{apiBase}}/api/branches/current
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Update profile
+PUT {{apiBase}}/api/me/profile
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Admin Validacion Local",
+  "phone": "8095550199"
+}
+
+### Update current business without sending BusinessId
+PUT {{apiBase}}/api/business/current
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "businessName": "Demo Business",
+  "identificationType": "Rnc",
+  "identificationNumber": "123456789",
+  "phones": [
+    {
+      "number": "8090000000",
+      "label": "Principal",
+      "isPrimary": true
+    }
+  ]
+}
+
+### Update current branch without sending BusinessId
+PUT {{apiBase}}/api/branches/current
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Main Branch",
+  "address": "Santo Domingo",
+  "phone": "8090000000"
+}

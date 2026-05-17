@@ -1,0 +1,77 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+@runId = {{$timestamp}}
+
+### Register business with Dominican-like local data
+# @name registerBusiness
+POST {{apiBase}}/api/account/register-business
+Content-Type: application/json
+
+{
+  "businessName": "Colmado La Bendicion",
+  "ownerFullName": "Maria Perez",
+  "email": "admin+{{runId}}@colmado.local",
+  "password": "Admin123!",
+  "identificationType": "Rnc",
+  "identificationNumber": "137{{runId}}",
+  "phones": [
+    {
+      "number": "8095550101",
+      "label": "Principal",
+      "isPrimary": true
+    }
+  ],
+  "branchName": "Principal"
+}
+
+### Login seed admin
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Login with registered business user
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin+{{runId}}@colmado.local",
+  "password": "Admin123!"
+}
+
+### Login invalid password; expected 401 ApiResponse
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "bad-password"
+}
+
+### Refresh valid token
+POST {{apiBase}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.data.refreshToken}}"
+}
+
+### Refresh invalid token; expected 401 ApiResponse
+POST {{apiBase}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "invalid-refresh-token"
+}
+
+### Protected endpoint without token; expected 401 ApiResponse
+GET {{apiBase}}/api/me
+
+### Protected endpoint with token
+GET {{apiBase}}/api/me
+Authorization: Bearer {{login.response.body.$.data.accessToken}}

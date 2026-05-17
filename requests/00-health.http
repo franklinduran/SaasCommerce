@@ -1,0 +1,13 @@
+@apiBase = http://localhost:8080
+
+### Liveness
+GET {{apiBase}}/health/live
+
+### Readiness
+GET {{apiBase}}/health/ready
+
+### Version
+GET {{apiBase}}/api/version
+
+### Health root currently not exposed; expected 404 ApiResponse
+GET {{apiBase}}/health
