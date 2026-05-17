@@ -8,6 +8,7 @@ using Microsoft.OpenApi;
 using SaasCommerce.Api;
 using SaasCommerce.Api.Endpoints;
 using SaasCommerce.Api.Middleware;
+using SaasCommerce.Api.Realtime;
 using SaasCommerce.BuildingBlocks;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Contracts.Common;
@@ -53,7 +54,16 @@ builder.Host.UseSerilog((_, _, loggerConfiguration) =>
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 
 builder.Services.AddModules();
-builder.Services.AddBuildingBlocks(builder.Configuration);
+builder.Services.AddBuildingBlocks(
+  builder.Configuration,
+  massTransit =>
+  {
+    massTransit.AddConsumer<SaleCompletedRealtimeConsumer>();
+    massTransit.AddConsumer<SaleFailedRealtimeConsumer>();
+    massTransit.AddConsumer<InventoryAdjustedRealtimeConsumer>();
+    massTransit.AddConsumer<InventoryDeductedRealtimeConsumer>();
+    massTransit.AddConsumer<LowStockDetectedRealtimeConsumer>();
+  });
 builder.Services.AddCors(options =>
 {
   var allowedOrigins = builder.Configuration

@@ -1,0 +1,154 @@
+using MassTransit;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
+using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
+using SaasCommerce.Modules.Sales.Application.Sales;
+using SaasCommerce.Modules.Sales.Contracts.Events.V1;
+
+namespace SaasCommerce.Api.Realtime;
+
+public sealed class SaleCompletedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<SaleCompletedRealtimeConsumer> logger)
+  : IdempotentConsumer<SaleCompletedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<SaleCompletedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      SaleRealtimeEvents.StatusChanged,
+      new SaleStatusChangedNotificationV1(
+        Guid.NewGuid(),
+        context.Message.CorrelationId,
+        context.Message.SaleId,
+        context.Message.BusinessId,
+        context.Message.BranchId,
+        context.Message.UserId,
+        "Completed",
+        null,
+        context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class SaleFailedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<SaleFailedRealtimeConsumer> logger)
+  : IdempotentConsumer<SaleFailedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<SaleFailedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      SaleRealtimeEvents.StatusChanged,
+      new SaleStatusChangedNotificationV1(
+        Guid.NewGuid(),
+        context.Message.CorrelationId,
+        context.Message.SaleId,
+        context.Message.BusinessId,
+        context.Message.BranchId,
+        context.Message.UserId,
+        "Failed",
+        context.Message.Reason,
+        context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class InventoryAdjustedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InventoryAdjustedRealtimeConsumer> logger)
+  : IdempotentConsumer<InventoryAdjustedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<InventoryAdjustedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryRealtimeEvents.Adjusted,
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryRealtimeEvents.StockChanged,
+      new InventoryStockChangedNotificationV1(
+        Guid.NewGuid(),
+        context.Message.CorrelationId,
+        context.Message.BusinessId,
+        context.Message.BranchId,
+        context.Message.ProductId,
+        null,
+        "ManualAdjustment",
+        context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class InventoryDeductedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InventoryDeductedRealtimeConsumer> logger)
+  : IdempotentConsumer<InventoryDeductedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<InventoryDeductedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryRealtimeEvents.StockChanged,
+      new InventoryStockChangedNotificationV1(
+        Guid.NewGuid(),
+        context.Message.CorrelationId,
+        context.Message.BusinessId,
+        context.Message.BranchId,
+        null,
+        context.Message.SaleId,
+        "SaleDeduction",
+        context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class LowStockDetectedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<LowStockDetectedRealtimeConsumer> logger)
+  : IdempotentConsumer<LowStockDetectedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<LowStockDetectedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryRealtimeEvents.LowStockDetected,
+      new LowStockDetectedNotificationV1(
+        Guid.NewGuid(),
+        context.Message.CorrelationId,
+        context.Message.BusinessId,
+        context.Message.BranchId,
+        context.Message.ProductId,
+        context.Message.ProductName,
+        context.Message.CurrentStock,
+        context.Message.MinimumStock,
+        context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
