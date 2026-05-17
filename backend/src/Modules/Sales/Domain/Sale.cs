@@ -48,6 +48,8 @@ public sealed class Sale
 
   public Guid UserId { get; private set; }
 
+  public Guid? CustomerId { get; private set; }
+
   public SaleStatus Status { get; private set; }
 
   public string PaymentMethod { get; private set; } = string.Empty;
@@ -102,6 +104,22 @@ public sealed class Sale
     }
 
     return sale;
+  }
+
+  public void AssignCustomer(Guid customerId)
+  {
+    if (customerId == Guid.Empty)
+    {
+      throw new ArgumentException("Customer id is required.", nameof(customerId));
+    }
+
+    if (Status != SaleStatus.Received)
+    {
+      throw new InvalidOperationException("Only received sales can assign a customer.");
+    }
+
+    CustomerId = customerId;
+    UpdatedAt = CreatedAt;
   }
 
   public void MarkAsProcessing(DateTimeOffset processedAt)

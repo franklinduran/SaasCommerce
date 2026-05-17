@@ -36,6 +36,11 @@ public sealed class CompleteSaleUseCase(
       return Result.Success();
     }
 
+    if (sale.Status is SaleStatus.Failed or SaleStatus.Cancelled)
+    {
+      return Result.Success();
+    }
+
     try
     {
       sale.Complete(clock.UtcNow);

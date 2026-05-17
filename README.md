@@ -1033,3 +1033,60 @@ Worker: consumers delgados e idempotencia.
 Saga: solicitudes, completado, fallo y duplicados con MassTransit Test Harness.
 Architecture: Application sin MassTransit/SignalR, Domain sin EF/Infrastructure y Contracts sin Infrastructure.
 ```
+
+## Etapa 9: Customers API Y Sales API
+
+Etapa 9 expone Customers y Sales por HTTP sin mover reglas de negocio a API. Los endpoints delegan a casos de uso en Application, usan `BusinessId` del JWT y mantienen `ApiResponse` con `isSuccess`, `data` y `error`.
+
+### Customers
+
+Endpoints autenticados:
+
+```txt
+POST   /api/customers
+GET    /api/customers
+GET    /api/customers/{id}
+PUT    /api/customers/{id}
+DELETE /api/customers/{id}
+```
+
+Reglas:
+
+```txt
+Nombre requerido.
+Telefono y email opcionales, pero validados si se envian.
+GET/listado filtra por BusinessId del token.
+DELETE desactiva el cliente.
+Clientes de otro BusinessId devuelven NOT_FOUND.
+```
+
+### Sales
+
+Endpoints autenticados:
+
+```txt
+POST /api/sales
+GET  /api/sales
+GET  /api/sales/{id}
+POST /api/sales/{id}/cancel
+```
+
+Reglas:
+
+```txt
+POST /api/sales crea Sale en Received.
+Precios y total se calculan desde Catalog.
+BusinessId, BranchId y UserId salen del token.
+SaleCreatedEventV1 se guarda en Outbox.
+La saga procesa el flujo asincrono desde Worker.
+GET/listado filtra por BusinessId.
+Cancel respeta las reglas de dominio de Sale.
+```
+
+Requests locales:
+
+```txt
+requests/10-customers.http
+requests/11-sales.http
+requests/12-sales-saga-http-flow.http
+```

@@ -6,9 +6,12 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Catalog.Contracts.Sales;
+using SaasCommerce.Modules.Customers.Application.Abstractions;
+using SaasCommerce.Modules.Customers.Domain;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Contracts.Availability;
@@ -35,8 +38,10 @@ public sealed class SalesWorkflowTests
     var saleCreated = SaleCreated(scenario);
     var useCase = new CreateSaleUseCase(
       scenario.Sales,
-      scenario.Outbox,
-      scenario.Realtime,
+      scenario.Customers,
+      scenario.ProductPolicies,
+      scenario.CurrentUser,
+      scenario.SaleEvents,
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -57,8 +62,10 @@ public sealed class SalesWorkflowTests
     await scenario.Sales.AddAsync(CreateProcessingSale(scenario));
     var useCase = new CreateSaleUseCase(
       scenario.Sales,
-      scenario.Outbox,
-      scenario.Realtime,
+      scenario.Customers,
+      scenario.ProductPolicies,
+      scenario.CurrentUser,
+      scenario.SaleEvents,
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -75,8 +82,10 @@ public sealed class SalesWorkflowTests
     var scenario = TestScenario.Create();
     var useCase = new CreateSaleUseCase(
       scenario.Sales,
-      scenario.Outbox,
-      scenario.Realtime,
+      scenario.Customers,
+      scenario.ProductPolicies,
+      scenario.CurrentUser,
+      scenario.SaleEvents,
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -120,10 +129,13 @@ public sealed class SalesWorkflowTests
     var scenario = TestScenario.Create();
     scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, true));
     scenario.InventoryAvailability.Results[scenario.ProductId] = Availability(scenario, true);
+    await scenario.Sales.AddAsync(CreateProcessingSale(scenario));
     var useCase = new ValidateSaleStockUseCase(
+      scenario.Sales,
       scenario.ProductPolicies,
       scenario.InventoryAvailability,
       scenario.Outbox,
+      scenario.Realtime,
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -140,10 +152,13 @@ public sealed class SalesWorkflowTests
     scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, true));
     scenario.InventoryAvailability.Results[scenario.ProductId] =
       Availability(scenario, false, "Insufficient stock.");
+    await scenario.Sales.AddAsync(CreateProcessingSale(scenario));
     var useCase = new ValidateSaleStockUseCase(
+      scenario.Sales,
       scenario.ProductPolicies,
       scenario.InventoryAvailability,
       scenario.Outbox,
+      scenario.Realtime,
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -340,6 +355,36 @@ public sealed class SalesWorkflowTests
   }
 
   [Fact]
+  public async Task CompleteSale_ShouldIgnoreCancelledSale()
+  {
+    var scenario = TestScenario.Create();
+    var sale = CreateProcessingSale(scenario);
+    sale.Cancel("cancelled before async completion", Now);
+    await scenario.Sales.AddAsync(sale);
+    var useCase = new CompleteSaleUseCase(
+      scenario.Sales,
+      scenario.Realtime,
+      scenario.Clock,
+      scenario.UnitOfWork);
+
+    var result = await useCase.ExecuteAsync(new SaleCompletedEventV1(
+      Guid.NewGuid(),
+      scenario.CorrelationId,
+      scenario.SaleId,
+      scenario.BusinessId,
+      scenario.BranchId,
+      scenario.UserId,
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      scenario.Total,
+      Now));
+
+    result.IsSuccess.Should().BeTrue();
+    sale.Status.Should().Be(SaleStatus.Cancelled);
+    scenario.Realtime.Notifications.Should().BeEmpty();
+  }
+
+  [Fact]
   public async Task FailSale_ShouldNotifyBusiness_WhenSaleFails()
   {
     var scenario = TestScenario.Create();
@@ -393,6 +438,34 @@ public sealed class SalesWorkflowTests
 
     result.IsSuccess.Should().BeTrue();
     sale.Status.Should().Be(SaleStatus.Completed);
+    scenario.Realtime.Notifications.Should().BeEmpty();
+  }
+
+  [Fact]
+  public async Task FailSale_ShouldIgnoreCancelledSale()
+  {
+    var scenario = TestScenario.Create();
+    var sale = CreateProcessingSale(scenario);
+    sale.Cancel("cancelled before async failure", Now);
+    await scenario.Sales.AddAsync(sale);
+    var useCase = new FailSaleUseCase(
+      scenario.Sales,
+      scenario.Realtime,
+      scenario.Clock,
+      scenario.UnitOfWork);
+
+    var result = await useCase.ExecuteAsync(new SaleFailedEventV1(
+      Guid.NewGuid(),
+      scenario.CorrelationId,
+      scenario.SaleId,
+      scenario.BusinessId,
+      scenario.BranchId,
+      scenario.UserId,
+      "late failure",
+      Now));
+
+    result.IsSuccess.Should().BeTrue();
+    sale.Status.Should().Be(SaleStatus.Cancelled);
     scenario.Realtime.Notifications.Should().BeEmpty();
   }
 
@@ -518,6 +591,8 @@ public sealed class SalesWorkflowTests
 
     public NoopUnitOfWork UnitOfWork { get; } = new();
 
+    public FakeCurrentUserService CurrentUser { get; } = new();
+
     public FakeProductSalesPolicyReader ProductPolicies { get; } = new();
 
     public FakeInventoryAvailabilityService InventoryAvailability { get; } = new();
@@ -526,9 +601,26 @@ public sealed class SalesWorkflowTests
 
     public InMemorySaleRepository Sales { get; } = new();
 
+    public InMemoryCustomerRepository Customers { get; } = new();
+
     public RecordingRealtimeNotifier Realtime { get; } = new();
 
+    public ISaleEventWriter SaleEvents => new SaleEventWriter(Outbox, Realtime, Clock);
+
     public static TestScenario Create() => new();
+  }
+
+  private sealed class FakeCurrentUserService : ICurrentUserService
+  {
+    public Guid? UserId => Guid.NewGuid();
+
+    public Guid? BusinessId => Guid.NewGuid();
+
+    public Guid? BranchId => Guid.NewGuid();
+
+    public IReadOnlyCollection<string> Roles => ["Admin"];
+
+    public bool IsAuthenticated => true;
   }
 
   private sealed class RecordingOutboxWriter : IOutboxWriter
@@ -672,6 +764,52 @@ public sealed class SalesWorkflowTests
       sales[(sale.BusinessId.Value, sale.Id)] = sale;
       return Task.CompletedTask;
     }
+
+    public Task<int> CountAsync(
+      BusinessId businessId,
+      SaleSearchCriteria criteria,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(sales.Values.Count(sale => sale.BusinessId == businessId));
+
+    public Task<IReadOnlyCollection<Sale>> ListAsync(
+      BusinessId businessId,
+      SaleSearchCriteria criteria,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<Sale>>(
+        sales.Values.Where(sale => sale.BusinessId == businessId).ToArray());
+  }
+
+  private sealed class InMemoryCustomerRepository : ICustomerRepository
+  {
+    private readonly Dictionary<(Guid BusinessId, Guid CustomerId), Customer> customers = [];
+
+    public Task<Customer?> GetAsync(
+      BusinessId businessId,
+      Guid customerId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(
+        customers.TryGetValue((businessId.Value, customerId), out var customer)
+          ? customer
+          : null);
+
+    public Task AddAsync(Customer customer, CancellationToken cancellationToken = default)
+    {
+      customers[(customer.BusinessId.Value, customer.Id)] = customer;
+      return Task.CompletedTask;
+    }
+
+    public Task<int> CountAsync(
+      BusinessId businessId,
+      CustomerSearchCriteria criteria,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(customers.Values.Count(customer => customer.BusinessId == businessId));
+
+    public Task<IReadOnlyCollection<Customer>> ListAsync(
+      BusinessId businessId,
+      CustomerSearchCriteria criteria,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<Customer>>(
+        customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
   }
 
   private sealed class RecordingRealtimeNotifier : IRealtimeNotifier

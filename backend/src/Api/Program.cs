@@ -17,12 +17,16 @@ using SaasCommerce.Modules;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Requests;
+using SaasCommerce.Modules.Customers.Application.Customers;
+using SaasCommerce.Modules.Customers.Contracts.Requests;
 using SaasCommerce.Modules.Identity.Application.Account;
 using SaasCommerce.Modules.Identity.Application.Auth;
 using SaasCommerce.Modules.Identity.Application.Settings;
 using SaasCommerce.Modules.Identity.Contracts.Requests;
 using SaasCommerce.Modules.Inventory.Application.Stock;
 using SaasCommerce.Modules.Inventory.Contracts.Requests;
+using SaasCommerce.Modules.Sales.Application.Sales;
+using SaasCommerce.Modules.Sales.Contracts.Requests;
 using SaasCommerce.SharedKernel;
 using Serilog;
 
@@ -30,9 +34,11 @@ var builder = WebApplication.CreateBuilder(args);
 const string accountTag = "Account";
 const string authTag = "Auth";
 const string catalogTag = "Catalog";
+const string customersTag = "Customers";
 const string identityTag = "Identity";
 const string inventoryTag = "Inventory";
 const string realtimeTag = "Realtime";
+const string salesTag = "Sales";
 const string systemTag = "System";
 const string tenancyTag = "Tenancy";
 const int generatedJwtSecretBytes = 32;
@@ -335,6 +341,179 @@ app.MapPut(
   })
   .RequireAuthorization()
   .WithTags(tenancyTag);
+
+app.MapPost(
+  "/api/customers",
+  async (
+    CreateCustomerRequest request,
+    ICreateCustomerUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new CreateCustomerCommand(request.FullName, request.Phone, request.Email),
+      cancellationToken);
+
+    return ToApiResult(
+      result,
+      correlationIdProvider,
+      successStatusCode: StatusCodes.Status201Created);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapGet(
+  "/api/customers",
+  async (
+    [AsParameters] CustomerEndpointRequest request,
+    IListCustomersUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new ListCustomersQuery(
+        request.Query,
+        request.IsActive,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapGet(
+  "/api/customers/{id:guid}",
+  async (
+    Guid id,
+    IGetCustomerByIdUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new GetCustomerByIdQuery(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapPut(
+  "/api/customers/{id:guid}",
+  async (
+    Guid id,
+    UpdateCustomerRequest request,
+    IUpdateCustomerUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new UpdateCustomerCommand(id, request.FullName, request.Phone, request.Email, request.IsActive),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapDelete(
+  "/api/customers/{id:guid}",
+  async (
+    Guid id,
+    IDeleteCustomerUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new DeleteCustomerCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapPost(
+  "/api/sales",
+  async (
+    CreateSaleRequest request,
+    ICreateSaleUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new CreateSaleCommand(
+        request.BranchId,
+        request.CustomerId,
+        request.PaymentMethod,
+        request.Items
+          .Select(item => new CreateSaleItemCommand(item.ProductId, item.Quantity))
+          .ToArray()),
+      cancellationToken);
+
+    return ToApiResult(
+      result,
+      correlationIdProvider,
+      successStatusCode: StatusCodes.Status201Created);
+  })
+  .RequireAuthorization()
+  .WithTags(salesTag);
+
+app.MapGet(
+  "/api/sales",
+  async (
+    [AsParameters] SaleEndpointRequest request,
+    IListSalesUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new ListSalesQuery(
+        request.BranchId,
+        request.Status,
+        request.DateFrom,
+        request.DateTo,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(salesTag);
+
+app.MapGet(
+  "/api/sales/{id:guid}",
+  async (
+    Guid id,
+    IGetSaleByIdUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new GetSaleByIdQuery(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(salesTag);
+
+app.MapPost(
+  "/api/sales/{id:guid}/cancel",
+  async (
+    Guid id,
+    CancelSaleRequest request,
+    ICancelSaleUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new CancelSaleCommand(id, request.Reason), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(salesTag);
 
 app.MapPost(
   "/api/catalog/products",
@@ -691,7 +870,8 @@ static void ConfigureDevelopmentJwtSecret(
 static IResult ToApiResult<T>(
   Result<T> result,
   ICorrelationIdProvider correlationIdProvider,
-  int? failureStatusCode = null)
+  int? failureStatusCode = null,
+  int? successStatusCode = null)
 {
   ArgumentNullException.ThrowIfNull(result);
   ArgumentNullException.ThrowIfNull(correlationIdProvider);
@@ -701,7 +881,9 @@ static IResult ToApiResult<T>(
     : null;
 
   return result.IsSuccess
-    ? Results.Ok(ApiResponse.Success(result.Value, correlationIdProvider.CorrelationId))
+    ? Results.Json(
+      ApiResponse.Success(result.Value, correlationIdProvider.CorrelationId),
+      statusCode: successStatusCode ?? StatusCodes.Status200OK)
     : Results.Json(
       ApiResponse.Failure<T>(apiError!, correlationIdProvider.CorrelationId),
       statusCode: failureStatusCode ?? ToFailureStatusCode(apiError!.Code));
@@ -721,24 +903,33 @@ static string ToPublicErrorCode(string code)
   {
     "validation_error" or
       "catalog.invalid_product" or
-      "inventory.invalid_adjustment" => ApiErrorCodes.ValidationError,
+      "inventory.invalid_adjustment" or
+      "customers.invalid_customer" or
+      "sales.invalid_sale" or
+      "sales.invalid_state" => ApiErrorCodes.ValidationError,
     "identity.invalid_credentials" or
       "identity.invalid_refresh_token" or
       "identity.not_authenticated" => ApiErrorCodes.Unauthorized,
     "forbidden" => ApiErrorCodes.Forbidden,
     "identity.invalid_current_user" or
       "catalog.user_context_required" or
-      "inventory.user_context_required" => ApiErrorCodes.TenantContextMissing,
+      "inventory.user_context_required" or
+      "customers.user_context_required" or
+      "sales.user_context_required" => ApiErrorCodes.TenantContextMissing,
     "identity.user_not_found" or
       "tenancy.business_not_found" or
       "tenancy.branch_not_found" or
-      "catalog.category_not_found" => ApiErrorCodes.NotFound,
+      "catalog.category_not_found" or
+      "customers.customer_not_found" or
+      "sales.sale_not_found" or
+      "sales.customer_not_found" => ApiErrorCodes.NotFound,
     "account.duplicate_email" or
       "account.duplicate_identification" or
       "tenancy.duplicate_identification" or
       "catalog.duplicate_category" => ApiErrorCodes.Conflict,
     "catalog.product_not_found" or
-      "inventory.product_not_found" => ApiErrorCodes.ProductNotFound,
+      "inventory.product_not_found" or
+      "sales.product_not_found" => ApiErrorCodes.ProductNotFound,
     "catalog.duplicate_sku" => ApiErrorCodes.ProductSkuAlreadyExists,
     "catalog.duplicate_barcode" => ApiErrorCodes.ProductBarcodeAlreadyExists,
     "inventory.negative_stock" => ApiErrorCodes.InventoryStockInsufficient,

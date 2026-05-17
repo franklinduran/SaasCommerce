@@ -3,7 +3,7 @@
 @seedPassword = Admin123!
 @runId = {{$timestamp}}
 
-### Login
+### Login seed admin
 # @name login
 POST {{apiBase}}/api/auth/login
 Content-Type: application/json
@@ -13,10 +13,7 @@ Content-Type: application/json
   "password": "{{seedPassword}}"
 }
 
-### Customers without token; expected 401 ApiResponse
-GET {{apiBase}}/api/customers
-
-### Create customer
+### Create customer valid
 # @name createCustomer
 POST {{apiBase}}/api/customers
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
@@ -28,7 +25,7 @@ Content-Type: application/json
   "email": "maria.{{runId}}@colmado.local"
 }
 
-### List customers
+### List customers for current BusinessId
 GET {{apiBase}}/api/customers?page=1&pageSize=10&query=Maria&sortBy=name&sortDirection=asc
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
@@ -36,7 +33,7 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 GET {{apiBase}}/api/customers/{{createCustomer.response.body.$.data.id}}
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
-### Update customer
+### Update customer valid
 PUT {{apiBase}}/api/customers/{{createCustomer.response.body.$.data.id}}
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
 Content-Type: application/json
@@ -48,7 +45,7 @@ Content-Type: application/json
   "isActive": true
 }
 
-### Delete/deactivate customer
+### Delete customer
 DELETE {{apiBase}}/api/customers/{{createCustomer.response.body.$.data.id}}
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
@@ -62,3 +59,6 @@ Content-Type: application/json
   "phone": "8095550104",
   "email": "invalid-customer.{{runId}}@colmado.local"
 }
+
+### Endpoint protected without token; expected 401 UNAUTHORIZED
+GET {{apiBase}}/api/customers

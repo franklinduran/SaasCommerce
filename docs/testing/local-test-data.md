@@ -55,5 +55,7 @@ Uso: venta normal; venta fiada futura
 ## Notas de contratos actuales
 
 - Products `pageSize` acepta `10`, `25` o `50`.
-- Customers no tiene endpoints backend expuestos todavia.
-- Sales no tiene endpoint HTTP todavia; el flujo de saga se valida por Outbox tecnico hasta que exista `POST /api/sales`.
+- Customers expone `POST/GET/PUT/DELETE /api/customers` y siempre filtra por `BusinessId` del token.
+- Sales expone `POST /api/sales`, `GET /api/sales`, `GET /api/sales/{id}` y `POST /api/sales/{id}/cancel`.
+- `POST /api/sales` crea la venta en `Received`, calcula precios desde Catalog y agrega `SaleCreatedEventV1` en Outbox.
+- El flujo de saga se valida con API + Worker usando `requests/12-sales-saga-http-flow.http`.

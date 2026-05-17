@@ -1,17 +1,24 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Inventory.Contracts.Availability;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
+using SaasCommerce.Modules.Sales.Application.Abstractions;
+using SaasCommerce.Modules.Sales.Contracts.Events.V1;
+using SaasCommerce.Modules.Sales.Domain;
 using SaasCommerce.SharedKernel;
+using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Sales.Application.Sales;
 
 public sealed class ValidateSaleStockUseCase(
+  ISaleRepository sales,
   IProductSalesPolicyReader productPolicies,
   IInventoryAvailabilityService inventoryAvailability,
   IOutboxWriter outbox,
+  IRealtimeNotifier realtime,
   IClock clock,
   IUnitOfWork unitOfWork) : IValidateSaleStockUseCase
 {
@@ -20,6 +27,41 @@ public sealed class ValidateSaleStockUseCase(
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(stockValidationRequested);
+
+    var sale = await sales.GetAsync(
+      new BusinessId(stockValidationRequested.BusinessId),
+      stockValidationRequested.SaleId,
+      cancellationToken);
+
+    if (sale is null)
+    {
+      await PublishFailedAsync(stockValidationRequested, "Sale was not found.", cancellationToken);
+      return Result.Success();
+    }
+
+    if (sale.Status == SaleStatus.Received)
+    {
+      sale.MarkAsProcessing(clock.UtcNow);
+      await realtime.NotifyBusinessAsync(
+        stockValidationRequested.BusinessId,
+        SaleRealtimeEvents.StatusChanged,
+        new SaleStatusChangedNotificationV1(
+          Guid.NewGuid(),
+          stockValidationRequested.CorrelationId,
+          stockValidationRequested.SaleId,
+          stockValidationRequested.BusinessId,
+          stockValidationRequested.BranchId,
+          stockValidationRequested.UserId,
+          SaleStatus.Processing.ToString(),
+          null,
+          clock.UtcNow),
+        cancellationToken);
+    }
+    else if (sale.Status != SaleStatus.Processing)
+    {
+      await PublishFailedAsync(stockValidationRequested, "Sale is not in a processable state.", cancellationToken);
+      return Result.Success();
+    }
 
     var reason = await GetStockValidationFailureReasonAsync(
       stockValidationRequested,

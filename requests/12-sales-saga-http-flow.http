@@ -1,0 +1,112 @@
+@apiBase = http://localhost:8080
+@seedEmail = admin@test.com
+@seedPassword = Admin123!
+@seedBranchId = 22222222-2222-2222-2222-222222222222
+@runId = {{$timestamp}}
+
+### Login seed admin
+# @name login
+POST {{apiBase}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{seedEmail}}",
+  "password": "{{seedPassword}}"
+}
+
+### Create product for saga sale
+# @name createSagaProduct
+POST {{apiBase}}/api/catalog/products
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productType": "Simple",
+  "name": "Arroz selecto saga {{runId}}",
+  "description": "Producto temporal para validar HTTP -> Outbox -> Saga",
+  "sku": "ARROZ-SAGA-{{runId}}",
+  "barcode": "883{{runId}}",
+  "categoryId": null,
+  "brandId": null,
+  "unitOfMeasure": "Unit",
+  "salePrice": 245.00,
+  "costPrice": 190.00,
+  "wholesalePrice": null,
+  "minSalePrice": null,
+  "taxCategory": "Itbis18",
+  "taxRate": 18.0,
+  "isTaxIncluded": true,
+  "allowsDiscount": true,
+  "trackInventory": true,
+  "minimumStock": 5,
+  "maximumStock": 100,
+  "reorderPoint": 10,
+  "allowNegativeStock": false,
+  "internalCode": null,
+  "supplierCode": null,
+  "parentProductId": null,
+  "variantName": null,
+  "attributesJson": null
+}
+
+### Add stock before sale
+# @name addSagaStock
+POST {{apiBase}}/api/inventory/adjustments
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{createSagaProduct.response.body.$.data.id}}",
+  "quantity": 20,
+  "reason": "InitialLoad"
+}
+
+### Create sale; API should persist Sale Received and queue SaleCreatedEventV1 in Outbox
+# @name createSagaSale
+POST {{apiBase}}/api/sales
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "branchId": "{{seedBranchId}}",
+  "customerId": null,
+  "paymentMethod": "Cash",
+  "items": [
+    {
+      "productId": "{{createSagaProduct.response.body.$.data.id}}",
+      "quantity": 2
+    }
+  ]
+}
+
+### Poll sale status after Worker processes Outbox and Saga
+# Expected with API + Worker running: Received -> Processing -> Completed, or Failed with safe reason.
+GET {{apiBase}}/api/sales/{{createSagaSale.response.body.$.data.saleId}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### List sales by status
+GET {{apiBase}}/api/sales?page=1&pageSize=10&sortBy=createdAt&sortDirection=desc
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Create sale expected to fail later in saga because stock is insufficient
+# HTTP still returns 201 Received; failure is asynchronous through Saga and SignalR.
+# @name createInsufficientStockSale
+POST {{apiBase}}/api/sales
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "branchId": "{{seedBranchId}}",
+  "customerId": null,
+  "paymentMethod": "Cash",
+  "items": [
+    {
+      "productId": "{{createSagaProduct.response.body.$.data.id}}",
+      "quantity": 9999
+    }
+  ]
+}
+
+### Poll failed sale after Worker processes asynchronous flow
+GET {{apiBase}}/api/sales/{{createInsufficientStockSale.response.body.$.data.saleId}}
+Authorization: Bearer {{login.response.body.$.data.accessToken}}

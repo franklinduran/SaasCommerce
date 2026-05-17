@@ -11,4 +11,36 @@ public interface ISaleRepository
     CancellationToken cancellationToken = default);
 
   Task AddAsync(Sale sale, CancellationToken cancellationToken = default);
+
+  Task<int> CountAsync(
+    BusinessId businessId,
+    SaleSearchCriteria criteria,
+    CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<Sale>> ListAsync(
+    BusinessId businessId,
+    SaleSearchCriteria criteria,
+    CancellationToken cancellationToken = default);
+}
+
+public sealed record SaleSearchCriteria(
+  Guid? BranchId,
+  string? Status,
+  DateTimeOffset? DateFrom,
+  DateTimeOffset? DateTo,
+  int Page,
+  int PageSize,
+  SaleSortOption SortBy,
+  SaleSortDirection SortDirection);
+
+public enum SaleSortOption
+{
+  CreatedAt,
+  Total
+}
+
+public enum SaleSortDirection
+{
+  Asc,
+  Desc
 }

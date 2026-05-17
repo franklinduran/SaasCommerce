@@ -1,9 +1,11 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Catalog.Contracts.Sales;
+using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
+using SaasCommerce.Modules.Sales.Contracts.Responses;
 using SaasCommerce.Modules.Sales.Domain;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
@@ -12,11 +14,22 @@ namespace SaasCommerce.Modules.Sales.Application.Sales;
 
 public sealed class CreateSaleUseCase(
   ISaleRepository sales,
-  IOutboxWriter outbox,
-  IRealtimeNotifier realtime,
+  ICustomerRepository customers,
+  IProductSalesPolicyReader productPolicies,
+  ICurrentUserService currentUser,
+  ISaleEventWriter saleEvents,
   IClock clock,
   IUnitOfWork unitOfWork) : ICreateSaleUseCase
 {
+  public Task<Result<SaleResponse>> ExecuteAsync(
+    CreateSaleCommand command,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(command);
+
+    return ExecuteCoreAsync(command, cancellationToken);
+  }
+
   public async Task<Result> ExecuteAsync(
     SaleCreatedEventV1 saleCreated,
     CancellationToken cancellationToken = default)
@@ -58,35 +71,211 @@ public sealed class CreateSaleUseCase(
     }
 
     await sales.AddAsync(sale, cancellationToken);
-    await outbox.AddAsync(saleCreated, cancellationToken);
+    await saleEvents.AddAsync(saleCreated, cancellationToken);
     await unitOfWork.SaveChangesAsync(cancellationToken);
-
-    await NotifyStatusChangedAsync(
+    await saleEvents.NotifyStatusChangedAsync(
       saleCreated,
-      SaleStatus.Processing.ToString(),
+      SaleStatus.Processing,
       null,
       cancellationToken);
 
     return Result.Success();
   }
 
-  private Task NotifyStatusChangedAsync(
-    SaleCreatedEventV1 saleCreated,
-    string status,
-    string? reason,
+  private async Task<Result<SaleResponse>> ExecuteCoreAsync(
+    CreateSaleCommand command,
     CancellationToken cancellationToken)
-    => realtime.NotifyBusinessAsync(
-      saleCreated.BusinessId,
-      SaleRealtimeEvents.StatusChanged,
-      new SaleStatusChangedNotificationV1(
-        Guid.NewGuid(),
-        saleCreated.CorrelationId,
-        saleCreated.SaleId,
-        saleCreated.BusinessId,
-        saleCreated.BranchId,
-        saleCreated.UserId,
-        status,
-        reason,
-        clock.UtcNow),
+  {
+    var userContext = ResolveUserContext();
+
+    if (userContext.IsFailure)
+    {
+      return Result.Failure<SaleResponse>(SalesErrors.UserContextRequired);
+    }
+
+    if (!IsValidCommand(command))
+    {
+      return Result.Failure<SaleResponse>(SalesErrors.InvalidSale);
+    }
+
+    var context = userContext.Value;
+    var branchId = command.BranchId ?? context.BranchId;
+
+    if (branchId != context.BranchId)
+    {
+      return Result.Failure<SaleResponse>(SalesErrors.InvalidSale);
+    }
+
+    var customerResult = await EnsureCustomerCanBeUsedAsync(
+      new BusinessId(context.BusinessId),
+      command.CustomerId,
       cancellationToken);
+
+    if (customerResult.IsFailure)
+    {
+      return Result.Failure<SaleResponse>(customerResult.Error);
+    }
+
+    var linesResult = await BuildSaleLinesAsync(
+      context.BusinessId,
+      command.Items,
+      cancellationToken);
+
+    if (linesResult.IsFailure)
+    {
+      return Result.Failure<SaleResponse>(linesResult.Error);
+    }
+
+    var saleResult = CreateSale(
+      command,
+      context,
+      branchId,
+      linesResult.Value);
+
+    if (saleResult.IsFailure)
+    {
+      return Result.Failure<SaleResponse>(saleResult.Error);
+    }
+
+    var sale = saleResult.Value;
+    var saleCreated = await saleEvents.AddSaleCreatedAsync(
+      sale,
+      context.BusinessId,
+      branchId,
+      context.UserId,
+      cancellationToken);
+
+    await sales.AddAsync(sale, cancellationToken);
+    await unitOfWork.SaveChangesAsync(cancellationToken);
+    await saleEvents.NotifyStatusChangedAsync(
+      saleCreated,
+      SaleStatus.Received,
+      null,
+      cancellationToken);
+
+    return Result.Success(SaleResponseMapper.ToResponse(sale));
+  }
+
+  private Result<SaleUserContext> ResolveUserContext()
+  {
+    if (currentUser.BusinessId is not Guid businessId ||
+        currentUser.UserId is not Guid userId ||
+        currentUser.BranchId is not Guid branchId)
+    {
+      return Result.Failure<SaleUserContext>(SalesErrors.UserContextRequired);
+    }
+
+    return Result.Success(new SaleUserContext(businessId, branchId, userId));
+  }
+
+  private static bool IsValidCommand(CreateSaleCommand command)
+    => command.Items.Count > 0 &&
+      !string.IsNullOrWhiteSpace(command.PaymentMethod);
+
+  private async Task<Result> EnsureCustomerCanBeUsedAsync(
+    BusinessId businessId,
+    Guid? customerId,
+    CancellationToken cancellationToken)
+  {
+    if (!customerId.HasValue)
+    {
+      return Result.Success();
+    }
+
+    var customer = await customers.GetAsync(
+      businessId,
+      customerId.Value,
+      cancellationToken);
+
+    return customer is null || !customer.IsActive
+      ? Result.Failure(SalesErrors.CustomerNotFound)
+      : Result.Success();
+  }
+
+  private async Task<Result<IReadOnlyCollection<SaleLine>>> BuildSaleLinesAsync(
+    Guid businessId,
+    IReadOnlyCollection<CreateSaleItemCommand> items,
+    CancellationToken cancellationToken)
+  {
+    var lines = new List<SaleLine>(items.Count);
+
+    foreach (var item in items)
+    {
+      var lineResult = await CreateSaleLineAsync(
+        businessId,
+        item,
+        cancellationToken);
+
+      if (lineResult.IsFailure)
+      {
+        return Result.Failure<IReadOnlyCollection<SaleLine>>(lineResult.Error);
+      }
+
+      lines.Add(lineResult.Value);
+    }
+
+    return Result.Success<IReadOnlyCollection<SaleLine>>(lines);
+  }
+
+  private async Task<Result<SaleLine>> CreateSaleLineAsync(
+    Guid businessId,
+    CreateSaleItemCommand item,
+    CancellationToken cancellationToken)
+  {
+    if (item.ProductId == Guid.Empty || item.Quantity <= 0)
+    {
+      return Result.Failure<SaleLine>(SalesErrors.InvalidSale);
+    }
+
+    var productPolicy = await productPolicies.GetSalesPolicyAsync(
+      businessId,
+      item.ProductId,
+      cancellationToken);
+
+    if (productPolicy is null || !productPolicy.CanBeSold)
+    {
+      return Result.Failure<SaleLine>(SalesErrors.ProductNotFound);
+    }
+
+    return Result.Success(new SaleLine(
+      item.ProductId,
+      item.Quantity,
+      productPolicy.SalePrice));
+  }
+
+  private Result<Sale> CreateSale(
+    CreateSaleCommand command,
+    SaleUserContext context,
+    Guid branchId,
+    IReadOnlyCollection<SaleLine> lines)
+  {
+    try
+    {
+      var sale = Sale.Create(
+        Guid.NewGuid(),
+        new BusinessId(context.BusinessId),
+        new BranchId(branchId),
+        context.UserId,
+        lines,
+        command.PaymentMethod,
+        clock.UtcNow);
+
+      if (command.CustomerId.HasValue)
+      {
+        sale.AssignCustomer(command.CustomerId.Value);
+      }
+
+      return Result.Success(sale);
+    }
+    catch (ArgumentException)
+    {
+      return Result.Failure<Sale>(SalesErrors.InvalidSale);
+    }
+    catch (InvalidOperationException)
+    {
+      return Result.Failure<Sale>(SalesErrors.InvalidSale);
+    }
+  }
+
+  private sealed record SaleUserContext(Guid BusinessId, Guid BranchId, Guid UserId);
 }

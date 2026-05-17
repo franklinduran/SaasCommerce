@@ -31,7 +31,7 @@ public sealed class FailSaleUseCase(
       return Result.Failure(SalesErrors.SaleNotFound);
     }
 
-    if (sale.Status is SaleStatus.Failed or SaleStatus.Completed)
+    if (sale.Status is SaleStatus.Failed or SaleStatus.Completed or SaleStatus.Cancelled)
     {
       return Result.Success();
     }

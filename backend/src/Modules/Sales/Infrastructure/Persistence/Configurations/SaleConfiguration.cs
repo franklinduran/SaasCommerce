@@ -35,6 +35,8 @@ public sealed class SaleConfiguration : IEntityTypeConfiguration<Sale>
       .HasMaxLength(80)
       .IsRequired();
 
+    builder.Property(sale => sale.CustomerId);
+
     builder.Property(sale => sale.Total)
       .HasPrecision(18, 2)
       .IsRequired();
@@ -64,5 +66,6 @@ public sealed class SaleConfiguration : IEntityTypeConfiguration<Sale>
       .IsUnique();
 
     builder.HasIndex(sale => new { sale.BusinessId, sale.BranchId, sale.Status });
+    builder.HasIndex(sale => new { sale.BusinessId, sale.CustomerId });
   }
 }

@@ -167,8 +167,8 @@ Matriz HTTP integral:
 - Total de requests ejecutados: `38`.
 - Requests con resultado esperado: `38`.
 - Fallidos inesperados: `0`.
-- Incluye health, version, register-business, login, refresh, perfil, password, business, branch, categorias, productos, inventario, errores esperados, Customers pendiente y Sales pendiente.
-- Customers/Sales HTTP devuelven `404 NOT_FOUND` como esperado porque los endpoints aun no estan expuestos.
+- Incluyo health, version, register-business, login, refresh, perfil, password, business, branch, categorias, productos, inventario, errores esperados y los placeholders historicos de Customers/Sales.
+- Actualizacion Etapa 9: Customers y Sales ya tienen endpoints HTTP. Usar `requests/10-customers.http`, `requests/11-sales.http` y `requests/12-sales-saga-http-flow.http` para la validacion actual.
 
 SonarQube:
 
@@ -199,7 +199,7 @@ Usar los archivos en `requests/` con la extension REST Client de VS Code o Rider
 
 ## Validacion tecnica de Saga por Outbox
 
-Hasta que exista `POST /api/sales`, el flujo real de saga puede validarse localmente insertando una venta tecnica en `sales.sales` y un `SaleCreatedEventV1` en `outbox_messages`. Esto no reemplaza el endpoint futuro de POS; solo valida Worker, Outbox, Saga, Consumers e Inbox con infraestructura real.
+Desde Etapa 9, el flujo recomendado es crear ventas con `POST /api/sales` y dejar que API agregue `SaleCreatedEventV1` en Outbox. El procedimiento manual de abajo queda como alternativa tecnica para diagnostico de Worker, Outbox, Saga, Consumers e Inbox.
 
 1. Crear primero un producto inventariable y cargar stock con `requests/03-products.http` y `requests/04-inventory.http`.
 2. Tomar el `productId` creado.
@@ -282,15 +282,15 @@ Inbox contiene ValidateStockConsumer, DeductInventoryConsumer, RegisterPaymentCo
 - [x] Saga completa flujo feliz tecnico.
 - [x] SignalR protegido con JWT.
 - [x] ApiResponse observado en exitos y errores.
-- [ ] Customers HTTP pendiente: modulo base existe, endpoints no expuestos.
-- [ ] Sales HTTP/POS pendiente: infraestructura existe, endpoints no expuestos.
+- [x] Customers HTTP expuesto en Etapa 9.
+- [x] Sales HTTP expuesto en Etapa 9.
 
 ## Hallazgos
 
 1. `GET /health` no existe. Los endpoints reales son `/health/live` y `/health/ready`.
 2. `GET /api/catalog/products?pageSize=5` devuelve `VALIDATION_ERROR`; el contrato actual acepta `10`, `25` y `50`.
-3. Customers tiene modulo/pagina base, pero no endpoints backend.
-4. Sales tiene dominio, saga, outbox/consumers y tests, pero no endpoints HTTP. La validacion local del flujo se hizo por Outbox tecnico.
+3. Customers y Sales quedaron expuestos por HTTP en Etapa 9.
+4. Sales mantiene la saga, Outbox, consumers y tests; la validacion actual debe usar `POST /api/sales` antes de revisar el flujo asincrono.
 5. El scanner local de SonarQube finaliza correctamente, pero registra avisos de permisos de JGit sobre `C:\Users\frank\.config\jgit\config`. No bloquea el CE task ni el Quality Gate.
 
 ## Comandos de regresion
