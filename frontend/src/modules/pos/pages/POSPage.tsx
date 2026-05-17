@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { CustomerSelector } from '@/modules/pos/components/CustomerSelector'
@@ -26,6 +26,7 @@ import type {
 } from '@/modules/pos/types/posTypes'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { HttpClientError } from '@/shared/services/httpClient'
+import { offRealtimeEvent, onRealtimeEvent } from '@/shared/services/signalrClient'
 
 type CurrentSale = {
   reason: string | null
@@ -91,6 +92,24 @@ export function POSPage() {
     onSaleLoaded: applySaleStatus,
     saleId: currentSale?.saleId ?? null,
   })
+
+  useEffect(() => {
+    if (!session?.user.businessId) {
+      return undefined
+    }
+
+    const handler = (payload: { businessId?: string }) => {
+      if (payload.businessId === session.user.businessId) {
+        void queryClient.invalidateQueries({ queryKey: ['pos-products'] })
+      }
+    }
+
+    onRealtimeEvent('inventory.updated', handler)
+
+    return () => {
+      offRealtimeEvent('inventory.updated', handler)
+    }
+  }, [queryClient, session?.user.businessId])
 
   function handleAddProduct(product: POSProduct) {
     cart.addItem({

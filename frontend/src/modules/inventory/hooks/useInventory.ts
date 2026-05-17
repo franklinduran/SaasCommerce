@@ -83,11 +83,13 @@ export function useInventoryRealtimeInvalidation(productId?: string) {
     onRealtimeEvent('inventory.adjusted', handler)
     onRealtimeEvent('inventory.lowStockDetected', handler)
     onRealtimeEvent('inventory.stockChanged', handler)
+    onRealtimeEvent('inventory.updated', handler)
 
     return () => {
       offRealtimeEvent('inventory.adjusted', handler)
       offRealtimeEvent('inventory.lowStockDetected', handler)
       offRealtimeEvent('inventory.stockChanged', handler)
+      offRealtimeEvent('inventory.updated', handler)
     }
   }, [businessId, productId, queryClient])
 }

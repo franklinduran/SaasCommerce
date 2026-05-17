@@ -43,6 +43,7 @@ public sealed class StockItem
     bool allowNegativeStock,
     DateTimeOffset occurredAt,
     Guid? saleId = null,
+    Guid? purchaseId = null,
     string? note = null)
   {
     if (quantity == 0)
@@ -72,6 +73,7 @@ public sealed class StockItem
         quantity,
         reason,
         saleId,
+        purchaseId,
         note),
       userId,
       occurredAt);

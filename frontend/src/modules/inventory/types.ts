@@ -31,6 +31,7 @@ export type InventoryMovement = {
   quantity: number
   reason: string
   saleId: string | null
+  purchaseId: string | null
   note: string | null
   userId: string
   createdAt: string

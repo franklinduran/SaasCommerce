@@ -48,7 +48,7 @@ public sealed class DeductSaleInventoryUseCase(
         workItem.AllowNegativeStock,
         clock.UtcNow,
         inventoryDeductionRequested.SaleId,
-        $"Sale {inventoryDeductionRequested.SaleId:D}");
+        note: $"Sale {inventoryDeductionRequested.SaleId:D}");
 
       await inventory.AddMovementAsync(movement, cancellationToken);
 

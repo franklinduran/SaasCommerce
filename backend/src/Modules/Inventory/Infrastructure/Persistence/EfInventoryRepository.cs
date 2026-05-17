@@ -51,6 +51,19 @@ public sealed class EfInventoryRepository(AppDbContext dbContext) : IInventoryRe
           movement.SaleId == saleId,
         cancellationToken);
 
+  public Task<bool> HasPurchaseMovementAsync(
+    BusinessId businessId,
+    BranchId branchId,
+    Guid purchaseId,
+    CancellationToken cancellationToken = default)
+    => dbContext.Set<InventoryMovement>()
+      .AsNoTracking()
+      .AnyAsync(
+        movement => movement.BusinessId == businessId &&
+          movement.BranchId == branchId &&
+          movement.PurchaseId == purchaseId,
+        cancellationToken);
+
   public async Task<int> CountStockAsync(
     BusinessId businessId,
     BranchId? branchId,

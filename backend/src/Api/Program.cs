@@ -26,6 +26,9 @@ using SaasCommerce.Modules.Identity.Application.Settings;
 using SaasCommerce.Modules.Identity.Contracts.Requests;
 using SaasCommerce.Modules.Inventory.Application.Stock;
 using SaasCommerce.Modules.Inventory.Contracts.Requests;
+using SaasCommerce.Modules.Purchasing.Application.Purchases;
+using SaasCommerce.Modules.Purchasing.Application.Suppliers;
+using SaasCommerce.Modules.Purchasing.Contracts.Requests;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Requests;
 using SaasCommerce.SharedKernel;
@@ -38,8 +41,10 @@ const string catalogTag = "Catalog";
 const string customersTag = "Customers";
 const string identityTag = "Identity";
 const string inventoryTag = "Inventory";
+const string purchasesTag = "Purchases";
 const string realtimeTag = "Realtime";
 const string salesTag = "Sales";
+const string suppliersTag = "Suppliers";
 const string systemTag = "System";
 const string tenancyTag = "Tenancy";
 const int generatedJwtSecretBytes = 32;
@@ -63,6 +68,9 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InventoryAdjustedRealtimeConsumer>();
     massTransit.AddConsumer<InventoryDeductedRealtimeConsumer>();
     massTransit.AddConsumer<LowStockDetectedRealtimeConsumer>();
+    massTransit.AddConsumer<PurchaseReceivedRealtimeConsumer>();
+    massTransit.AddConsumer<InventoryIncreasedRealtimeConsumer>();
+    massTransit.AddConsumer<ProductCostUpdatedRealtimeConsumer>();
   });
 builder.Services.AddCors(options =>
 {
@@ -848,6 +856,181 @@ app.MapGet(
   .RequireAuthorization()
   .WithTags(inventoryTag);
 
+app.MapPost(
+  "/api/suppliers",
+  async (
+    CreateSupplierRequest request,
+    CreateSupplierHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new CreateSupplierCommand(
+        request.Name,
+        request.Rnc,
+        request.Phone,
+        request.Email,
+        request.Address),
+      cancellationToken);
+
+    return ToApiResult(
+      result,
+      correlationIdProvider,
+      successStatusCode: StatusCodes.Status201Created);
+  })
+  .RequireAuthorization()
+  .WithTags(suppliersTag);
+
+app.MapPut(
+  "/api/suppliers/{id:guid}",
+  async (
+    Guid id,
+    UpdateSupplierRequest request,
+    UpdateSupplierHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new UpdateSupplierCommand(
+        id,
+        request.Name,
+        request.Rnc,
+        request.Phone,
+        request.Email,
+        request.Address,
+        request.IsActive),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(suppliersTag);
+
+app.MapGet(
+  "/api/suppliers",
+  async (
+    [AsParameters] SupplierEndpointRequest request,
+    GetSuppliersHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetSuppliersQuery(
+        request.Query,
+        request.IsActive,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(suppliersTag);
+
+app.MapPost(
+  "/api/purchases",
+  async (
+    CreatePurchaseRequest request,
+    CreatePurchaseHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new CreatePurchaseCommand(
+        request.SupplierId,
+        request.BranchId,
+        request.Items.Select(item => new CreatePurchaseItemCommand(
+          item.ProductId,
+          item.Quantity,
+          item.UnitCost)).ToArray(),
+        request.SupplierInvoiceNumber,
+        request.PurchaseDate,
+        request.Notes,
+        request.ReceiveNow),
+      cancellationToken);
+
+    return ToApiResult(
+      result,
+      correlationIdProvider,
+      successStatusCode: StatusCodes.Status201Created);
+  })
+  .RequireAuthorization()
+  .WithTags(purchasesTag);
+
+app.MapGet(
+  "/api/purchases",
+  async (
+    [AsParameters] PurchaseEndpointRequest request,
+    GetPurchasesHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetPurchasesQuery(
+        request.SupplierId,
+        request.BranchId,
+        request.Status,
+        request.Query,
+        request.DateFrom,
+        request.DateTo,
+        request.Page ?? 1,
+        request.PageSize ?? 10,
+        request.SortBy,
+        request.SortDirection),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(purchasesTag);
+
+app.MapGet(
+  "/api/purchases/{id:guid}",
+  async (
+    Guid id,
+    GetPurchaseByIdHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new GetPurchaseByIdQuery(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(purchasesTag);
+
+app.MapPost(
+  "/api/purchases/{id:guid}/receive",
+  async (
+    Guid id,
+    ReceivePurchaseHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new ReceivePurchaseCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(purchasesTag);
+
+app.MapPost(
+  "/api/purchases/{id:guid}/cancel",
+  async (
+    Guid id,
+    CancelPurchaseHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new CancelPurchaseCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(purchasesTag);
+
 app.MapHub<RealtimeHub>("/hubs/realtime")
   .RequireAuthorization()
   .WithTags(realtimeTag);
@@ -964,6 +1147,9 @@ static string ToPublicErrorCode(string code)
       "inventory.invalid_adjustment" or
       "customers.invalid_customer" or
       "sales.invalid_sale" or
+      "suppliers.invalid_supplier" or
+      "purchases.invalid_purchase" or
+      "purchases.invalid_state" or
       "sales.invalid_state" => ApiErrorCodes.ValidationError,
     "identity.invalid_credentials" or
       "identity.invalid_refresh_token" or
@@ -973,25 +1159,32 @@ static string ToPublicErrorCode(string code)
       "catalog.user_context_required" or
       "inventory.user_context_required" or
       "customers.user_context_required" or
-      "sales.user_context_required" => ApiErrorCodes.TenantContextMissing,
+      "sales.user_context_required" or
+      "suppliers.user_context_required" or
+      "purchases.user_context_required" => ApiErrorCodes.TenantContextMissing,
     "identity.user_not_found" or
       "tenancy.business_not_found" or
       "tenancy.branch_not_found" or
       "catalog.category_not_found" or
       "customers.customer_not_found" or
       "sales.sale_not_found" or
-      "sales.customer_not_found" => ApiErrorCodes.NotFound,
+      "sales.customer_not_found" or
+      "suppliers.supplier_not_found" or
+      "purchases.purchase_not_found" or
+      "purchases.supplier_not_found" => ApiErrorCodes.NotFound,
     "account.duplicate_email" or
       "account.duplicate_identification" or
       "tenancy.duplicate_identification" or
       "catalog.duplicate_category" => ApiErrorCodes.Conflict,
     "catalog.product_not_found" or
       "inventory.product_not_found" or
-      "sales.product_not_found" => ApiErrorCodes.ProductNotFound,
+      "sales.product_not_found" or
+      "purchases.product_not_found" => ApiErrorCodes.ProductNotFound,
     "catalog.duplicate_sku" => ApiErrorCodes.ProductSkuAlreadyExists,
     "catalog.duplicate_barcode" => ApiErrorCodes.ProductBarcodeAlreadyExists,
     "inventory.negative_stock" => ApiErrorCodes.InventoryStockInsufficient,
-    "inventory.product_does_not_track_inventory" => ApiErrorCodes.InventoryProductNotTracked,
+    "inventory.product_does_not_track_inventory" or
+      "purchases.product_does_not_track_inventory" => ApiErrorCodes.InventoryProductNotTracked,
     _ => code.ToUpperInvariant().Replace('.', '_')
   };
 

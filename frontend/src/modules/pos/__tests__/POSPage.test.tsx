@@ -10,17 +10,17 @@ import { usePOSCartStore } from '@/modules/pos/store/posCartStore'
 import type { SaleStatusChangedNotification } from '@/modules/pos/types/posTypes'
 
 const realtimeMock = vi.hoisted(() => ({
-  handlers: new Map<string, Set<(payload: SaleStatusChangedNotification) => void>>(),
+  handlers: new Map<string, Set<(payload: unknown) => void>>(),
 }))
 
 vi.mock('@/shared/services/signalrClient', () => ({
   offRealtimeEvent: vi.fn(
-    (eventName: string, handler: (payload: SaleStatusChangedNotification) => void) => {
+    (eventName: string, handler: (payload: unknown) => void) => {
       realtimeMock.handlers.get(eventName)?.delete(handler)
     },
   ),
   onRealtimeEvent: vi.fn(
-    (eventName: string, handler: (payload: SaleStatusChangedNotification) => void) => {
+    (eventName: string, handler: (payload: unknown) => void) => {
       const handlers = realtimeMock.handlers.get(eventName) ?? new Set()
 
       handlers.add(handler)
@@ -31,6 +31,7 @@ vi.mock('@/shared/services/signalrClient', () => ({
 
 const server = setupServer(
   http.get('http://localhost:5000/api/catalog/products', ({ request }) => {
+    productRequests += 1
     const url = new URL(request.url)
     const query = url.searchParams.get('query')?.toLowerCase() ?? ''
     const items = [createProduct()].filter((product) =>
@@ -57,6 +58,7 @@ describe('POSPage', () => {
 
   beforeEach(() => {
     lastSaleRequest = null
+    productRequests = 0
     realtimeMock.handlers.clear()
     usePOSCartStore.getState().clearCart()
     useAuthStore.getState().setSession(createSession())
@@ -181,9 +183,31 @@ describe('POSPage', () => {
     expect(screen.queryByText('Carrito vacio')).toBeNull()
     expect(screen.getAllByText('Stock insuficiente')).toHaveLength(2)
   })
+
+  it('refreshes products when inventory.updated arrives', async () => {
+    renderPOSPage()
+
+    expect(await screen.findByText('Cafe molido')).toBeTruthy()
+    expect(productRequests).toBe(1)
+
+    act(() => {
+      realtimeMock.handlers.get('inventory.updated')?.forEach((handler) =>
+        handler({
+          branchId,
+          businessId,
+          productId,
+        }),
+      )
+    })
+
+    await waitFor(() => {
+      expect(productRequests).toBeGreaterThan(1)
+    })
+  })
 })
 
 let lastSaleRequest: unknown = null
+let productRequests = 0
 
 const businessId = '11111111-1111-4111-8111-111111111111'
 const branchId = '22222222-2222-4222-8222-222222222222'

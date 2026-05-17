@@ -45,6 +45,7 @@ internal static class InventoryResponseMapper
       movement.Quantity,
       movement.Reason.ToString(),
       movement.SaleId,
+      movement.PurchaseId,
       movement.Note,
       movement.UserId,
       movement.CreatedAt);

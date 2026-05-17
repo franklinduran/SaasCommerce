@@ -5,6 +5,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
 using SaasCommerce.Modules.Inventory.Application.Stock;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
+using SaasCommerce.Modules.Purchasing.Application.Purchases;
+using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 
@@ -149,6 +151,78 @@ public sealed class LowStockDetectedRealtimeConsumer(
         context.Message.CurrentStock,
         context.Message.MinimumStock,
         context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class PurchaseReceivedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<PurchaseReceivedRealtimeConsumer> logger)
+  : IdempotentConsumer<PurchaseReceivedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<PurchaseReceivedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      PurchaseRealtimeEvents.Received,
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      PurchaseRealtimeEvents.Received,
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class InventoryIncreasedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InventoryIncreasedRealtimeConsumer> logger)
+  : IdempotentConsumer<InventoryIncreasedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<InventoryIncreasedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      PurchaseRealtimeEvents.InventoryUpdated,
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      PurchaseRealtimeEvents.InventoryUpdated,
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class ProductCostUpdatedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<ProductCostUpdatedRealtimeConsumer> logger)
+  : IdempotentConsumer<ProductCostUpdatedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<ProductCostUpdatedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      PurchaseRealtimeEvents.ProductCostUpdated,
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      PurchaseRealtimeEvents.ProductCostUpdated,
+      context.Message,
       context.CancellationToken);
   }
 }

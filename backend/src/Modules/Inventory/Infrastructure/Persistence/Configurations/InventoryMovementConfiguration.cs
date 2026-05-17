@@ -45,6 +45,8 @@ public sealed class InventoryMovementConfiguration : IEntityTypeConfiguration<In
 
     builder.Property(movement => movement.SaleId);
 
+    builder.Property(movement => movement.PurchaseId);
+
     builder.Property(movement => movement.Note)
       .HasMaxLength(240);
 
@@ -53,5 +55,6 @@ public sealed class InventoryMovementConfiguration : IEntityTypeConfiguration<In
 
     builder.HasIndex(movement => new { movement.BusinessId, movement.BranchId, movement.ProductId, movement.CreatedAt });
     builder.HasIndex(movement => new { movement.BusinessId, movement.BranchId, movement.SaleId });
+    builder.HasIndex(movement => new { movement.BusinessId, movement.BranchId, movement.PurchaseId });
   }
 }

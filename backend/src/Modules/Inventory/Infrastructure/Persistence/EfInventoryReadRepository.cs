@@ -266,6 +266,7 @@ public sealed class EfInventoryReadRepository(AppDbContext dbContext) : IInvento
         movement.Quantity,
         movement.Reason.ToString(),
         movement.SaleId,
+        movement.PurchaseId,
         movement.Note,
         movement.UserId,
         movement.CreatedAt);

@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Boxes,
+  Building2,
   ChevronDown,
   CircleDollarSign,
   History,
@@ -36,6 +37,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Productos', path: '/products', icon: Package },
   { label: 'Inventario', path: '/inventory', icon: Boxes },
   { label: 'Clientes', path: '/customers', icon: Users },
+  { label: 'Proveedores', path: '/suppliers', icon: Building2 },
   { label: 'Compras', path: '/purchases', icon: Truck },
   { label: 'Facturas', path: '/invoices', icon: ReceiptText },
   { label: 'Reportes', path: '/reports', icon: BarChart3 },
@@ -52,6 +54,7 @@ const pageTitles: Record<string, string> = {
   '/products': 'Productos',
   '/inventory': 'Inventario',
   '/customers': 'Clientes',
+  '/suppliers': 'Proveedores',
   '/purchases': 'Compras',
   '/invoices': 'Facturas',
   '/reports': 'Reportes',
@@ -204,6 +207,10 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith('/inventory/products/')) {
     return 'Detalle de inventario'
+  }
+
+  if (pathname.startsWith('/purchases/')) {
+    return pathname === '/purchases/new' ? 'Nueva compra' : 'Detalle de compra'
   }
 
   return 'Inicio'

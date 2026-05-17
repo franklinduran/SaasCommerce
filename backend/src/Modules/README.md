@@ -12,6 +12,7 @@ Initial module ownership:
 - Customers: customers, credit accounts, receivables and customer payments.
 - Billing: receipts, invoices, fiscal sequences and future tax documents.
 - Payments: payment methods, sale payments, cash movements and payment validation.
+- Purchasing: suppliers, purchases, purchase reception and replenishment cost events.
 - Reporting: dashboards, metrics, reports and read models.
 
 Rules:

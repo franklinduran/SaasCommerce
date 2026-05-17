@@ -12,6 +12,7 @@ public sealed record InventoryMovementResponse(
   decimal Quantity,
   string Reason,
   Guid? SaleId,
+  Guid? PurchaseId,
   string? Note,
   Guid UserId,
   DateTimeOffset CreatedAt);

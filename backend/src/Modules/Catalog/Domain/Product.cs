@@ -117,6 +117,34 @@ public sealed class Product
     UpdatedAt = updatedAt;
   }
 
+  public void UpdateAverageCost(
+    decimal currentStock,
+    decimal purchasedQuantity,
+    decimal unitCost,
+    DateTimeOffset updatedAt)
+  {
+    if (currentStock < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(currentStock), "Current stock cannot be negative.");
+    }
+
+    if (purchasedQuantity <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(purchasedQuantity), "Purchased quantity must be greater than zero.");
+    }
+
+    if (unitCost < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(unitCost), "Unit cost cannot be negative.");
+    }
+
+    var totalQuantity = currentStock + purchasedQuantity;
+    CostPrice = totalQuantity == 0
+      ? unitCost
+      : Math.Round(((currentStock * CostPrice) + (purchasedQuantity * unitCost)) / totalQuantity, 2);
+    UpdatedAt = updatedAt;
+  }
+
   private void ApplyDetails(
     ProductIdentity identity,
     ProductCodes codes,

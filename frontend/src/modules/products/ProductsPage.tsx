@@ -17,6 +17,7 @@ import {
   useActivateProductMutation,
   useCategoriesQuery,
   useDeactivateProductMutation,
+  useProductsRealtimeInvalidation,
   useProductsQuery,
 } from '@/modules/products/hooks/useProducts'
 import type { Product, ProductFilters } from '@/modules/products/types'
@@ -63,6 +64,7 @@ export function ProductsPage() {
     () => (drawerMode === 'edit' ? 'Editar producto' : 'Crear producto'),
     [drawerMode],
   )
+  useProductsRealtimeInvalidation()
 
   function updateFilters(next: Partial<ProductFilters>) {
     setFilters((current) => ({

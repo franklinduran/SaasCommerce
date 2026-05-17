@@ -28,6 +28,7 @@ public sealed class InventoryMovement
     Quantity = snapshot.Quantity;
     Reason = snapshot.Reason;
     SaleId = snapshot.SaleId;
+    PurchaseId = snapshot.PurchaseId;
     Note = NormalizeNote(snapshot.Note);
     UserId = userId;
     CreatedAt = createdAt;
@@ -51,6 +52,8 @@ public sealed class InventoryMovement
 
   public Guid? SaleId { get; private set; }
 
+  public Guid? PurchaseId { get; private set; }
+
   public string? Note { get; private set; }
 
   public Guid UserId { get; private set; }
@@ -70,4 +73,5 @@ public sealed record InventoryMovementSnapshot(
   decimal Quantity,
   InventoryMovementReason Reason,
   Guid? SaleId = null,
+  Guid? PurchaseId = null,
   string? Note = null);

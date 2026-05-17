@@ -49,6 +49,21 @@ const PurchasesPage = lazy(() =>
     default: module.PurchasesPage,
   })),
 )
+const NewPurchasePage = lazy(() =>
+  import('@/modules/purchases/pages/NewPurchasePage').then((module) => ({
+    default: module.NewPurchasePage,
+  })),
+)
+const PurchaseDetailPage = lazy(() =>
+  import('@/modules/purchases/pages/PurchaseDetailPage').then((module) => ({
+    default: module.PurchaseDetailPage,
+  })),
+)
+const SuppliersPage = lazy(() =>
+  import('@/modules/suppliers/SuppliersPage').then((module) => ({
+    default: module.SuppliersPage,
+  })),
+)
 const InvoicesPage = lazy(() =>
   import('@/modules/invoices/InvoicesPage').then((module) => ({
     default: module.InvoicesPage,
@@ -107,6 +122,18 @@ export function CustomersRoute() {
 
 export function PurchasesRoute() {
   return <PurchasesPage />
+}
+
+export function NewPurchaseRoute() {
+  return <NewPurchasePage />
+}
+
+export function PurchaseDetailRoute() {
+  return <PurchaseDetailPage />
+}
+
+export function SuppliersRoute() {
+  return <SuppliersPage />
 }
 
 export function InvoicesRoute() {

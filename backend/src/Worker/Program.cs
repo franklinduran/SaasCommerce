@@ -29,6 +29,7 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<PaymentRegistrationRequestedConsumer>();
     massTransit.AddConsumer<InvoiceGenerationRequestedConsumer>();
     massTransit.AddConsumer<SaleStatusChangedConsumer>();
+    massTransit.AddConsumer<PurchaseReceivedConsumer>();
     massTransit.AddConsumer<ValidateStockConsumer>();
     massTransit.AddConsumer<DeductInventoryConsumer>();
     massTransit.AddConsumer<RegisterPaymentConsumer>();

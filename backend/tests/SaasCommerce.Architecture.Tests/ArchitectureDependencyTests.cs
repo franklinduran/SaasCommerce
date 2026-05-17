@@ -29,6 +29,7 @@ public sealed class ArchitectureDependencyTests
     "Customers",
     "Billing",
     "Payments",
+    "Purchasing",
     "Reporting"
   ];
 

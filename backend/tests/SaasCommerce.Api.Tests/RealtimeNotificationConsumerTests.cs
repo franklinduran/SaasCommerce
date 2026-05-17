@@ -8,6 +8,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
+using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 
 namespace SaasCommerce.Api.Tests;
@@ -160,6 +161,101 @@ public sealed class RealtimeNotificationConsumerTests
   }
 
   [Fact]
+  public async Task PurchaseReceivedRealtimeConsumer_ShouldNotifyBusinessAndBranch()
+  {
+    var message = PurchaseReceived();
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new PurchaseReceivedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(PurchaseReceivedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<PurchaseReceivedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "purchase.received",
+      message,
+      Arg.Any<CancellationToken>());
+    await realtime.Received(1).NotifyBranchAsync(
+      message.BranchId,
+      "purchase.received",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task InventoryIncreasedRealtimeConsumer_ShouldPublishInventoryUpdatedEvent()
+  {
+    var message = new InventoryIncreasedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      10,
+      15,
+      5,
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new InventoryIncreasedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(InventoryIncreasedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<InventoryIncreasedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "inventory.updated",
+      message,
+      Arg.Any<CancellationToken>());
+    await realtime.Received(1).NotifyBranchAsync(
+      message.BranchId,
+      "inventory.updated",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task ProductCostUpdatedRealtimeConsumer_ShouldPublishCostUpdatedEvent()
+  {
+    var message = new ProductCostUpdatedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      80,
+      95,
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new ProductCostUpdatedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(ProductCostUpdatedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<ProductCostUpdatedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "product.costUpdated",
+      message,
+      Arg.Any<CancellationToken>());
+    await realtime.Received(1).NotifyBranchAsync(
+      message.BranchId,
+      "product.costUpdated",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
   public async Task InventoryDeductedRealtimeConsumer_ShouldSkipDuplicateEvent()
   {
     var message = InventoryDeducted();
@@ -203,6 +299,19 @@ public sealed class RealtimeNotificationConsumerTests
       [new SaleItemV1(Guid.NewGuid(), 2, 100)],
       200,
       "Cash",
+      Now);
+
+  private static PurchaseReceivedEventV1 PurchaseReceived()
+    => new(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      [new PurchaseItemV1(Guid.NewGuid(), 2, 120, 240)],
+      240,
       Now);
 
   private static ConsumeContext<TMessage> Context<TMessage>(TMessage message)

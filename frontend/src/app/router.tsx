@@ -9,14 +9,17 @@ import {
   InventoryProductDetailRoute,
   InventoryRoute,
   InvoicesRoute,
+  NewPurchaseRoute,
   ProductsRoute,
   POSRoute,
+  PurchaseDetailRoute,
   PurchasesRoute,
   RegisterBusinessRoute,
   ReportsRoute,
   SaleDetailRoute,
   SalesRoute,
   SettingsRoute,
+  SuppliersRoute,
 } from '@/app/LazyPages'
 import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute'
 import { PageLoadingState } from '@/shared/components/PageLoadingState'
@@ -44,7 +47,10 @@ export const router = createBrowserRouter([
       { path: 'inventory', element: withPageLoading(<InventoryRoute />) },
       { path: 'inventory/products/:productId', element: withPageLoading(<InventoryProductDetailRoute />) },
       { path: 'customers', element: withPageLoading(<CustomersRoute />) },
+      { path: 'suppliers', element: withPageLoading(<SuppliersRoute />) },
       { path: 'purchases', element: withPageLoading(<PurchasesRoute />) },
+      { path: 'purchases/new', element: withPageLoading(<NewPurchaseRoute />) },
+      { path: 'purchases/:purchaseId', element: withPageLoading(<PurchaseDetailRoute />) },
       { path: 'invoices', element: withPageLoading(<InvoicesRoute />) },
       { path: 'reports', element: withPageLoading(<ReportsRoute />) },
       { path: 'settings', element: withPageLoading(<SettingsRoute />) },

@@ -21,6 +21,12 @@ public interface IInventoryRepository
     Guid saleId,
     CancellationToken cancellationToken = default);
 
+  Task<bool> HasPurchaseMovementAsync(
+    BusinessId businessId,
+    BranchId branchId,
+    Guid purchaseId,
+    CancellationToken cancellationToken = default);
+
   Task<int> CountStockAsync(
     BusinessId businessId,
     BranchId? branchId,
