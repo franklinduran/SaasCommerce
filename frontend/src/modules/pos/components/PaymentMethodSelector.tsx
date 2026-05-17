@@ -1,4 +1,4 @@
-import { Banknote } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, WalletCards } from 'lucide-react'
 import type { PaymentMethod } from '@/modules/pos/types/posTypes'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
@@ -12,6 +12,13 @@ export function PaymentMethodSelector({
   onChange,
   value,
 }: Readonly<PaymentMethodSelectorProps>) {
+  const methods = [
+    { icon: Banknote, label: 'Efectivo', value: 'Cash' as const },
+    { icon: Landmark, label: 'Transferencia', value: 'Transfer' as const },
+    { icon: CreditCard, label: 'Tarjeta', value: 'Card' as const },
+    { icon: WalletCards, label: 'Fiado', value: 'Credit' as const },
+  ]
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-3">
@@ -23,17 +30,24 @@ export function PaymentMethodSelector({
           <p className="text-sm font-medium text-stone-600">Metodo</p>
         </div>
       </CardHeader>
-      <CardContent>
-        <Button
-          aria-pressed={value === 'Cash'}
-          className="w-full"
-          onClick={() => onChange('Cash')}
-          type="button"
-          variant={value === 'Cash' ? 'default' : 'secondary'}
-        >
-          <Banknote aria-hidden="true" size={16} />
-          Efectivo
-        </Button>
+      <CardContent className="grid grid-cols-2 gap-2">
+        {methods.map((method) => {
+          const Icon = method.icon
+
+          return (
+            <Button
+              aria-pressed={value === method.value}
+              className="w-full"
+              key={method.value}
+              onClick={() => onChange(method.value)}
+              type="button"
+              variant={value === method.value ? 'default' : 'secondary'}
+            >
+              <Icon aria-hidden="true" size={16} />
+              {method.label}
+            </Button>
+          )
+        })}
       </CardContent>
     </Card>
   )

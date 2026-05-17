@@ -1,6 +1,7 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Contracts.Responses;
+using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -8,7 +9,8 @@ namespace SaasCommerce.Modules.Customers.Application.Customers;
 
 public sealed class ListCustomersUseCase(
   ICustomerRepository customers,
-  ICurrentUserService currentUser) : IListCustomersUseCase
+  ICurrentUserService currentUser,
+  ICustomerCreditRepository? credits = null) : IListCustomersUseCase
 {
   private static readonly int[] AllowedPageSizes = [10, 25, 50];
 
@@ -50,10 +52,17 @@ public sealed class ListCustomersUseCase(
       sortDirection);
     var totalItems = await customers.CountAsync(tenantId, criteria, cancellationToken);
     var items = await customers.ListAsync(tenantId, criteria, cancellationToken);
+    var accountMap = credits is null
+      ? new Dictionary<Guid, CustomerCreditAccount>()
+      : await credits.ListAccountsAsync(tenantId, items.Select(customer => customer.Id).ToArray(), cancellationToken);
     var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)query.PageSize);
 
     return Result.Success(new CustomerListResponse(
-      items.Select(CustomerResponseMapper.ToResponse).ToArray(),
+      items.Select(customer =>
+        CustomerResponseMapper.ToResponse(
+          customer,
+          accountMap.TryGetValue(customer.Id, out var account) ? account : null))
+        .ToArray(),
       query.Page,
       query.PageSize,
       totalItems,

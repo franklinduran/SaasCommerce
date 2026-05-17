@@ -9,6 +9,7 @@ using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 using SaasCommerce.Modules.Catalog.Infrastructure.Persistence;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
+using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
@@ -50,6 +51,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IInventoryReadRepository, EfInventoryReadRepository>();
     services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
     services.AddScoped<ICustomerRepository, EfCustomerRepository>();
+    services.AddScoped<ICustomerCreditRepository, EfCustomerCreditRepository>();
     services.AddScoped<ISaleRepository, EfSaleRepository>();
     services.AddScoped<ISaleReadRepository, EfSaleReadRepository>();
     services.AddScoped<ISupplierRepository, EfSupplierRepository>();
@@ -90,6 +92,12 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IListCustomersUseCase, ListCustomersUseCase>();
     services.AddScoped<IUpdateCustomerUseCase, UpdateCustomerUseCase>();
     services.AddScoped<IDeleteCustomerUseCase, DeleteCustomerUseCase>();
+    services.AddScoped<IGetCustomerCreditSummaryUseCase, GetCustomerCreditSummaryUseCase>();
+    services.AddScoped<IGetCustomerCreditMovementsUseCase, GetCustomerCreditMovementsUseCase>();
+    services.AddScoped<IRegisterCustomerPaymentUseCase, RegisterCustomerPaymentUseCase>();
+    services.AddScoped<IBlockCustomerCreditUseCase, BlockCustomerCreditUseCase>();
+    services.AddScoped<IUnblockCustomerCreditUseCase, UnblockCustomerCreditUseCase>();
+    services.AddScoped<IRegisterCreditSaleUseCase, RegisterCreditSaleUseCase>();
     services.AddScoped<ICreateSaleUseCase, CreateSaleUseCase>();
     services.AddScoped<ISaleEventWriter, SaleEventWriter>();
     services.AddScoped<IGetSaleByIdUseCase, GetSaleByIdUseCase>();

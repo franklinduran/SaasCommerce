@@ -9,4 +9,7 @@ public sealed record CustomerResponse(
   bool IsActive,
   DateTimeOffset CreatedAt,
   DateTimeOffset? UpdatedAt,
-  DateTimeOffset? DeactivatedAt);
+  DateTimeOffset? DeactivatedAt,
+  decimal CurrentBalance = 0,
+  decimal CreditLimit = 0,
+  string CreditStatus = "Active");

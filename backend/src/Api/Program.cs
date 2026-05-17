@@ -18,6 +18,7 @@ using SaasCommerce.Modules;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Requests;
+using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Contracts.Requests;
 using SaasCommerce.Modules.Identity.Application.Account;
@@ -71,6 +72,8 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<PurchaseReceivedRealtimeConsumer>();
     massTransit.AddConsumer<InventoryIncreasedRealtimeConsumer>();
     massTransit.AddConsumer<ProductCostUpdatedRealtimeConsumer>();
+    massTransit.AddConsumer<CustomerCreditDebitedRealtimeConsumer>();
+    massTransit.AddConsumer<CustomerPaymentRegisteredRealtimeConsumer>();
   });
 builder.Services.AddCors(options =>
 {
@@ -446,6 +449,106 @@ app.MapDelete(
     CancellationToken cancellationToken) =>
   {
     var result = await useCase.ExecuteAsync(new DeleteCustomerCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapPost(
+  "/api/customers/{id:guid}/deactivate",
+  async (
+    Guid id,
+    IDeleteCustomerUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new DeleteCustomerCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapGet(
+  "/api/customers/{id:guid}/credit",
+  async (
+    Guid id,
+    IGetCustomerCreditSummaryUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new GetCustomerCreditSummaryQuery(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapGet(
+  "/api/customers/{id:guid}/credit/movements",
+  async (
+    Guid id,
+    int? page,
+    int? pageSize,
+    IGetCustomerCreditMovementsUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new GetCustomerCreditMovementsQuery(id, page ?? 1, pageSize ?? 50),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapPost(
+  "/api/customers/{id:guid}/payments",
+  async (
+    Guid id,
+    RegisterCustomerPaymentRequest request,
+    IRegisterCustomerPaymentUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new RegisterCustomerPaymentCommand(id, request.Amount, request.Note),
+      cancellationToken);
+
+    return ToApiResult(
+      result,
+      correlationIdProvider,
+      successStatusCode: StatusCodes.Status201Created);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapPost(
+  "/api/customers/{id:guid}/credit/block",
+  async (
+    Guid id,
+    IBlockCustomerCreditUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new BlockCustomerCreditCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(customersTag);
+
+app.MapPost(
+  "/api/customers/{id:guid}/credit/unblock",
+  async (
+    Guid id,
+    IUnblockCustomerCreditUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(new UnblockCustomerCreditCommand(id), cancellationToken);
 
     return ToApiResult(result, correlationIdProvider);
   })
@@ -1146,6 +1249,10 @@ static string ToPublicErrorCode(string code)
       "catalog.invalid_product" or
       "inventory.invalid_adjustment" or
       "customers.invalid_customer" or
+      "credits.invalid_operation" or
+      "credits.payment_exceeds_balance" or
+      "credits.credit_blocked" or
+      "credits.credit_limit_exceeded" or
       "sales.invalid_sale" or
       "suppliers.invalid_supplier" or
       "purchases.invalid_purchase" or
@@ -1159,6 +1266,7 @@ static string ToPublicErrorCode(string code)
       "catalog.user_context_required" or
       "inventory.user_context_required" or
       "customers.user_context_required" or
+      "credits.user_context_required" or
       "sales.user_context_required" or
       "suppliers.user_context_required" or
       "purchases.user_context_required" => ApiErrorCodes.TenantContextMissing,
@@ -1167,6 +1275,8 @@ static string ToPublicErrorCode(string code)
       "tenancy.branch_not_found" or
       "catalog.category_not_found" or
       "customers.customer_not_found" or
+      "credits.customer_not_found" or
+      "credits.sale_not_found" or
       "sales.sale_not_found" or
       "sales.customer_not_found" or
       "suppliers.supplier_not_found" or

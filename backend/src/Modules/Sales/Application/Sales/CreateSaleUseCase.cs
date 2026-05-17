@@ -3,6 +3,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
+using SaasCommerce.Modules.Customers.Application.Credits;
+using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Contracts.Responses;
@@ -19,7 +21,8 @@ public sealed class CreateSaleUseCase(
   ICurrentUserService currentUser,
   ISaleEventWriter saleEvents,
   IClock clock,
-  IUnitOfWork unitOfWork) : ICreateSaleUseCase
+  IUnitOfWork unitOfWork,
+  ICustomerCreditRepository? customerCredits = null) : ICreateSaleUseCase
 {
   public Task<Result<SaleResponse>> ExecuteAsync(
     CreateSaleCommand command,
@@ -126,6 +129,17 @@ public sealed class CreateSaleUseCase(
       return Result.Failure<SaleResponse>(linesResult.Error);
     }
 
+    var creditResult = await EnsureCreditSaleCanBeCreatedAsync(
+      new BusinessId(context.BusinessId),
+      command,
+      linesResult.Value,
+      cancellationToken);
+
+    if (creditResult.IsFailure)
+    {
+      return Result.Failure<SaleResponse>(creditResult.Error);
+    }
+
     var saleResult = CreateSale(
       command,
       context,
@@ -215,6 +229,60 @@ public sealed class CreateSaleUseCase(
     }
 
     return Result.Success<IReadOnlyCollection<SaleLine>>(lines);
+  }
+
+  private async Task<Result> EnsureCreditSaleCanBeCreatedAsync(
+    BusinessId businessId,
+    CreateSaleCommand command,
+    IReadOnlyCollection<SaleLine> lines,
+    CancellationToken cancellationToken)
+  {
+    if (!RegisterCreditSaleUseCase.IsCreditSale(command.PaymentMethod))
+    {
+      return Result.Success();
+    }
+
+    if (command.CustomerId is not Guid customerId)
+    {
+      return Result.Failure(SalesErrors.InvalidSale);
+    }
+
+    if (customerCredits is null)
+    {
+      return Result.Failure(CustomerCreditErrors.InvalidCreditOperation);
+    }
+
+    var account = await customerCredits.GetAccountAsync(
+      businessId,
+      customerId,
+      cancellationToken);
+
+    if (account is null)
+    {
+      account = new CustomerCreditAccount(Guid.NewGuid(), businessId, customerId, 0, clock.UtcNow);
+      await customerCredits.AddAccountAsync(account, cancellationToken);
+    }
+
+    var total = lines.Sum(line => line.Quantity * line.UnitPrice);
+
+    try
+    {
+      account.EnsureCanDebit(total);
+    }
+    catch (InvalidOperationException) when (account.Status is CustomerCreditStatus.Blocked or CustomerCreditStatus.Closed)
+    {
+      return Result.Failure(CustomerCreditErrors.CreditAccountBlocked);
+    }
+    catch (InvalidOperationException)
+    {
+      return Result.Failure(CustomerCreditErrors.CreditLimitExceeded);
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      return Result.Failure(CustomerCreditErrors.InvalidCreditOperation);
+    }
+
+    return Result.Success();
   }
 
   private async Task<Result<SaleLine>> CreateSaleLineAsync(

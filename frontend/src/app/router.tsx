@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/app/AppShell'
 import {
   AuthRoute,
+  CustomerDetailRoute,
   CustomersRoute,
   DashboardRoute,
   InventoryProductDetailRoute,
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       { path: 'inventory', element: withPageLoading(<InventoryRoute />) },
       { path: 'inventory/products/:productId', element: withPageLoading(<InventoryProductDetailRoute />) },
       { path: 'customers', element: withPageLoading(<CustomersRoute />) },
+      { path: 'customers/:customerId', element: withPageLoading(<CustomerDetailRoute />) },
       { path: 'suppliers', element: withPageLoading(<SuppliersRoute />) },
       { path: 'purchases', element: withPageLoading(<PurchasesRoute />) },
       { path: 'purchases/new', element: withPageLoading(<NewPurchaseRoute />) },

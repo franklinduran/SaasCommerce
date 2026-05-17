@@ -8,7 +8,8 @@ namespace SaasCommerce.Modules.Customers.Application.Customers;
 
 public sealed class GetCustomerByIdUseCase(
   ICustomerRepository customers,
-  ICurrentUserService currentUser) : IGetCustomerByIdUseCase
+  ICurrentUserService currentUser,
+  ICustomerCreditRepository? credits = null) : IGetCustomerByIdUseCase
 {
   public Task<Result<CustomerResponse>> ExecuteAsync(
     GetCustomerByIdQuery query,
@@ -33,8 +34,15 @@ public sealed class GetCustomerByIdUseCase(
       query.CustomerId,
       cancellationToken);
 
-    return customer is null
-      ? Result.Failure<CustomerResponse>(CustomerErrors.CustomerNotFound)
-      : Result.Success(CustomerResponseMapper.ToResponse(customer));
+    if (customer is null)
+    {
+      return Result.Failure<CustomerResponse>(CustomerErrors.CustomerNotFound);
+    }
+
+    var account = credits is null
+      ? null
+      : await credits.GetAccountAsync(new BusinessId(businessId), query.CustomerId, cancellationToken);
+
+    return Result.Success(CustomerResponseMapper.ToResponse(customer, account));
   }
 }

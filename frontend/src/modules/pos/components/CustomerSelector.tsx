@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 
 type CustomerSelectorProps = {
   customers: Customer[]
+  isCreditPayment?: boolean
   isError: boolean
   isLoading: boolean
   onCustomerChange: (customerId: string | null) => void
@@ -14,6 +15,7 @@ type CustomerSelectorProps = {
 
 export function CustomerSelector({
   customers,
+  isCreditPayment = false,
   isError,
   isLoading,
   onCustomerChange,
@@ -29,7 +31,7 @@ export function CustomerSelector({
         </span>
         <div>
           <h2 className="text-base font-semibold text-stone-950">Cliente</h2>
-          <p className="text-sm font-medium text-stone-600">Opcional</p>
+          <p className="text-sm font-medium text-stone-600">{isCreditPayment ? 'Obligatorio' : 'Opcional'}</p>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -57,14 +59,42 @@ export function CustomerSelector({
           <option value="">Sin cliente</option>
           {customers.map((customer) => (
             <option key={customer.id} value={customer.id}>
-              {customer.fullName}
+              {customer.fullName} | {formatMoney(customer.currentBalance ?? 0)}
             </option>
           ))}
         </select>
+        {selectedCustomerId && (
+          <SelectedCustomerCredit
+            customer={customers.find((customer) => customer.id === selectedCustomerId)}
+          />
+        )}
         {isError && (
           <p className="text-sm font-semibold text-red-700">No se pudieron cargar clientes.</p>
         )}
       </CardContent>
     </Card>
   )
+}
+
+function SelectedCustomerCredit({ customer }: Readonly<{ customer?: Customer }>) {
+  if (!customer) {
+    return null
+  }
+
+  const creditLimit = customer.creditLimit ?? 0
+  const limit = creditLimit === 0 ? 'Sin limite' : formatMoney(creditLimit)
+
+  return (
+    <div className="rounded-md bg-stone-50 p-3 text-sm font-semibold text-stone-700 ring-1 ring-stone-200">
+      <p>Balance: {formatMoney(customer.currentBalance ?? 0)}</p>
+      <p className="mt-1">Limite: {limit}</p>
+      {customer.creditStatus === 'Blocked' && (
+        <p className="mt-2 text-red-700">Credito bloqueado</p>
+      )}
+    </div>
+  )
+}
+
+function formatMoney(value: number) {
+  return `RD$ ${value.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
 }

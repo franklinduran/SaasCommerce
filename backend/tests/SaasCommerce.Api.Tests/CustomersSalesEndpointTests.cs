@@ -13,6 +13,7 @@ using SaasCommerce.Modules.Catalog.Contracts.Requests;
 using SaasCommerce.Modules.Catalog.Contracts.Responses;
 using SaasCommerce.Modules.Customers.Contracts.Requests;
 using SaasCommerce.Modules.Customers.Contracts.Responses;
+using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.Modules.Identity.Contracts.Requests;
 using SaasCommerce.Modules.Identity.Contracts.Responses;
 using SaasCommerce.Modules.Sales.Contracts.Requests;
@@ -123,6 +124,67 @@ public sealed class CustomersSalesEndpointTests
     payload.Should().NotBeNull();
     payload!.IsSuccess.Should().BeFalse();
     payload.Data.Should().BeNull();
+    payload.Error!.Code.Should().Be("NOT_FOUND");
+  }
+
+  [Fact]
+  public async Task Post_CustomerPayments_ShouldRegisterPayment_WhenRequestIsValid()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var customer = await CreateCustomerAsync(client, "Cliente con fiado");
+    await SeedCreditBalanceAsync(factory, customer.Id, 500);
+
+    var response = await client.PostAsJsonAsync(
+      $"/api/customers/{customer.Id}/payments",
+      new RegisterCustomerPaymentRequest(200, "Abono en efectivo"));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterCustomerPaymentResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.Created);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.CustomerId.Should().Be(customer.Id);
+    payload.Data.NewBalance.Should().Be(300);
+  }
+
+  [Fact]
+  public async Task Post_CustomerPayments_ShouldReturn400_WhenAmountIsInvalid()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    await AuthenticateAsync(client);
+    var customer = await CreateCustomerAsync(client, "Cliente abono invalido");
+
+    var response = await client.PostAsJsonAsync(
+      $"/api/customers/{customer.Id}/payments",
+      new RegisterCustomerPaymentRequest(0, null));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterCustomerPaymentResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
+    payload.Error!.Code.Should().Be("VALIDATION_ERROR");
+  }
+
+  [Fact]
+  public async Task Post_CustomerPayments_ShouldReturn404_WhenCustomerBelongsToAnotherBusiness()
+  {
+    using var factory = CreateFactory();
+    using var adminClient = factory.CreateClient();
+    await AuthenticateAsync(adminClient);
+
+    var secondTenant = await RegisterBusinessAsync(factory, "payment-foreign");
+    var foreignCustomer = await CreateCustomerAsync(secondTenant.Client, "Cliente abono aislado");
+
+    var response = await adminClient.PostAsJsonAsync(
+      $"/api/customers/{foreignCustomer.Id}/payments",
+      new RegisterCustomerPaymentRequest(100, null));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterCustomerPaymentResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
     payload.Error!.Code.Should().Be("NOT_FOUND");
   }
 
@@ -687,6 +749,28 @@ public sealed class CustomersSalesEndpointTests
     payload.Data.Should().NotBeNull();
 
     return payload.Data!;
+  }
+
+  private static async Task SeedCreditBalanceAsync(
+    WebApplicationFactory<Program> factory,
+    Guid customerId,
+    decimal amount)
+  {
+    using var scope = factory.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var account = await dbContext.Set<CustomerCreditAccount>().SingleAsync(
+      candidate => candidate.CustomerId == customerId,
+      CancellationToken.None);
+    var movement = account.ApplyDebit(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      amount,
+      "Balance inicial de prueba",
+      null,
+      DateTimeOffset.UtcNow);
+
+    dbContext.Set<CustomerCreditMovement>().Add(movement);
+    await dbContext.SaveChangesAsync(CancellationToken.None);
   }
 
   private static async Task<ProductResponse> CreateProductAsync(

@@ -4,6 +4,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Contracts.Responses;
 using SaasCommerce.Modules.Customers.Domain;
+using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -13,7 +14,8 @@ public sealed class CreateCustomerUseCase(
   ICustomerRepository customers,
   ICurrentUserService currentUser,
   IClock clock,
-  IUnitOfWork unitOfWork) : ICreateCustomerUseCase
+  IUnitOfWork unitOfWork,
+  ICustomerCreditRepository? credits = null) : ICreateCustomerUseCase
 {
   public Task<Result<CustomerResponse>> ExecuteAsync(
     CreateCustomerCommand command,
@@ -55,8 +57,22 @@ public sealed class CreateCustomerUseCase(
     }
 
     await customers.AddAsync(customer, cancellationToken);
+
+    CustomerCreditAccount? creditAccount = null;
+
+    if (credits is not null)
+    {
+      creditAccount = new CustomerCreditAccount(
+        Guid.NewGuid(),
+        customer.BusinessId,
+        customer.Id,
+        0,
+        clock.UtcNow);
+      await credits.AddAccountAsync(creditAccount, cancellationToken);
+    }
+
     await unitOfWork.SaveChangesAsync(cancellationToken);
 
-    return Result.Success(CustomerResponseMapper.ToResponse(customer));
+    return Result.Success(CustomerResponseMapper.ToResponse(customer, creditAccount));
   }
 }

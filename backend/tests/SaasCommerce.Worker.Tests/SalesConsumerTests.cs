@@ -10,6 +10,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
+using SaasCommerce.Modules.Customers.Application.Credits;
+using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
 using SaasCommerce.Modules.Payments.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Application.Sales;
@@ -286,6 +288,37 @@ public sealed class SalesConsumerTests
         notification.BusinessId == message.BusinessId &&
         notification.ProductId == message.ProductId &&
         notification.CurrentStock == 2),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task CustomerCreditDebitedNotificationConsumer_ShouldNotifyBusinessGroup()
+  {
+    var message = new CustomerCreditDebitedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      800,
+      2500,
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new CustomerCreditDebitedNotificationConsumer(
+      InboxStore(message.EventId, nameof(CustomerCreditDebitedNotificationConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<CustomerCreditDebitedNotificationConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      CustomerCreditRealtimeEvents.CreditDebited,
+      Arg.Is<CustomerCreditDebitedNotificationV1>(notification =>
+        notification.BusinessId == message.BusinessId &&
+        notification.CustomerId == message.CustomerId &&
+        notification.NewBalance == 2500),
       Arg.Any<CancellationToken>());
   }
 

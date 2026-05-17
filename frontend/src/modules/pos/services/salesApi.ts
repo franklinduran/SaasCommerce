@@ -12,7 +12,7 @@ import { httpClient } from '@/shared/services/httpClient'
 export const createSaleSchema = z.object({
   branchId: z.guid(),
   customerId: z.guid().nullable().optional(),
-  paymentMethod: z.enum(['Cash']),
+  paymentMethod: z.enum(['Cash', 'Transfer', 'Card', 'Credit']),
   items: z
     .array(
       z.object({

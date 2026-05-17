@@ -21,6 +21,9 @@ export type Customer = {
   createdAt: string
   updatedAt: string | null
   deactivatedAt: string | null
+  currentBalance?: number
+  creditLimit?: number
+  creditStatus?: 'Active' | 'Blocked' | 'Closed'
 }
 
 export type CustomerListResponse = {
@@ -41,7 +44,7 @@ export type CurrentBranchForPOS = {
   phone: string | null
 }
 
-export type PaymentMethod = 'Cash'
+export type PaymentMethod = 'Cash' | 'Transfer' | 'Card' | 'Credit'
 
 export type CreateSaleItemRequest = {
   productId: string

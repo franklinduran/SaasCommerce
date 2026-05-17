@@ -144,6 +144,28 @@ export function POSPage() {
       paymentMethod,
     }
 
+    const selectedCustomer = customersForPOS.find((customer) => customer.id === selectedCustomerId)
+
+    if (paymentMethod === 'Credit' && !selectedCustomer) {
+      setValidationMessage('Selecciona un cliente para vender fiado.')
+      return
+    }
+
+    if (paymentMethod === 'Credit' && selectedCustomer?.creditStatus === 'Blocked') {
+      setValidationMessage('El cliente tiene el credito bloqueado.')
+      return
+    }
+
+    if (
+      paymentMethod === 'Credit' &&
+      selectedCustomer &&
+      (selectedCustomer.creditLimit ?? 0) > 0 &&
+      (selectedCustomer.currentBalance ?? 0) + cart.subtotal > (selectedCustomer.creditLimit ?? 0)
+    ) {
+      setValidationMessage('La venta supera el limite de credito del cliente.')
+      return
+    }
+
     const validation = createSaleSchema.safeParse(request)
 
     if (!validation.success) {
@@ -216,6 +238,7 @@ export function POSPage() {
 
           <CustomerSelector
             customers={customersForPOS}
+            isCreditPayment={paymentMethod === 'Credit'}
             isError={customers.isError}
             isLoading={customers.isLoading}
             onCustomerChange={setSelectedCustomerId}

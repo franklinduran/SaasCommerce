@@ -44,6 +44,11 @@ const CustomersPage = lazy(() =>
     default: module.CustomersPage,
   })),
 )
+const CustomerDetailPage = lazy(() =>
+  import('@/modules/customers/pages/CustomerDetailPage').then((module) => ({
+    default: module.CustomerDetailPage,
+  })),
+)
 const PurchasesPage = lazy(() =>
   import('@/modules/purchases/PurchasesPage').then((module) => ({
     default: module.PurchasesPage,
@@ -118,6 +123,10 @@ export function InventoryProductDetailRoute() {
 
 export function CustomersRoute() {
   return <CustomersPage />
+}
+
+export function CustomerDetailRoute() {
+  return <CustomerDetailPage />
 }
 
 export function PurchasesRoute() {
