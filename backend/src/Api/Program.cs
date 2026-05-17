@@ -70,7 +70,8 @@ builder.Services.AddCors(options =>
     policy => policy
       .WithOrigins(allowedOrigins)
       .AllowAnyHeader()
-      .AllowAnyMethod());
+      .AllowAnyMethod()
+      .AllowCredentials());
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

@@ -1090,3 +1090,50 @@ requests/10-customers.http
 requests/11-sales.http
 requests/12-sales-saga-http-flow.http
 ```
+
+## Etapa 10: POS Frontend Con Venta Real
+
+Etapa 10 agrega la pantalla POS en React para crear ventas reales contra `POST /api/sales`. La ruta protegida `/sales` carga productos, clientes, carrito local, metodo de pago y estado de venta en tiempo real.
+
+### Frontend POS
+
+Estructura principal:
+
+```txt
+frontend/src/modules/pos/components
+frontend/src/modules/pos/hooks
+frontend/src/modules/pos/services
+frontend/src/modules/pos/store
+frontend/src/modules/pos/types
+frontend/src/modules/pos/pages/POSPage.tsx
+```
+
+Reglas:
+
+```txt
+TanStack Query maneja productos, clientes y creacion de ventas.
+Zustand maneja solo el carrito local.
+El cliente HTTP centralizado llama /api/catalog/products, /api/customers y /api/sales.
+El cliente SignalR centralizado escucha sale.statusChanged.
+El POS sincroniza GET /api/sales/{id} mientras la venta no es terminal para cubrir la separacion API/Worker en Docker local.
+El POS no envia BusinessId.
+El POS no envia total ni precio como fuente de verdad.
+El carrito se limpia solo cuando la venta termina Completed.
+El carrito se conserva si la venta termina Failed.
+```
+
+### Validacion
+
+Documento operativo:
+
+```txt
+docs/testing/Etapa-10-pos-frontend.md
+```
+
+Comandos:
+
+```powershell
+npm.cmd --prefix .\frontend run lint
+npm.cmd --prefix .\frontend run test
+npm.cmd --prefix .\frontend run build
+```
