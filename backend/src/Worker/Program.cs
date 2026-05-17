@@ -29,6 +29,12 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<PaymentRegistrationRequestedConsumer>();
     massTransit.AddConsumer<InvoiceGenerationRequestedConsumer>();
     massTransit.AddConsumer<SaleStatusChangedConsumer>();
+    massTransit.AddConsumer<ValidateStockConsumer>();
+    massTransit.AddConsumer<DeductInventoryConsumer>();
+    massTransit.AddConsumer<RegisterPaymentConsumer>();
+    massTransit.AddConsumer<GenerateInvoiceConsumer>();
+    massTransit.AddConsumer<SaleCompletedConsumer>();
+    massTransit.AddConsumer<SaleFailedConsumer>();
     massTransit.AddSagaStateMachine<SaleStateMachine, SaleSagaState>()
       .EntityFrameworkRepository(repository =>
       {

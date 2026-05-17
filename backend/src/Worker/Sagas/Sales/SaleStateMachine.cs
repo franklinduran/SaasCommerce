@@ -1,4 +1,7 @@
 using MassTransit;
+using Microsoft.Extensions.DependencyInjection;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
+using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Sagas.Sales;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
@@ -14,11 +17,13 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
       LogLevel.Information,
       new EventId(2400, nameof(LogSagaTransition)),
       "Sale saga transition. CorrelationId={CorrelationId} BusinessId={BusinessId} BranchId={BranchId} UserId={UserId} SaleId={SaleId} SagaState={SagaState}");
+
   private static readonly Action<ILogger, Guid, Guid, Guid, string, string, Exception?> LogDuplicateEvent =
     LoggerMessage.Define<Guid, Guid, Guid, string, string>(
       LogLevel.Information,
       new EventId(2401, nameof(LogDuplicateEvent)),
       "Duplicate sale saga event ignored. CorrelationId={CorrelationId} BusinessId={BusinessId} SaleId={SaleId} EventName={EventName} SagaState={SagaState}");
+
   private static readonly Action<ILogger, Guid, Guid, Guid, string, string, Exception?> LogOutOfOrderEvent =
     LoggerMessage.Define<Guid, Guid, Guid, string, string>(
       LogLevel.Warning,
@@ -37,9 +42,7 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
     Event(() => PaymentRegisteredEvent, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
     Event(() => PaymentFailed, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
     Event(() => InvoiceGeneratedEvent, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
-    Event(() => InvoiceGenerationFailed, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
-    Event(() => SaleCompleted, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
-    Event(() => SaleFailed, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
+    Event(() => InvoiceFailed, configurator => configurator.CorrelateById(context => context.Message.CorrelationId));
 
     Initially(
       When(SaleCreated)
@@ -49,110 +52,206 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
           context.Saga.BusinessId = context.Message.BusinessId;
           context.Saga.BranchId = context.Message.BranchId;
           context.Saga.UserId = context.Message.UserId;
-          context.Saga.CreatedAt = context.Message.OccurredAt;
-          context.Saga.UpdatedAt = context.Message.OccurredAt;
-          LogTransition(logger, context.Saga, "Initial", "Processing");
+          context.Saga.CreatedAt = context.Message.CreatedAt;
+          context.Saga.UpdatedAt = context.Message.CreatedAt;
+          context.Saga.Version = 1;
+          LogTransition(logger, context.Saga, "Initial", nameof(StockValidationPending));
         })
-        .TransitionTo(Processing));
+        .ThenAsync(context => AddOutboxAsync(
+          context,
+          new StockValidationRequestedEventV1(
+            Guid.NewGuid(),
+            context.Message.CorrelationId,
+            context.Message.SaleId,
+            context.Message.BusinessId,
+            context.Message.BranchId,
+            context.Message.UserId,
+            context.Message.Items,
+            context.Message.Total,
+            context.Message.PaymentMethod,
+            DateTimeOffset.UtcNow)))
+        .TransitionTo(StockValidationPending));
 
     During(
-      Processing,
+      StockValidationPending,
       When(StockValidatedEvent)
-        .Then(context => MarkUpdated(logger, context.Saga, context.Message.OccurredAt, "StockValidated"))
-        .TransitionTo(StockValidated),
+        .Then(context => MarkUpdated(logger, context.Saga, context.Message.CreatedAt, nameof(InventoryDeductionPending)))
+        .ThenAsync(context => AddOutboxAsync(
+          context,
+          new InventoryDeductionRequestedEventV1(
+            Guid.NewGuid(),
+            context.Message.CorrelationId,
+            context.Message.SaleId,
+            context.Message.BusinessId,
+            context.Message.BranchId,
+            context.Message.UserId,
+            context.Message.Items,
+            context.Message.Total,
+            context.Message.PaymentMethod,
+            DateTimeOffset.UtcNow)))
+        .TransitionTo(InventoryDeductionPending),
       When(InventoryDeductedEvent).Then(context => LogOutOfOrder(logger, context.Saga, nameof(InventoryDeductedEvent))),
       When(PaymentRegisteredEvent).Then(context => LogOutOfOrder(logger, context.Saga, nameof(PaymentRegisteredEvent))),
       When(InvoiceGeneratedEvent).Then(context => LogOutOfOrder(logger, context.Saga, nameof(InvoiceGeneratedEvent))));
 
     During(
-      StockValidated,
+      InventoryDeductionPending,
       When(InventoryDeductedEvent)
-        .Then(context => MarkUpdated(logger, context.Saga, context.Message.OccurredAt, "InventoryDeducted"))
-        .TransitionTo(InventoryDeducted),
-      When(StockValidatedEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(StockValidatedEvent))));
+        .Then(context => MarkUpdated(logger, context.Saga, context.Message.CreatedAt, nameof(PaymentRegistrationPending)))
+        .ThenAsync(context => AddOutboxAsync(
+          context,
+          new PaymentRegistrationRequestedEventV1(
+            Guid.NewGuid(),
+            context.Message.CorrelationId,
+            context.Message.SaleId,
+            context.Message.BusinessId,
+            context.Message.BranchId,
+            context.Message.UserId,
+            context.Message.Total,
+            context.Message.PaymentMethod,
+            DateTimeOffset.UtcNow)))
+        .TransitionTo(PaymentRegistrationPending),
+      When(StockValidatedEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(StockValidatedEvent))),
+      When(PaymentRegisteredEvent).Then(context => LogOutOfOrder(logger, context.Saga, nameof(PaymentRegisteredEvent))));
 
     During(
-      InventoryDeducted,
+      PaymentRegistrationPending,
       When(PaymentRegisteredEvent)
-        .Then(context => MarkUpdated(logger, context.Saga, context.Message.OccurredAt, "PaymentRegistered"))
-        .TransitionTo(PaymentRegistered),
-      When(InventoryDeductedEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(InventoryDeductedEvent))));
+        .Then(context => MarkUpdated(logger, context.Saga, context.Message.CreatedAt, nameof(InvoiceGenerationPending)))
+        .ThenAsync(context => AddOutboxAsync(
+          context,
+          new InvoiceGenerationRequestedEventV1(
+            Guid.NewGuid(),
+            context.Message.CorrelationId,
+            context.Message.SaleId,
+            context.Message.BusinessId,
+            context.Message.BranchId,
+            context.Message.UserId,
+            context.Message.PaymentId,
+            context.Message.Amount,
+            DateTimeOffset.UtcNow)))
+        .TransitionTo(InvoiceGenerationPending),
+      When(InventoryDeductedEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(InventoryDeductedEvent))),
+      When(InvoiceGeneratedEvent).Then(context => LogOutOfOrder(logger, context.Saga, nameof(InvoiceGeneratedEvent))));
 
     During(
-      PaymentRegistered,
+      InvoiceGenerationPending,
       When(InvoiceGeneratedEvent)
-        .Then(context => MarkUpdated(logger, context.Saga, context.Message.OccurredAt, "InvoiceGenerated"))
-        .TransitionTo(InvoiceGenerated),
-      When(PaymentRegisteredEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(PaymentRegisteredEvent))));
-
-    During(
-      InvoiceGenerated,
-      When(SaleCompleted)
         .Then(context =>
         {
-          context.Saga.CompletedAt = context.Message.OccurredAt;
-          MarkUpdated(logger, context.Saga, context.Message.OccurredAt, "Completed");
+          context.Saga.CompletedAt = context.Message.CreatedAt;
+          MarkUpdated(logger, context.Saga, context.Message.CreatedAt, nameof(Completed));
         })
+        .ThenAsync(context => AddOutboxAsync(
+          context,
+          new SaleCompletedEventV1(
+            Guid.NewGuid(),
+            context.Message.CorrelationId,
+            context.Message.SaleId,
+            context.Message.BusinessId,
+            context.Message.BranchId,
+            context.Message.UserId,
+            context.Message.PaymentId,
+            context.Message.InvoiceId,
+            context.Message.Total,
+            DateTimeOffset.UtcNow)))
         .TransitionTo(Completed),
-      When(InvoiceGeneratedEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(InvoiceGeneratedEvent))));
+      When(PaymentRegisteredEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(PaymentRegisteredEvent))));
 
     DuringAny(
       When(StockValidationFailed)
-        .Then(context => MarkFailed(logger, context.Saga, context.Message.OccurredAt, context.Message.Reason))
+        .Then(context => MarkFailed(logger, context.Saga, context.Message.CreatedAt, context.Message.Reason))
+        .ThenAsync(context => AddSaleFailedAsync(context, context.Message.Reason))
         .TransitionTo(Failed),
       When(InventoryDeductionFailed)
-        .Then(context => MarkFailed(logger, context.Saga, context.Message.OccurredAt, context.Message.Reason))
+        .Then(context => MarkFailed(logger, context.Saga, context.Message.CreatedAt, context.Message.Reason))
+        .ThenAsync(context => AddSaleFailedAsync(context, context.Message.Reason))
         .TransitionTo(Failed),
       When(PaymentFailed)
-        .Then(context => MarkFailed(logger, context.Saga, context.Message.OccurredAt, context.Message.Reason))
+        .Then(context => MarkFailed(logger, context.Saga, context.Message.CreatedAt, context.Message.Reason))
+        .ThenAsync(context => AddSaleFailedAsync(context, context.Message.Reason))
         .TransitionTo(Failed),
-      When(InvoiceGenerationFailed)
-        .Then(context => MarkFailed(logger, context.Saga, context.Message.OccurredAt, context.Message.Reason))
-        .TransitionTo(Failed),
-      When(SaleFailed)
-        .Then(context => MarkFailed(logger, context.Saga, context.Message.OccurredAt, context.Message.Reason))
+      When(InvoiceFailed)
+        .Then(context => MarkFailed(logger, context.Saga, context.Message.CreatedAt, context.Message.Reason))
+        .ThenAsync(context => AddSaleFailedAsync(context, context.Message.Reason))
         .TransitionTo(Failed));
-  }
 
-  public State Received { get; private set; } = null!;
+    During(
+      Completed,
+      Ignore(StockValidatedEvent),
+      Ignore(InventoryDeductedEvent),
+      Ignore(PaymentRegisteredEvent),
+      Ignore(InvoiceGeneratedEvent));
+
+    During(
+      Failed,
+      Ignore(StockValidatedEvent),
+      Ignore(InventoryDeductedEvent),
+      Ignore(PaymentRegisteredEvent),
+      Ignore(InvoiceGeneratedEvent),
+      Ignore(StockValidationFailed),
+      Ignore(InventoryDeductionFailed),
+      Ignore(PaymentFailed),
+      Ignore(InvoiceFailed));
+  }
 
   public State Processing { get; private set; } = null!;
 
-  public State StockValidated { get; private set; } = null!;
+  public State StockValidationPending { get; private set; } = null!;
 
-  public State InventoryDeducted { get; private set; } = null!;
+  public State InventoryDeductionPending { get; private set; } = null!;
 
-  public State PaymentRegistered { get; private set; } = null!;
+  public State PaymentRegistrationPending { get; private set; } = null!;
 
-  public State InvoiceGenerated { get; private set; } = null!;
+  public State InvoiceGenerationPending { get; private set; } = null!;
 
   public State Completed { get; private set; } = null!;
 
   public State Failed { get; private set; } = null!;
 
-  public State Cancelled { get; private set; } = null!;
+  public Event<SaleCreatedEventV1> SaleCreated { get; private set; } = null!;
 
-  public Event<SaleCreatedIntegrationEventV1> SaleCreated { get; private set; } = null!;
+  public Event<StockValidatedEventV1> StockValidatedEvent { get; private set; } = null!;
 
-  public Event<StockValidatedIntegrationEventV1> StockValidatedEvent { get; private set; } = null!;
+  public Event<StockValidationFailedEventV1> StockValidationFailed { get; private set; } = null!;
 
-  public Event<StockValidationFailedIntegrationEventV1> StockValidationFailed { get; private set; } = null!;
+  public Event<InventoryDeductedEventV1> InventoryDeductedEvent { get; private set; } = null!;
 
-  public Event<InventoryDeductedIntegrationEventV1> InventoryDeductedEvent { get; private set; } = null!;
+  public Event<InventoryDeductionFailedEventV1> InventoryDeductionFailed { get; private set; } = null!;
 
-  public Event<InventoryDeductionFailedIntegrationEventV1> InventoryDeductionFailed { get; private set; } = null!;
+  public Event<PaymentRegisteredEventV1> PaymentRegisteredEvent { get; private set; } = null!;
 
-  public Event<PaymentRegisteredIntegrationEventV1> PaymentRegisteredEvent { get; private set; } = null!;
+  public Event<PaymentFailedEventV1> PaymentFailed { get; private set; } = null!;
 
-  public Event<PaymentFailedIntegrationEventV1> PaymentFailed { get; private set; } = null!;
+  public Event<InvoiceGeneratedEventV1> InvoiceGeneratedEvent { get; private set; } = null!;
 
-  public Event<InvoiceGeneratedIntegrationEventV1> InvoiceGeneratedEvent { get; private set; } = null!;
+  public Event<InvoiceFailedEventV1> InvoiceFailed { get; private set; } = null!;
 
-  public Event<InvoiceGenerationFailedIntegrationEventV1> InvoiceGenerationFailed { get; private set; } = null!;
+  private static Task AddSaleFailedAsync<TMessage>(
+    BehaviorContext<SaleSagaState, TMessage> context,
+    string reason)
+    where TMessage : class, IIntegrationEvent
+    => AddOutboxAsync(
+      context,
+      new SaleFailedEventV1(
+        Guid.NewGuid(),
+        context.Message.CorrelationId,
+        context.Saga.SaleId,
+        context.Saga.BusinessId,
+        context.Saga.BranchId,
+        context.Saga.UserId,
+        reason,
+        DateTimeOffset.UtcNow));
 
-  public Event<SaleCompletedIntegrationEventV1> SaleCompleted { get; private set; } = null!;
-
-  public Event<SaleFailedIntegrationEventV1> SaleFailed { get; private set; } = null!;
+  private static Task AddOutboxAsync<TMessage, TEvent>(
+    BehaviorContext<SaleSagaState, TMessage> context,
+    TEvent integrationEvent)
+    where TMessage : class
+    where TEvent : class, IIntegrationEvent
+  {
+    var outbox = context.GetPayload<IServiceProvider>().GetRequiredService<IOutboxWriter>();
+    return outbox.AddAsync(integrationEvent, context.CancellationToken);
+  }
 
   private static void MarkUpdated(
     ILogger logger,
@@ -162,6 +261,7 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
   {
     LogTransition(logger, state, state.CurrentState, nextState);
     state.UpdatedAt = occurredAt;
+    state.Version++;
   }
 
   private static void MarkFailed(
@@ -172,7 +272,7 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
   {
     state.FailedAt = occurredAt;
     state.FailureReason = reason;
-    MarkUpdated(logger, state, occurredAt, "Failed");
+    MarkUpdated(logger, state, occurredAt, nameof(Failed));
   }
 
   private static void LogTransition(

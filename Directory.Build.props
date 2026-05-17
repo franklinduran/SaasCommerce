@@ -9,5 +9,6 @@
     <AnalysisMode>Recommended</AnalysisMode>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 </Project>

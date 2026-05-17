@@ -114,6 +114,76 @@ public sealed class ArchitectureDependencyTests
   }
 
   [Fact]
+  public void ApplicationShouldNotReferenceMassTransit()
+  {
+    foreach (var moduleName in ModuleNames)
+    {
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Application",
+        "MassTransit");
+    }
+  }
+
+  [Fact]
+  public void ApplicationShouldNotReferenceSignalR()
+  {
+    foreach (var moduleName in ModuleNames)
+    {
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Application",
+        "Microsoft.AspNetCore.SignalR");
+    }
+
+    AssertNoDependency(
+      BuildingBlocksAssembly,
+      "SaasCommerce.BuildingBlocks.Application",
+      "Microsoft.AspNetCore.SignalR");
+  }
+
+  [Fact]
+  public void DomainShouldNotReferenceInfrastructureOrEntityFramework()
+  {
+    foreach (var moduleName in ModuleNames)
+    {
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Domain",
+        "Infrastructure");
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Domain",
+        "Microsoft.EntityFrameworkCore");
+    }
+  }
+
+  [Fact]
+  public void WorkerAndApiShouldNotBeReferencedByApplication()
+  {
+    foreach (var moduleName in ModuleNames)
+    {
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Application",
+        "SaasCommerce.Worker");
+      AssertNoDependency(
+        ModulesAssembly,
+        $"SaasCommerce.Modules.{moduleName}.Application",
+        "SaasCommerce.Api");
+    }
+
+    AssertNoDependency(
+      BuildingBlocksAssembly,
+      "SaasCommerce.BuildingBlocks.Application",
+      "SaasCommerce.Worker");
+    AssertNoDependency(
+      BuildingBlocksAssembly,
+      "SaasCommerce.BuildingBlocks.Application",
+      "SaasCommerce.Api");
+  }
+
+  [Fact]
   public void ModuleDomainsShouldNotDependOnOtherModuleDomains()
   {
     foreach (var sourceModule in ModuleNames)

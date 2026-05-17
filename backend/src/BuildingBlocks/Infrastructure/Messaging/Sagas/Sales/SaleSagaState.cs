@@ -25,4 +25,6 @@ public sealed class SaleSagaState : SagaStateMachineInstance
   public DateTimeOffset? FailedAt { get; set; }
 
   public string? FailureReason { get; set; }
+
+  public int Version { get; set; }
 }

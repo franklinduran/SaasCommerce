@@ -887,3 +887,149 @@ Validacion manual:
 6. Login desde frontend: SignalR debe conectar despues de obtener accessToken.
 7. Logout: SignalR debe desconectar.
 ```
+
+## Etapa 8: Saga State Machine Para Flujo De Venta
+
+Etapa 8 activa la primera version real del flujo transaccional de venta sin construir todavia el POS completo. La API sigue fuera de la logica de negocio, el Worker solo adapta MassTransit, Application decide los casos de uso y Infrastructure mantiene EF Core, Outbox, Inbox, Saga y SignalR.
+
+Flujo implementado:
+
+```txt
+SaleCreatedEventV1
+  -> SaleStateMachine
+  -> StockValidationRequestedEventV1
+  -> StockValidatedEventV1 / StockValidationFailedEventV1
+  -> InventoryDeductionRequestedEventV1
+  -> InventoryDeductedEventV1 / InventoryDeductionFailedEventV1
+  -> PaymentRegistrationRequestedEventV1
+  -> PaymentRegisteredEventV1 / PaymentFailedEventV1
+  -> InvoiceGenerationRequestedEventV1
+  -> InvoiceGeneratedEventV1 / InvoiceFailedEventV1
+  -> SaleCompletedEventV1 / SaleFailedEventV1
+  -> sale.statusChanged por SignalR al grupo business-{BusinessId}
+```
+
+### Contratos V1
+
+Eventos propios de Sales:
+
+```txt
+SaleCreatedEventV1
+SaleCompletedEventV1
+SaleFailedEventV1
+SaleStatusChangedNotificationV1
+```
+
+Eventos cuyo dueno es Inventory:
+
+```txt
+StockValidationRequestedEventV1
+StockValidatedEventV1
+StockValidationFailedEventV1
+InventoryDeductionRequestedEventV1
+InventoryDeductedEventV1
+InventoryDeductionFailedEventV1
+```
+
+Eventos cuyo dueno es Payments:
+
+```txt
+PaymentRegistrationRequestedEventV1
+PaymentRegisteredEventV1
+PaymentFailedEventV1
+```
+
+Eventos cuyo dueno es Billing:
+
+```txt
+InvoiceGenerationRequestedEventV1
+InvoiceGeneratedEventV1
+InvoiceFailedEventV1
+```
+
+Todos implementan `IIntegrationEvent` e incluyen `EventId`, `CorrelationId`, `BusinessId`, `SaleId`, `BranchId`, `CreatedAt` y `Version`.
+
+### Persistencia De Ventas Y Saga
+
+La entidad `Sale` vive en `Modules/Sales/Domain` con estados:
+
+```txt
+Received
+Processing
+Completed
+Failed
+Cancelled
+```
+
+Reglas minimas:
+
+```txt
+Completed no vuelve a Failed.
+Failed no vuelve a Completed.
+Cancelled no se procesa.
+Solo Processing puede completar.
+```
+
+`SaleSagaState` agrega `Version` y se indexa por `SaleId`, `BusinessId`, `BusinessId + SaleId` y `CurrentState`. La migracion `202605160003_SalesSagaFlow` crea el esquema `sales`, las tablas `sales.sales`, `sales.sale_items` y actualiza indices de saga.
+
+### Casos De Uso
+
+Application contiene los casos de uso que ejecutan decisiones del flujo:
+
+```txt
+CreateSaleUseCase
+ValidateSaleStockUseCase
+DeductSaleInventoryUseCase
+RegisterSalePaymentUseCase
+GenerateSaleInvoiceUseCase
+CompleteSaleUseCase
+FailSaleUseCase
+```
+
+Reglas:
+
+```txt
+Application no referencia MassTransit.
+Application no referencia SignalR directamente.
+Eventos criticos se agregan con IOutboxWriter.
+Cambios de estado se notifican con IRealtimeNotifier.
+Sales consulta Catalog con IProductSalesPolicyReader.
+Sales valida stock con IInventoryAvailabilityService.
+Sales descuenta inventario mediante IInventoryRepository, sin tocar DbContext.
+```
+
+### Consumers Delgados
+
+Worker registra consumers de eventos reales:
+
+```txt
+ValidateStockConsumer
+DeductInventoryConsumer
+RegisterPaymentConsumer
+GenerateInvoiceConsumer
+SaleCompletedConsumer
+SaleFailedConsumer
+```
+
+Cada consumer deriva de `IdempotentConsumer<TMessage>` mediante `DelegatingIntegrationEventConsumer<TMessage>`, consulta Inbox antes de ejecutar, delega al caso de uso correspondiente y marca procesado solo despues de exito.
+
+### Validacion
+
+Comandos recomendados:
+
+```bash
+$env:NUGET_PACKAGES='C:\Users\frank\.nuget\packages'
+dotnet restore SaasCommerce.slnx --ignore-failed-sources -p:NuGetAudit=false
+dotnet build SaasCommerce.slnx --no-restore -m:1 /nr:false -v minimal -p:NuGetAudit=false
+dotnet test SaasCommerce.slnx --no-build -m:1 /nr:false -v minimal -p:NuGetAudit=false
+```
+
+Pruebas cubiertas:
+
+```txt
+Domain: transiciones y reglas de Sale.
+Application: eventos de stock, pago, factura y notificaciones realtime.
+Worker: consumers delgados e idempotencia.
+Saga: solicitudes, completado, fallo y duplicados con MassTransit Test Harness.
+Architecture: Application sin MassTransit/SignalR, Domain sin EF/Infrastructure y Contracts sin Infrastructure.
+```

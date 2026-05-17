@@ -14,6 +14,7 @@ public sealed record ProductSalesPolicy(
   bool IsTaxIncluded,
   bool AllowsDiscount,
   bool TrackInventory,
+  bool AllowNegativeStock,
   bool IsActive,
   bool CanBeSold,
   string? ReasonIfCannotBeSold);

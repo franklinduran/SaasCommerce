@@ -23,8 +23,12 @@ public sealed class SaleSagaStateConfiguration : IEntityTypeConfiguration<SaleSa
     builder.Property(state => state.CompletedAt);
     builder.Property(state => state.FailedAt);
     builder.Property(state => state.FailureReason).HasMaxLength(1_000);
+    builder.Property(state => state.Version).IsConcurrencyToken();
 
-    builder.HasIndex(state => state.SaleId).IsUnique();
+    builder.HasIndex(state => state.SaleId);
+    builder.HasIndex(state => state.BusinessId);
+    builder.HasIndex(state => new { state.BusinessId, state.SaleId }).IsUnique();
+    builder.HasIndex(state => state.CurrentState);
     builder.HasIndex(state => new { state.BusinessId, state.CurrentState });
   }
 }

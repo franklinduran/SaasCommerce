@@ -19,6 +19,9 @@ using SaasCommerce.Modules.Inventory.Application.Stock;
 using SaasCommerce.Modules.Inventory.Contracts.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
+using SaasCommerce.Modules.Sales.Application.Abstractions;
+using SaasCommerce.Modules.Sales.Application.Sales;
+using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 
 namespace SaasCommerce.Modules;
 
@@ -36,6 +39,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IProductSalesPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
     services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
+    services.AddScoped<ISaleRepository, EfSaleRepository>();
     services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
     services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();
     services.AddScoped<IIdentitySettingsRepository, EfIdentitySettingsRepository>();
@@ -54,6 +58,13 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<AdjustInventoryHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();
+    services.AddScoped<ICreateSaleUseCase, CreateSaleUseCase>();
+    services.AddScoped<IValidateSaleStockUseCase, ValidateSaleStockUseCase>();
+    services.AddScoped<IDeductSaleInventoryUseCase, DeductSaleInventoryUseCase>();
+    services.AddScoped<IRegisterSalePaymentUseCase, RegisterSalePaymentUseCase>();
+    services.AddScoped<IGenerateSaleInvoiceUseCase, GenerateSaleInvoiceUseCase>();
+    services.AddScoped<ICompleteSaleUseCase, CompleteSaleUseCase>();
+    services.AddScoped<IFailSaleUseCase, FailSaleUseCase>();
     services.AddScoped<RegisterBusinessHandler>();
     services.AddScoped<LoginHandler>();
     services.AddScoped<RefreshTokenHandler>();

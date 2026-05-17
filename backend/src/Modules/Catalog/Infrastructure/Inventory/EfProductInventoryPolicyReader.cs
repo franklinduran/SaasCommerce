@@ -115,6 +115,7 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
         candidate.IsTaxIncluded,
         candidate.AllowsDiscount,
         candidate.TrackInventory,
+        candidate.AllowNegativeStock,
         candidate.IsActive
       })
       .SingleOrDefaultAsync(cancellationToken);
@@ -140,6 +141,7 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
       product.IsTaxIncluded,
       product.AllowsDiscount,
       product.TrackInventory,
+      product.AllowNegativeStock,
       product.IsActive,
       blockedReason is null,
       blockedReason);
