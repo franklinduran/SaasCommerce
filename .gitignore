@@ -36,6 +36,7 @@ logs/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+.claude/
 
 ## OS
 Thumbs.db

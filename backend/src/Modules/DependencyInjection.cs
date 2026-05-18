@@ -31,6 +31,11 @@ using SaasCommerce.Modules.Purchasing.Application.Abstractions;
 using SaasCommerce.Modules.Purchasing.Application.Purchases;
 using SaasCommerce.Modules.Purchasing.Application.Suppliers;
 using SaasCommerce.Modules.Purchasing.Infrastructure.Persistence;
+using SaasCommerce.Modules.Reporting.Application.Abstractions;
+using SaasCommerce.Modules.Reporting.Application.Dashboard;
+using SaasCommerce.Modules.Reporting.Application.Reports;
+using SaasCommerce.Modules.Reporting.Infrastructure.Export;
+using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
@@ -131,6 +136,16 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetCurrentBranchHandler>();
     services.AddScoped<UpdateCurrentBranchHandler>();
     services.AddScoped<DevelopmentDataSeeder>();
+
+    // Reporting
+    services.AddScoped<IReportsReadRepository, EfReportsReadRepository>();
+    services.AddScoped<IReportExportService, CsvReportExportService>();
+    services.AddScoped<GetDashboardSummaryHandler>();
+    services.AddScoped<GetSalesReportHandler>();
+    services.AddScoped<GetInvoiceReportHandler>();
+    services.AddScoped<GetAccountsReceivableReportHandler>();
+    services.AddScoped<GetLowStockReportHandler>();
+    services.AddScoped<GetPurchaseReportHandler>();
 
     return services;
   }
