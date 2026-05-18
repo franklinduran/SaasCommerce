@@ -20,14 +20,14 @@ public sealed class EfInventoryReadRepository(AppDbContext dbContext) : IInvento
     BusinessId businessId,
     InventoryReadCriteria criteria,
     CancellationToken cancellationToken = default)
-    => ApplyFilters(BuildRowsQuery(businessId), criteria).CountAsync(cancellationToken);
+    => ApplyFilters(BuildRowsQuery(businessId, criteria), criteria).CountAsync(cancellationToken);
 
   public async Task<IReadOnlyCollection<StockItemResponse>> ListAsync(
     BusinessId businessId,
     InventoryReadCriteria criteria,
     CancellationToken cancellationToken = default)
   {
-    var query = ApplySorting(ApplyFilters(BuildRowsQuery(businessId), criteria), criteria);
+    var query = ApplySorting(ApplyFilters(BuildRowsQuery(businessId, criteria), criteria), criteria);
 
     var rows = await query
       .Skip((criteria.Page - 1) * criteria.PageSize)
@@ -152,10 +152,26 @@ public sealed class EfInventoryReadRepository(AppDbContext dbContext) : IInvento
       alerts);
   }
 
-  private IQueryable<InventoryRowProjection> BuildRowsQuery(BusinessId businessId)
+  private IQueryable<InventoryRowProjection> BuildRowsQuery(BusinessId businessId, InventoryReadCriteria criteria)
   {
+    var stockItems = dbContext.Set<StockItem>()
+      .AsNoTracking()
+      .Where(stockItem => stockItem.BusinessId == businessId);
+
+    if (criteria.ProductId.HasValue)
+    {
+      var productId = criteria.ProductId.Value;
+      stockItems = stockItems.Where(stockItem => stockItem.ProductId == productId);
+    }
+
+    if (criteria.BranchId.HasValue)
+    {
+      var branchId = new BranchId(criteria.BranchId.Value);
+      stockItems = stockItems.Where(stockItem => stockItem.BranchId == branchId);
+    }
+
     var query =
-      from stockItem in dbContext.Set<StockItem>().AsNoTracking()
+      from stockItem in stockItems
       join product in dbContext.Set<Product>().AsNoTracking()
         on new { stockItem.ProductId, stockItem.BusinessId }
         equals new { ProductId = product.Id, product.BusinessId }
@@ -190,16 +206,6 @@ public sealed class EfInventoryReadRepository(AppDbContext dbContext) : IInvento
     IQueryable<InventoryRowProjection> query,
     InventoryReadCriteria criteria)
   {
-    if (criteria.ProductId.HasValue)
-    {
-      query = query.Where(row => row.ProductId == criteria.ProductId.Value);
-    }
-
-    if (criteria.BranchId.HasValue)
-    {
-      query = query.Where(row => row.BranchId == criteria.BranchId.Value);
-    }
-
     if (!string.IsNullOrWhiteSpace(criteria.Search))
     {
       var term = criteria.Search.Trim();

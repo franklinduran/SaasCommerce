@@ -208,6 +208,32 @@ public sealed class StabilizationEndpointTests
   }
 
   [Fact]
+  public async Task GetInventory_ShouldFilterByProductAndBranch()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+    var login = await AuthenticateAsync(client);
+    var branchId = login.User.BranchId!.Value;
+    var created = await CreateProductAsync(
+      client,
+      ProductRequest("Cafe filtrado", $"SKU-{Guid.NewGuid():N}", null));
+    await client.PostAsJsonAsync(
+      "/api/inventory/adjustments",
+      new CreateInventoryAdjustmentRequest(created.Id, 7, "InitialStock", branchId));
+
+    var response = await client.GetAsync($"/api/inventory?productId={created.Id}&branchId={branchId}&pageSize=50");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<InventoryListResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data!.Items.Should().ContainSingle(item =>
+      item.ProductId == created.Id &&
+      item.BranchId == branchId &&
+      item.Quantity == 7);
+  }
+
+  [Fact]
   public async Task GetInventoryProductDetail_ShouldReturnStockAndMovements()
   {
     using var factory = CreateFactory();
@@ -231,7 +257,7 @@ public sealed class StabilizationEndpointTests
     payload.Data.RecentMovements.Should().Contain(movement => movement.NewStock == 3);
   }
 
-  private static async Task AuthenticateAsync(HttpClient client)
+  private static async Task<LoginResponse> AuthenticateAsync(HttpClient client)
   {
     var loginResponse = await client.PostAsJsonAsync(
       "/api/auth/login",
@@ -241,6 +267,8 @@ public sealed class StabilizationEndpointTests
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
       "Bearer",
       login!.Data!.AccessToken);
+
+    return login.Data;
   }
 
   private static async Task<ProductResponse> CreateProductAsync(

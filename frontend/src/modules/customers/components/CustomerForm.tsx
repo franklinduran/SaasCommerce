@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Save } from 'lucide-react'
 import { customerSchema } from '@/modules/customers/schemas/customerSchemas'
 import type { Customer, CustomerUpsertRequest } from '@/modules/customers/types'
@@ -22,12 +22,6 @@ export function CustomerForm({
   const [phone, setPhone] = useState(customer?.phone ?? '')
   const [email, setEmail] = useState(customer?.email ?? '')
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setFullName(customer?.fullName ?? '')
-    setPhone(customer?.phone ?? '')
-    setEmail(customer?.email ?? '')
-  }, [customer])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

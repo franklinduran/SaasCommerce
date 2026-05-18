@@ -59,7 +59,7 @@ export function CustomerSelector({
           <option value="">Sin cliente</option>
           {customers.map((customer) => (
             <option key={customer.id} value={customer.id}>
-              {customer.fullName} | {formatMoney(customer.currentBalance ?? 0)}
+              {customer.fullName}
             </option>
           ))}
         </select>

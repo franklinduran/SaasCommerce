@@ -91,6 +91,7 @@ export function CustomerDetailPage() {
           <CustomerForm
             customer={customer.data}
             isSubmitting={updateCustomer.isPending}
+            key={customer.data?.id ?? 'customer-loading'}
             onSubmit={(request) => updateCustomer.mutate(request)}
           />
           <div className="mt-4">
