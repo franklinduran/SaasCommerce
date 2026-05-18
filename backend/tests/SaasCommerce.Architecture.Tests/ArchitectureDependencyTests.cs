@@ -287,6 +287,7 @@ public sealed class ArchitectureDependencyTests
         path.EndsWith("Command.cs", StringComparison.Ordinal) ||
         path.EndsWith("Query.cs", StringComparison.Ordinal) ||
         path.EndsWith("Handler.cs", StringComparison.Ordinal))
+      .Where(path => !path.Replace(Path.DirectorySeparatorChar, '/').Contains("/Infrastructure/"))
       .ToArray();
 
     foreach (var file in useCaseFiles)

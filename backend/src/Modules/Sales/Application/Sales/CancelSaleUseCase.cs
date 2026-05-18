@@ -1,3 +1,4 @@
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
@@ -15,6 +16,7 @@ public sealed class CancelSaleUseCase(
   ISaleRepository sales,
   ICurrentUserService currentUser,
   IRealtimeNotifier realtime,
+  IAuditLogWriter auditLog,
   IClock clock,
   IUnitOfWork unitOfWork) : ICancelSaleUseCase
 {
@@ -61,6 +63,16 @@ public sealed class CancelSaleUseCase(
     }
 
     await unitOfWork.SaveChangesAsync(cancellationToken);
+
+    await auditLog.WriteAsync(
+      new BusinessId(businessId),
+      userId,
+      "sale.cancelled",
+      "Sale",
+      sale.Id,
+      $"Sale cancelled. Reason: {reason}",
+      cancellationToken: cancellationToken);
+
     await realtime.NotifyBusinessAsync(
       businessId,
       SaleRealtimeEvents.StatusChanged,

@@ -5,6 +5,8 @@ import {
   Search,
 } from 'lucide-react'
 import { useState } from 'react'
+import { PermissionGate } from '@/shared/components/PermissionGate'
+import { Permission } from '@/shared/types/permissions'
 import {
   useAccountsReceivableReport,
   useInvoiceReport,
@@ -621,14 +623,16 @@ function SelectInput({
 
 function ExportButton({ href, label }: { href: string; label: string }) {
   return (
-    <a
-      className="flex h-10 shrink-0 items-center gap-2 rounded-md bg-stone-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-stone-700"
-      download
-      href={href}
-    >
-      <Download size={15} />
-      {label}
-    </a>
+    <PermissionGate permission={Permission.ReportsExport}>
+      <a
+        className="flex h-10 shrink-0 items-center gap-2 rounded-md bg-stone-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-stone-700"
+        download
+        href={href}
+      >
+        <Download size={15} />
+        {label}
+      </a>
+    </PermissionGate>
   )
 }
 

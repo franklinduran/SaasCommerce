@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
@@ -385,6 +386,7 @@ public sealed class CatalogInventoryTests
         ProductInventoryPolicy(productId, currentUser.BusinessId!.Value, minimumStock: 5)),
       currentUser,
       outbox,
+      new NoopAuditLogWriter(),
       new FixedClock(),
       new EfUnitOfWork(dbContext));
 
@@ -828,6 +830,7 @@ public sealed class CatalogInventoryTests
       new TestProductInventoryPolicyReader(productPolicy),
       currentUser,
       new NoopOutboxWriter(),
+      new NoopAuditLogWriter(),
       new FixedClock(),
       new EfUnitOfWork(dbContext));
 
@@ -911,6 +914,15 @@ public sealed class CatalogInventoryTests
   {
     public DateTimeOffset UtcNow { get; } =
       new(2026, 5, 15, 12, 0, 0, TimeSpan.Zero);
+  }
+
+  private sealed class NoopAuditLogWriter : IAuditLogWriter
+  {
+    public Task WriteAsync(
+      BusinessId businessId, Guid? userId, string action, string entityName,
+      Guid? entityId, string? description = null, string? ipAddress = null,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
   }
 
   private sealed class NoopOutboxWriter : IOutboxWriter

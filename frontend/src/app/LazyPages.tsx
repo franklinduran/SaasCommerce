@@ -89,6 +89,13 @@ const SettingsPage = lazy(() =>
     default: module.SettingsPage,
   })),
 )
+const UsersPage = lazy(() => import('@/modules/users/UsersPage'))
+const AuditLogsPage = lazy(() => import('@/modules/audit/AuditLogsPage'))
+const ForbiddenPage = lazy(() =>
+  import('@/shared/components/ForbiddenPage').then((module) => ({
+    default: module.ForbiddenPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -164,4 +171,16 @@ export function ReportsRoute() {
 
 export function SettingsRoute() {
   return <SettingsPage />
+}
+
+export function UsersRoute() {
+  return <UsersPage />
+}
+
+export function AuditLogsRoute() {
+  return <AuditLogsPage />
+}
+
+export function ForbiddenRoute() {
+  return <ForbiddenPage />
 }

@@ -1,5 +1,8 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
+using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
 using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Billing.Application.Invoices;
 using SaasCommerce.Modules.Billing.Infrastructure.Persistence;
@@ -17,8 +20,12 @@ using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Application.Account;
+using SaasCommerce.Modules.Identity.Application.Audit;
 using SaasCommerce.Modules.Identity.Application.Auth;
+using SaasCommerce.Modules.Identity.Application.Permissions;
 using SaasCommerce.Modules.Identity.Application.Settings;
+using SaasCommerce.Modules.Identity.Application.Users;
+using SaasCommerce.Modules.Identity.Domain;
 using SaasCommerce.Modules.Identity.Infrastructure.Auth;
 using SaasCommerce.Modules.Identity.Infrastructure.Development;
 using SaasCommerce.Modules.Identity.Infrastructure.Persistence;
@@ -49,30 +56,14 @@ public static class ModulesServiceCollectionExtensions
     ArgumentNullException.ThrowIfNull(services);
 
     services.AddValidatorsFromAssembly(ModulesAssemblyReference.Assembly);
+
+    // Catalog
     services.AddScoped<ICatalogCategoryRepository, EfCatalogCategoryRepository>();
     services.AddScoped<ICatalogProductRepository, EfCatalogProductRepository>();
     services.AddScoped<IProductInventoryPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IInventoryProductLookupReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IProductSalesPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IProductPurchaseReader, EfProductPurchaseReader>();
-    services.AddScoped<IInvoiceRepository, EfInvoiceRepository>();
-    services.AddScoped<IInvoiceSaleReader, EfInvoiceSaleReader>();
-    services.AddScoped<IInventoryRepository, EfInventoryRepository>();
-    services.AddScoped<IInventoryReadRepository, EfInventoryReadRepository>();
-    services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
-    services.AddScoped<ICustomerRepository, EfCustomerRepository>();
-    services.AddScoped<ICustomerCreditRepository, EfCustomerCreditRepository>();
-    services.AddScoped<ISaleRepository, EfSaleRepository>();
-    services.AddScoped<ISaleReadRepository, EfSaleReadRepository>();
-    services.AddScoped<ISupplierRepository, EfSupplierRepository>();
-    services.AddScoped<IPurchaseRepository, EfPurchaseRepository>();
-    services.AddScoped<IPurchaseMovementReader, EfPurchaseMovementReader>();
-    services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
-    services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();
-    services.AddScoped<IIdentitySettingsRepository, EfIdentitySettingsRepository>();
-    services.AddScoped<IJwtTokenService, JwtTokenService>();
-    services.AddScoped<IPasswordHasher, PasswordHasher>();
-    services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
     services.AddScoped<CreateProductHandler>();
     services.AddScoped<UpdateProductHandler>();
     services.AddScoped<ActivateProductHandler>();
@@ -82,11 +73,21 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<CreateCategoryHandler>();
     services.AddScoped<UpdateCategoryHandler>();
     services.AddScoped<GetCategoriesHandler>();
+
+    // Inventory
+    services.AddScoped<IInventoryRepository, EfInventoryRepository>();
+    services.AddScoped<IInventoryReadRepository, EfInventoryReadRepository>();
+    services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
     services.AddScoped<AdjustInventoryHandler>();
     services.AddScoped<GetInventoryHandler>();
     services.AddScoped<GetInventoryProductDetailHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();
+
+    // Purchasing
+    services.AddScoped<ISupplierRepository, EfSupplierRepository>();
+    services.AddScoped<IPurchaseRepository, EfPurchaseRepository>();
+    services.AddScoped<IPurchaseMovementReader, EfPurchaseMovementReader>();
     services.AddScoped<CreateSupplierHandler>();
     services.AddScoped<UpdateSupplierHandler>();
     services.AddScoped<GetSuppliersHandler>();
@@ -97,11 +98,19 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetPurchasesHandler>();
     services.AddScoped<GetPurchaseByIdHandler>();
     services.AddScoped<IProcessPurchaseReceivedEventUseCase, ProcessPurchaseReceivedEventUseCase>();
+
+    // Billing
+    services.AddScoped<IInvoiceRepository, EfInvoiceRepository>();
+    services.AddScoped<IInvoiceSaleReader, EfInvoiceSaleReader>();
     services.AddScoped<IGenerateInvoiceUseCase, GenerateInvoiceHandler>();
     services.AddScoped<GetInvoiceBySaleHandler>();
     services.AddScoped<GetInvoiceByIdHandler>();
     services.AddScoped<GetInvoicesHandler>();
     services.AddScoped<CancelInvoiceHandler>();
+
+    // Customers
+    services.AddScoped<ICustomerRepository, EfCustomerRepository>();
+    services.AddScoped<ICustomerCreditRepository, EfCustomerCreditRepository>();
     services.AddScoped<ICreateCustomerUseCase, CreateCustomerUseCase>();
     services.AddScoped<IGetCustomerByIdUseCase, GetCustomerByIdUseCase>();
     services.AddScoped<IListCustomersUseCase, ListCustomersUseCase>();
@@ -113,6 +122,10 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IBlockCustomerCreditUseCase, BlockCustomerCreditUseCase>();
     services.AddScoped<IUnblockCustomerCreditUseCase, UnblockCustomerCreditUseCase>();
     services.AddScoped<IRegisterCreditSaleUseCase, RegisterCreditSaleUseCase>();
+
+    // Sales
+    services.AddScoped<ISaleRepository, EfSaleRepository>();
+    services.AddScoped<ISaleReadRepository, EfSaleReadRepository>();
     services.AddScoped<ICreateSaleUseCase, CreateSaleUseCase>();
     services.AddScoped<ISaleEventWriter, SaleEventWriter>();
     services.AddScoped<IGetSaleByIdUseCase, GetSaleByIdUseCase>();
@@ -124,6 +137,31 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IGenerateSaleInvoiceUseCase, GenerateSaleInvoiceUseCase>();
     services.AddScoped<ICompleteSaleUseCase, CompleteSaleUseCase>();
     services.AddScoped<IFailSaleUseCase, FailSaleUseCase>();
+
+    // Identity — auth infrastructure
+    services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
+    services.AddScoped<IIdentityUserRepository, EfIdentityUserRepository>();
+    services.AddScoped<IIdentitySettingsRepository, EfIdentitySettingsRepository>();
+    services.AddScoped<IJwtTokenService, Identity.Infrastructure.Auth.JwtTokenService>();
+    services.AddScoped<IPasswordHasher, PasswordHasher>();
+    services.AddScoped<IRefreshTokenGenerator, RefreshTokenGenerator>();
+
+    // Identity — security: permissions & authorization
+    services.AddScoped<IPermissionService, PermissionService>();
+    services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+    // Identity — audit log
+    services.AddScoped<IAuditLogWriter, EfAuditLogWriter>();
+    services.AddScoped<IAuditLogReadRepository, EfAuditLogReadRepository>();
+    services.AddScoped<GetAuditLogsHandler>();
+
+    // Identity — user management
+    services.AddScoped<IUserManagementRepository, EfUserManagementRepository>();
+    services.AddScoped<GetUsersHandler>();
+    services.AddScoped<UpdateUserRoleHandler>();
+    services.AddScoped<DisableUserHandler>();
+
+    // Identity — application handlers
     services.AddScoped<RegisterBusinessHandler>();
     services.AddScoped<LoginHandler>();
     services.AddScoped<RefreshTokenHandler>();
@@ -135,6 +173,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateCurrentBusinessHandler>();
     services.AddScoped<GetCurrentBranchHandler>();
     services.AddScoped<UpdateCurrentBranchHandler>();
+    services.AddScoped<GetCurrentUserPermissionsHandler>();
     services.AddScoped<DevelopmentDataSeeder>();
 
     // Reporting

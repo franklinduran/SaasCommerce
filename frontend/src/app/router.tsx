@@ -3,10 +3,12 @@ import type { ReactNode } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/app/AppShell'
 import {
+  AuditLogsRoute,
   AuthRoute,
   CustomerDetailRoute,
   CustomersRoute,
   DashboardRoute,
+  ForbiddenRoute,
   InventoryProductDetailRoute,
   InvoiceDetailRoute,
   InventoryRoute,
@@ -22,6 +24,7 @@ import {
   SalesRoute,
   SettingsRoute,
   SuppliersRoute,
+  UsersRoute,
 } from '@/app/LazyPages'
 import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute'
 import { PageLoadingState } from '@/shared/components/PageLoadingState'
@@ -57,6 +60,9 @@ export const router = createBrowserRouter([
       { path: 'invoices', element: withPageLoading(<InvoicesRoute />) },
       { path: 'invoices/:invoiceId', element: withPageLoading(<InvoiceDetailRoute />) },
       { path: 'reports', element: withPageLoading(<ReportsRoute />) },
+      { path: 'users', element: withPageLoading(<UsersRoute />) },
+      { path: 'audit-logs', element: withPageLoading(<AuditLogsRoute />) },
+      { path: 'forbidden', element: withPageLoading(<ForbiddenRoute />) },
       { path: 'settings', element: withPageLoading(<SettingsRoute />) },
     ],
   },

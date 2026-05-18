@@ -97,4 +97,19 @@ public sealed class User
     PasswordHash = passwordHash;
     UpdatedAt = updatedAt;
   }
+
+  public void Deactivate(DateTimeOffset updatedAt)
+  {
+    IsActive = false;
+    UpdatedAt = updatedAt;
+  }
+
+  public void ChangeRole(Role newRole, DateTimeOffset updatedAt)
+  {
+    ArgumentNullException.ThrowIfNull(newRole);
+
+    roles.Clear();
+    roles.Add(newRole);
+    UpdatedAt = updatedAt;
+  }
 }

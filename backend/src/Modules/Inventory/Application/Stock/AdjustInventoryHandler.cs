@@ -1,3 +1,4 @@
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
@@ -17,6 +18,7 @@ public sealed class AdjustInventoryHandler(
   IProductInventoryPolicyReader productPolicies,
   ICurrentUserService currentUser,
   IOutboxWriter outbox,
+  IAuditLogWriter auditLog,
   IClock clock,
   IUnitOfWork unitOfWork)
 {
@@ -130,6 +132,15 @@ public sealed class AdjustInventoryHandler(
     }
 
     await unitOfWork.SaveChangesAsync(cancellationToken);
+
+    await auditLog.WriteAsync(
+      tenantId,
+      userId,
+      "inventory.adjusted",
+      "StockItem",
+      stockItem.Id,
+      $"Product {command.ProductId}: {movement.PreviousStock} → {movement.NewStock} ({command.Reason})",
+      cancellationToken: cancellationToken);
 
     return Result.Success(new InventoryAdjustmentResponse(
       InventoryResponseMapper.ToResponse(stockItem, null),

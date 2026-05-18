@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +11,10 @@ using SaasCommerce.Api.Endpoints;
 using SaasCommerce.Api.Middleware;
 using SaasCommerce.Api.Realtime;
 using SaasCommerce.BuildingBlocks;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Contracts.Common;
+using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.Modules;
@@ -23,15 +26,18 @@ using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Contracts.Requests;
 using SaasCommerce.Modules.Identity.Application.Account;
+using SaasCommerce.Modules.Identity.Application.Audit;
 using SaasCommerce.Modules.Identity.Application.Auth;
+using SaasCommerce.Modules.Identity.Application.Permissions;
 using SaasCommerce.Modules.Identity.Application.Settings;
+using SaasCommerce.Modules.Identity.Application.Users;
+using SaasCommerce.Modules.Identity.Contracts;
 using SaasCommerce.Modules.Identity.Contracts.Requests;
 using SaasCommerce.Modules.Inventory.Application.Stock;
 using SaasCommerce.Modules.Inventory.Contracts.Requests;
 using SaasCommerce.Modules.Purchasing.Application.Purchases;
 using SaasCommerce.Modules.Purchasing.Application.Suppliers;
 using SaasCommerce.Modules.Purchasing.Contracts.Requests;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Reporting.Application.Abstractions;
 using SaasCommerce.Modules.Reporting.Application.Dashboard;
 using SaasCommerce.Modules.Reporting.Application.Reports;
@@ -56,6 +62,8 @@ const string salesTag = "Sales";
 const string suppliersTag = "Suppliers";
 const string systemTag = "System";
 const string tenancyTag = "Tenancy";
+const string usersTag = "Users";
+const string auditTag = "Audit";
 const int generatedJwtSecretBytes = 32;
 const int rabbitMqDefaultPort = 5672;
 const int readyCheckTimeoutSeconds = 2;
@@ -139,7 +147,18 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddSaasCommerceJwt(builder.Configuration, builder.Environment);
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+  foreach (var permission in GetAllSystemPermissions())
+  {
+    var captured = permission;
+    options.AddPolicy(
+      $"Permission:{captured}",
+      policy => policy
+        .RequireAuthenticatedUser()
+        .AddRequirements(new PermissionRequirement(captured)));
+  }
+});
 
 var app = builder.Build();
 
@@ -273,6 +292,19 @@ app.MapGet(
   .RequireAuthorization()
   .WithTags(identityTag);
 
+app.MapGet(
+  "/api/me/permissions",
+  (
+    GetCurrentUserPermissionsHandler handler,
+    ICorrelationIdProvider correlationIdProvider) =>
+  {
+    var result = handler.Handle(new GetCurrentUserPermissionsQuery());
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(identityTag);
+
 app.MapPut(
   "/api/me/profile",
   async (
@@ -391,7 +423,7 @@ app.MapPost(
       correlationIdProvider,
       successStatusCode: StatusCodes.Status201Created);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.CustomersCreate}")
   .WithTags(customersTag);
 
 app.MapGet(
@@ -414,7 +446,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.CustomersView}")
   .WithTags(customersTag);
 
 app.MapGet(
@@ -429,7 +461,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.CustomersView}")
   .WithTags(customersTag);
 
 app.MapPut(
@@ -447,7 +479,7 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.CustomersUpdate}")
   .WithTags(customersTag);
 
 app.MapDelete(
@@ -462,7 +494,7 @@ app.MapDelete(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.CustomersUpdate}")
   .WithTags(customersTag);
 
 app.MapPost(
@@ -477,7 +509,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.CustomersUpdate}")
   .WithTags(customersTag);
 
 app.MapGet(
@@ -492,7 +524,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.AccountsReceivableView}")
   .WithTags(customersTag);
 
 app.MapGet(
@@ -511,7 +543,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.AccountsReceivableView}")
   .WithTags(customersTag);
 
 app.MapPost(
@@ -532,7 +564,7 @@ app.MapPost(
       correlationIdProvider,
       successStatusCode: StatusCodes.Status201Created);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.AccountsReceivableRegisterPayment}")
   .WithTags(customersTag);
 
 app.MapPost(
@@ -547,7 +579,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.AccountsReceivableRegisterPayment}")
   .WithTags(customersTag);
 
 app.MapPost(
@@ -562,7 +594,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.AccountsReceivableRegisterPayment}")
   .WithTags(customersTag);
 
 app.MapPost(
@@ -588,7 +620,7 @@ app.MapPost(
       correlationIdProvider,
       successStatusCode: StatusCodes.Status201Created);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCreate}")
   .WithTags(salesTag);
 
 app.MapGet(
@@ -614,7 +646,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesView}")
   .WithTags(salesTag);
 
 app.MapGet(
@@ -629,7 +661,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesView}")
   .WithTags(salesTag);
 
 app.MapGet(
@@ -644,7 +676,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InvoicesView}")
   .WithTags(invoicesTag);
 
 app.MapPost(
@@ -660,7 +692,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCancel}")
   .WithTags(salesTag);
 
 app.MapGet(
@@ -683,7 +715,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InvoicesView}")
   .WithTags(invoicesTag);
 
 app.MapGet(
@@ -698,7 +730,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InvoicesView}")
   .WithTags(invoicesTag);
 
 app.MapPost(
@@ -713,7 +745,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InvoicesCancel}")
   .WithTags(invoicesTag);
 
 app.MapPost(
@@ -756,7 +788,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsCreate}")
   .WithTags(catalogTag);
 
 app.MapPut(
@@ -802,7 +834,7 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsUpdate}")
   .WithTags(catalogTag);
 
 app.MapGet(
@@ -817,7 +849,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsView}")
   .WithTags(catalogTag);
 
 app.MapPut(
@@ -832,7 +864,7 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsUpdate}")
   .WithTags(catalogTag);
 
 app.MapPut(
@@ -847,7 +879,7 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsUpdate}")
   .WithTags(catalogTag);
 
 app.MapGet(
@@ -872,7 +904,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsView}")
   .WithTags(catalogTag);
 
 app.MapPost(
@@ -889,7 +921,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsCreate}")
   .WithTags(catalogTag);
 
 app.MapPut(
@@ -907,7 +939,7 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsUpdate}")
   .WithTags(catalogTag);
 
 app.MapGet(
@@ -921,7 +953,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsView}")
   .WithTags(catalogTag);
 
 app.MapPost(
@@ -938,7 +970,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InventoryAdjust}")
   .WithTags(inventoryTag);
 
 app.MapGet(
@@ -964,7 +996,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InventoryView}")
   .WithTags(inventoryTag);
 
 app.MapGet(
@@ -981,7 +1013,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InventoryView}")
   .WithTags(inventoryTag);
 
 app.MapGet(
@@ -1009,7 +1041,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InventoryView}")
   .WithTags(inventoryTag);
 
 app.MapGet(
@@ -1034,7 +1066,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.InventoryView}")
   .WithTags(inventoryTag);
 
 app.MapPost(
@@ -1059,7 +1091,7 @@ app.MapPost(
       correlationIdProvider,
       successStatusCode: StatusCodes.Status201Created);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesCreate}")
   .WithTags(suppliersTag);
 
 app.MapPut(
@@ -1084,7 +1116,7 @@ app.MapPut(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesCreate}")
   .WithTags(suppliersTag);
 
 app.MapGet(
@@ -1107,7 +1139,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesView}")
   .WithTags(suppliersTag);
 
 app.MapPost(
@@ -1137,7 +1169,7 @@ app.MapPost(
       correlationIdProvider,
       successStatusCode: StatusCodes.Status201Created);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesCreate}")
   .WithTags(purchasesTag);
 
 app.MapGet(
@@ -1164,7 +1196,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesView}")
   .WithTags(purchasesTag);
 
 app.MapGet(
@@ -1179,7 +1211,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesView}")
   .WithTags(purchasesTag);
 
 app.MapPost(
@@ -1194,7 +1226,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesReceive}")
   .WithTags(purchasesTag);
 
 app.MapPost(
@@ -1209,7 +1241,7 @@ app.MapPost(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.PurchasesCancel}")
   .WithTags(purchasesTag);
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -1225,7 +1257,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.DashboardView}")
   .WithTags(dashboardTag);
 
 // ── Reports ────────────────────────────────────────────────────────────────
@@ -1253,7 +1285,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsView}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1284,7 +1316,7 @@ app.MapGet(
 
     return Results.File(csv, "text/csv", "ventas.csv");
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1309,7 +1341,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsView}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1339,7 +1371,7 @@ app.MapGet(
 
     return Results.File(csv, "text/csv", "facturas.csv");
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1363,7 +1395,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsView}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1392,7 +1424,7 @@ app.MapGet(
 
     return Results.File(csv, "text/csv", "cuentas-por-cobrar.csv");
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1414,7 +1446,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsView}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1441,7 +1473,7 @@ app.MapGet(
 
     return Results.File(csv, "text/csv", "inventario-bajo.csv");
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1466,7 +1498,7 @@ app.MapGet(
 
     return ToApiResult(result, correlationIdProvider);
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsView}")
   .WithTags(reportsTag);
 
 app.MapGet(
@@ -1496,8 +1528,95 @@ app.MapGet(
 
     return Results.File(csv, "text/csv", "compras.csv");
   })
-  .RequireAuthorization()
+  .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
+
+// ── Users ─────────────────────────────────────────────────────────────────
+
+app.MapGet(
+  "/api/users",
+  async (
+    GetUsersHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new GetUsersQuery(), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.UsersView}")
+  .WithTags(usersTag);
+
+app.MapPut(
+  "/api/users/{id:guid}/role",
+  async (
+    Guid id,
+    UpdateUserRoleRequest request,
+    UpdateUserRoleHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new UpdateUserRoleCommand(id, request.Role),
+      cancellationToken);
+
+    return result.IsSuccess
+      ? Results.Ok(ApiResponse.Success<object?>(null, correlationIdProvider.CorrelationId))
+      : Results.Json(
+        ApiResponse.Failure<object?>(
+          new ApiError(ToPublicErrorCode(result.Error.Code), result.Error.Message),
+          correlationIdProvider.CorrelationId),
+        statusCode: ToFailureStatusCode(ToPublicErrorCode(result.Error.Code)));
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.UsersUpdateRole}")
+  .WithTags(usersTag);
+
+app.MapPut(
+  "/api/users/{id:guid}/disable",
+  async (
+    Guid id,
+    DisableUserHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new DisableUserCommand(id),
+      cancellationToken);
+
+    return result.IsSuccess
+      ? Results.Ok(ApiResponse.Success<object?>(null, correlationIdProvider.CorrelationId))
+      : Results.Json(
+        ApiResponse.Failure<object?>(
+          new ApiError(ToPublicErrorCode(result.Error.Code), result.Error.Message),
+          correlationIdProvider.CorrelationId),
+        statusCode: ToFailureStatusCode(ToPublicErrorCode(result.Error.Code)));
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.UsersDisable}")
+  .WithTags(usersTag);
+
+// ── Audit Logs ────────────────────────────────────────────────────────────
+
+app.MapGet(
+  "/api/audit-logs",
+  async (
+    DateTimeOffset? dateFrom,
+    Guid? userId,
+    string? action,
+    string? entityName,
+    int? page,
+    int? pageSize,
+    GetAuditLogsHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetAuditLogsQuery(dateFrom, userId, action, entityName, page ?? 1, pageSize ?? 25),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.AuditView}")
+  .WithTags(auditTag);
 
 app.MapHub<RealtimeHub>("/hubs/realtime")
   .RequireAuthorization()
@@ -1628,8 +1747,11 @@ static string ToPublicErrorCode(string code)
     "identity.invalid_credentials" or
       "identity.invalid_refresh_token" or
       "identity.not_authenticated" => ApiErrorCodes.Unauthorized,
-    "forbidden" => ApiErrorCodes.Forbidden,
+    "forbidden" or
+      "identity.forbidden" or
+      "identity.user_different_business" => ApiErrorCodes.Forbidden,
     "identity.invalid_current_user" or
+      "identity.user_context_required" or
       "catalog.user_context_required" or
       "inventory.user_context_required" or
       "customers.user_context_required" or
@@ -1652,6 +1774,9 @@ static string ToPublicErrorCode(string code)
       "suppliers.supplier_not_found" or
       "purchases.purchase_not_found" or
       "purchases.supplier_not_found" => ApiErrorCodes.NotFound,
+    "identity.cannot_disable_self" or
+      "identity.cannot_remove_last_owner" or
+      "identity.invalid_role" => ApiErrorCodes.ValidationError,
     "account.duplicate_email" or
       "account.duplicate_identification" or
       "tenancy.duplicate_identification" or
@@ -1738,6 +1863,12 @@ static async Task MigrateDatabaseAsync(
     await dbContext.Database.MigrateAsync(cancellationToken);
   }
 }
+
+static IEnumerable<string> GetAllSystemPermissions()
+  => typeof(SystemPermissions)
+    .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+    .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+    .Select(f => (string)f.GetValue(null)!);
 
 public partial class Program
 {

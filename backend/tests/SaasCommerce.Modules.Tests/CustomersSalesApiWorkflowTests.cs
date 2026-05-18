@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
@@ -343,6 +344,7 @@ public sealed class CustomersSalesApiWorkflowTests
       scenario.Sales,
       scenario.CurrentUser,
       scenario.Realtime,
+      new NoopAuditLogWriter(),
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -364,6 +366,7 @@ public sealed class CustomersSalesApiWorkflowTests
       scenario.Sales,
       scenario.CurrentUser,
       scenario.Realtime,
+      new NoopAuditLogWriter(),
       scenario.Clock,
       scenario.UnitOfWork);
 
@@ -497,6 +500,15 @@ public sealed class CustomersSalesApiWorkflowTests
   {
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
       => Task.FromResult(1);
+  }
+
+  private sealed class NoopAuditLogWriter : IAuditLogWriter
+  {
+    public Task WriteAsync(
+      BusinessId businessId, Guid? userId, string action, string entityName,
+      Guid? entityId, string? description = null, string? ipAddress = null,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
   }
 
   private sealed class RecordingOutboxWriter : IOutboxWriter

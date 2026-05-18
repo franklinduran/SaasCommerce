@@ -4,6 +4,7 @@ import {
   Building2,
   ChevronDown,
   CircleDollarSign,
+  ClipboardList,
   History,
   LayoutDashboard,
   LogOut,
@@ -13,6 +14,7 @@ import {
   ReceiptText,
   Search,
   Settings,
+  Shield,
   ShoppingCart,
   Truck,
   Users,
@@ -22,25 +24,32 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { Button } from '@/shared/components/ui/button'
 import { useAppStore } from '@/shared/hooks/useAppStore'
+import { useCurrentUserPermissions } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
+import type { PermissionCode } from '@/shared/types/permissions'
 import { cn } from '@/shared/utils/cn'
 
 type NavigationItem = {
   label: string
   path: string
   icon: LucideIcon
+  /** Permission(s) required to see this item. Undefined = always visible. */
+  requiredPermission?: PermissionCode | PermissionCode[]
 }
 
 const navigationItems: readonly NavigationItem[] = [
-  { label: 'Inicio', path: '/', icon: LayoutDashboard },
-  { label: 'POS', path: '/pos', icon: ShoppingCart },
-  { label: 'Ventas', path: '/sales', icon: History },
-  { label: 'Productos', path: '/products', icon: Package },
-  { label: 'Inventario', path: '/inventory', icon: Boxes },
-  { label: 'Clientes', path: '/customers', icon: Users },
-  { label: 'Proveedores', path: '/suppliers', icon: Building2 },
-  { label: 'Compras', path: '/purchases', icon: Truck },
-  { label: 'Recibos', path: '/invoices', icon: ReceiptText },
-  { label: 'Reportes', path: '/reports', icon: BarChart3 },
+  { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
+  { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
+  { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
+  { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
+  { label: 'Inventario', path: '/inventory', icon: Boxes, requiredPermission: Permission.InventoryView },
+  { label: 'Clientes', path: '/customers', icon: Users, requiredPermission: Permission.CustomersView },
+  { label: 'Proveedores', path: '/suppliers', icon: Building2, requiredPermission: Permission.PurchasesView },
+  { label: 'Compras', path: '/purchases', icon: Truck, requiredPermission: Permission.PurchasesView },
+  { label: 'Recibos', path: '/invoices', icon: ReceiptText, requiredPermission: Permission.InvoicesView },
+  { label: 'Reportes', path: '/reports', icon: BarChart3, requiredPermission: Permission.ReportsView },
+  { label: 'Usuarios', path: '/users', icon: Shield, requiredPermission: Permission.UsersView },
+  { label: 'Auditoria', path: '/audit-logs', icon: ClipboardList, requiredPermission: Permission.AuditView },
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
@@ -58,7 +67,10 @@ const pageTitles: Record<string, string> = {
   '/purchases': 'Compras',
   '/invoices': 'Recibos',
   '/reports': 'Reportes',
+  '/users': 'Usuarios',
+  '/audit-logs': 'Auditoria',
   '/settings': 'Ajustes',
+  '/forbidden': 'Acceso denegado',
 }
 
 export function AppShell() {
@@ -67,6 +79,8 @@ export function AppShell() {
   const toggleSidebar = useAppStore((state) => state.toggleSidebar)
   const session = useAuthStore((state) => state.session)
   const clearSession = useAuthStore((state) => state.clearSession)
+  const { data: permissionsData } = useCurrentUserPermissions()
+  const userPermissions = permissionsData?.permissions ?? []
   const location = useLocation()
   const navigate = useNavigate()
   const pageTitle = getPageTitle(location.pathname)
@@ -139,11 +153,13 @@ export function AppShell() {
               collapsed={sidebarCollapsed}
               items={mainNavigation}
               label="NAVEGACION"
+              userPermissions={userPermissions}
             />
             <NavigationSection
               collapsed={sidebarCollapsed}
               items={growthTools}
               label="OPERACION"
+              userPermissions={userPermissions}
             />
           </nav>
 
@@ -224,9 +240,20 @@ type NavigationSectionProps = {
   collapsed: boolean
   items: readonly NavigationItem[]
   label: string
+  userPermissions: string[]
 }
 
-function NavigationSection({ collapsed, items, label }: Readonly<NavigationSectionProps>) {
+function NavigationSection({ collapsed, items, label, userPermissions }: Readonly<NavigationSectionProps>) {
+  const visibleItems = items.filter((item) => {
+    if (!item.requiredPermission) return true
+    const required = Array.isArray(item.requiredPermission)
+      ? item.requiredPermission
+      : [item.requiredPermission]
+    return required.some((p) => userPermissions.includes(p))
+  })
+
+  if (visibleItems.length === 0) return null
+
   return (
     <div className="flex gap-1 lg:flex-col lg:gap-1.5">
       {!collapsed && (
@@ -234,7 +261,7 @@ function NavigationSection({ collapsed, items, label }: Readonly<NavigationSecti
           {label}
         </p>
       )}
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <NavLink
           className={({ isActive }) =>
             cn(
