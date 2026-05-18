@@ -1,5 +1,8 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Application.Invoices;
+using SaasCommerce.Modules.Billing.Infrastructure.Persistence;
 using SaasCommerce.Modules.Catalog.Application.Abstractions;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
@@ -47,6 +50,8 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IInventoryProductLookupReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IProductSalesPolicyReader, EfProductInventoryPolicyReader>();
     services.AddScoped<IProductPurchaseReader, EfProductPurchaseReader>();
+    services.AddScoped<IInvoiceRepository, EfInvoiceRepository>();
+    services.AddScoped<IInvoiceSaleReader, EfInvoiceSaleReader>();
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
     services.AddScoped<IInventoryReadRepository, EfInventoryReadRepository>();
     services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
@@ -87,6 +92,11 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetPurchasesHandler>();
     services.AddScoped<GetPurchaseByIdHandler>();
     services.AddScoped<IProcessPurchaseReceivedEventUseCase, ProcessPurchaseReceivedEventUseCase>();
+    services.AddScoped<IGenerateInvoiceUseCase, GenerateInvoiceHandler>();
+    services.AddScoped<GetInvoiceBySaleHandler>();
+    services.AddScoped<GetInvoiceByIdHandler>();
+    services.AddScoped<GetInvoicesHandler>();
+    services.AddScoped<CancelInvoiceHandler>();
     services.AddScoped<ICreateCustomerUseCase, CreateCustomerUseCase>();
     services.AddScoped<IGetCustomerByIdUseCase, GetCustomerByIdUseCase>();
     services.AddScoped<IListCustomersUseCase, ListCustomersUseCase>();

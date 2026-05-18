@@ -39,7 +39,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Clientes', path: '/customers', icon: Users },
   { label: 'Proveedores', path: '/suppliers', icon: Building2 },
   { label: 'Compras', path: '/purchases', icon: Truck },
-  { label: 'Facturas', path: '/invoices', icon: ReceiptText },
+  { label: 'Recibos', path: '/invoices', icon: ReceiptText },
   { label: 'Reportes', path: '/reports', icon: BarChart3 },
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
@@ -56,7 +56,7 @@ const pageTitles: Record<string, string> = {
   '/customers': 'Clientes',
   '/suppliers': 'Proveedores',
   '/purchases': 'Compras',
-  '/invoices': 'Facturas',
+  '/invoices': 'Recibos',
   '/reports': 'Reportes',
   '/settings': 'Ajustes',
 }
@@ -211,6 +211,10 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith('/purchases/')) {
     return pathname === '/purchases/new' ? 'Nueva compra' : 'Detalle de compra'
+  }
+
+  if (pathname.startsWith('/invoices/')) {
+    return 'Detalle de recibo'
   }
 
   return 'Inicio'

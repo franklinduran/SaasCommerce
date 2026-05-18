@@ -117,10 +117,14 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
     During(
       PaymentRegistrationPending,
       When(PaymentRegisteredEvent)
-        .Then(context => MarkUpdated(logger, context.Saga, context.Message.CreatedAt, nameof(InvoiceGenerationPending)))
+        .Then(context =>
+        {
+          context.Saga.CompletedAt = context.Message.CreatedAt;
+          MarkUpdated(logger, context.Saga, context.Message.CreatedAt, nameof(Completed));
+        })
         .ThenAsync(context => AddOutboxAsync(
           context,
-          new InvoiceGenerationRequestedEventV1(
+          new SaleCompletedEventV1(
             Guid.NewGuid(),
             context.Message.CorrelationId,
             context.Message.SaleId,
@@ -128,9 +132,10 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
             context.Message.BranchId,
             context.Message.UserId,
             context.Message.PaymentId,
+            Guid.Empty,
             context.Message.Amount,
             DateTimeOffset.UtcNow)))
-        .TransitionTo(InvoiceGenerationPending),
+        .TransitionTo(Completed),
       When(InventoryDeductedEvent).Then(context => LogDuplicate(logger, context.Saga, nameof(InventoryDeductedEvent))),
       When(InvoiceGeneratedEvent).Then(context => LogOutOfOrder(logger, context.Saga, nameof(InvoiceGeneratedEvent))));
 
@@ -181,7 +186,8 @@ public sealed class SaleStateMachine : MassTransitStateMachine<SaleSagaState>
       Ignore(StockValidatedEvent),
       Ignore(InventoryDeductedEvent),
       Ignore(PaymentRegisteredEvent),
-      Ignore(InvoiceGeneratedEvent));
+      Ignore(InvoiceGeneratedEvent),
+      Ignore(InvoiceFailed));
 
     During(
       Failed,

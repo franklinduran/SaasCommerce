@@ -74,6 +74,11 @@ const InvoicesPage = lazy(() =>
     default: module.InvoicesPage,
   })),
 )
+const InvoiceDetailPage = lazy(() =>
+  import('@/modules/invoices/pages/InvoiceDetailPage').then((module) => ({
+    default: module.InvoiceDetailPage,
+  })),
+)
 const ReportsPage = lazy(() =>
   import('@/modules/reports/ReportsPage').then((module) => ({
     default: module.ReportsPage,
@@ -147,6 +152,10 @@ export function SuppliersRoute() {
 
 export function InvoicesRoute() {
   return <InvoicesPage />
+}
+
+export function InvoiceDetailRoute() {
+  return <InvoiceDetailPage />
 }
 
 export function ReportsRoute() {

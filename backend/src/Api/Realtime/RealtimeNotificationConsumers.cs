@@ -3,6 +3,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Messaging;
+using SaasCommerce.Modules.Billing.Application.Invoices;
+using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Application.Stock;
@@ -120,6 +122,44 @@ public sealed class CustomerPaymentRegisteredRealtimeConsumer(
         context.Message.Amount,
         context.Message.NewBalance,
         context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class InvoiceGeneratedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InvoiceGeneratedRealtimeConsumer> logger)
+  : IdempotentConsumer<InvoiceGeneratedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<InvoiceGeneratedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InvoiceRealtimeEvents.Generated,
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class InvoiceCancelledRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InvoiceCancelledRealtimeConsumer> logger)
+  : IdempotentConsumer<InvoiceCancelledEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<InvoiceCancelledEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InvoiceRealtimeEvents.Cancelled,
+      context.Message,
       context.CancellationToken);
   }
 }

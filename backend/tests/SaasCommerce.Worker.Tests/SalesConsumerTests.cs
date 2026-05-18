@@ -9,7 +9,9 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
+using SaasCommerce.Modules.Billing.Application.Invoices;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
+using SaasCommerce.Modules.Billing.Contracts.Responses;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
@@ -103,7 +105,7 @@ public sealed class SalesConsumerTests
   }
 
   [Fact]
-  public async Task GenerateInvoiceConsumer_ShouldPublishInvoiceFailed_WhenUseCaseFails()
+  public async Task GenerateInvoiceConsumer_ShouldDelegateToGenerateInvoiceUseCase()
   {
     var message = new InvoiceGenerationRequestedEventV1(
       Guid.NewGuid(),
@@ -115,18 +117,24 @@ public sealed class SalesConsumerTests
       Guid.Empty,
       200,
       Now);
-    var outbox = new RecordingOutboxWriter();
-    var useCase = new GenerateSaleInvoiceUseCase(outbox, Clock(), new NoopUnitOfWork());
+    var useCase = Substitute.For<IGenerateInvoiceUseCase>();
     var inboxStore = InboxStore(message.EventId, nameof(GenerateInvoiceConsumer), alreadyProcessed: false);
+    GenerateInvoiceCommand? captured = null;
     var consumer = new GenerateInvoiceConsumer(
       NullLogger<GenerateInvoiceConsumer>.Instance,
       inboxStore,
       Clock(),
       useCase);
 
+    useCase
+      .Handle(Arg.Do<GenerateInvoiceCommand>(command => captured = command), Arg.Any<CancellationToken>())
+      .Returns(Task.FromResult(Result.Success(InvoiceResponse(message))));
+
     await consumer.Consume(Context(message));
 
-    outbox.Events.Should().ContainSingle(@event => @event is InvoiceFailedEventV1);
+    captured.Should().NotBeNull();
+    captured!.BusinessId.Should().Be(message.BusinessId);
+    captured.SaleId.Should().Be(message.SaleId);
   }
 
   [Fact]
@@ -144,18 +152,26 @@ public sealed class SalesConsumerTests
       200,
       Now);
     var useCase = Substitute.For<ICompleteSaleUseCase>();
+    var generateInvoice = Substitute.For<IGenerateInvoiceUseCase>();
     var consumer = new SaleCompletedConsumer(
       NullLogger<SaleCompletedConsumer>.Instance,
       InboxStore(message.EventId, nameof(SaleCompletedConsumer), alreadyProcessed: false),
       Clock(),
-      useCase);
+      useCase,
+      generateInvoice);
 
     useCase.ExecuteAsync(message, Arg.Any<CancellationToken>())
       .Returns(Task.FromResult(Result.Success()));
+    generateInvoice
+      .Handle(Arg.Any<GenerateInvoiceCommand>(), Arg.Any<CancellationToken>())
+      .Returns(Task.FromResult(Result.Success(InvoiceResponse(message))));
 
     await consumer.Consume(Context(message));
 
     await useCase.Received(1).ExecuteAsync(message, Arg.Any<CancellationToken>());
+    await generateInvoice.Received(1).Handle(
+      Arg.Is<GenerateInvoiceCommand>(command => command.SaleId == message.SaleId),
+      Arg.Any<CancellationToken>());
   }
 
   [Fact]
@@ -360,6 +376,40 @@ public sealed class SalesConsumerTests
       200,
       "Cash",
       Now);
+
+  private static InvoiceResponse InvoiceResponse(InvoiceGenerationRequestedEventV1 message)
+    => new(
+      Guid.NewGuid(),
+      message.BusinessId,
+      message.BranchId,
+      message.SaleId,
+      null,
+      "RI-00000001",
+      message.Total,
+      0,
+      0,
+      message.Total,
+      "Issued",
+      Now,
+      Now,
+      null);
+
+  private static InvoiceResponse InvoiceResponse(SaleCompletedEventV1 message)
+    => new(
+      Guid.NewGuid(),
+      message.BusinessId,
+      message.BranchId,
+      message.SaleId,
+      null,
+      "RI-00000001",
+      message.Total,
+      0,
+      0,
+      message.Total,
+      "Issued",
+      Now,
+      Now,
+      null);
 
   private static ConsumeContext<TMessage> Context<TMessage>(TMessage message)
     where TMessage : class

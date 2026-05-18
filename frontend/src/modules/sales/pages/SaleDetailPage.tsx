@@ -1,5 +1,6 @@
-import { ArrowLeft, RefreshCw } from 'lucide-react'
+import { ArrowLeft, ReceiptText, RefreshCw } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { useInvoiceBySale } from '@/modules/invoices/hooks/useInvoices'
 import { SaleDetailHeader } from '@/modules/sales/components/SaleDetailHeader'
 import { SaleItemsTable } from '@/modules/sales/components/SaleItemsTable'
 import { SaleReceipt } from '@/modules/sales/components/SaleReceipt'
@@ -13,6 +14,7 @@ export function SaleDetailPage() {
   const { saleId } = useParams()
   const sale = useSaleDetail(saleId)
   const business = useCurrentBusinessQuery()
+  const invoice = useInvoiceBySale(saleId, sale.data?.status === 'Completed')
 
   useSaleStatusInvalidation(saleId ? [saleId] : [])
 
@@ -54,7 +56,18 @@ export function SaleDetailPage() {
     <section className="space-y-6 p-6 lg:p-8">
       <div className="flex flex-col justify-between gap-4 print:hidden lg:flex-row lg:items-center">
         <PageBackLink />
-        <PrintReceiptButton />
+        <div className="flex flex-wrap gap-2">
+          {invoice.data && (
+            <Link
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 transition-colors hover:bg-stone-50"
+              to={`/invoices/${invoice.data.invoiceId}`}
+            >
+              <ReceiptText size={16} />
+              Ver recibo
+            </Link>
+          )}
+          <PrintReceiptButton />
+        </div>
       </div>
 
       <SaleDetailHeader sale={sale.data} />

@@ -15,6 +15,7 @@ using SaasCommerce.BuildingBlocks.Contracts.Common;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.Modules;
+using SaasCommerce.Modules.Billing.Application.Invoices;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Requests;
@@ -41,6 +42,7 @@ const string authTag = "Auth";
 const string catalogTag = "Catalog";
 const string customersTag = "Customers";
 const string identityTag = "Identity";
+const string invoicesTag = "Invoices";
 const string inventoryTag = "Inventory";
 const string purchasesTag = "Purchases";
 const string realtimeTag = "Realtime";
@@ -74,6 +76,8 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<ProductCostUpdatedRealtimeConsumer>();
     massTransit.AddConsumer<CustomerCreditDebitedRealtimeConsumer>();
     massTransit.AddConsumer<CustomerPaymentRegisteredRealtimeConsumer>();
+    massTransit.AddConsumer<InvoiceGeneratedRealtimeConsumer>();
+    massTransit.AddConsumer<InvoiceCancelledRealtimeConsumer>();
   });
 builder.Services.AddCors(options =>
 {
@@ -622,6 +626,21 @@ app.MapGet(
   .RequireAuthorization()
   .WithTags(salesTag);
 
+app.MapGet(
+  "/api/sales/{saleId:guid}/invoice",
+  async (
+    Guid saleId,
+    GetInvoiceBySaleHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new GetInvoiceBySaleQuery(saleId), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(invoicesTag);
+
 app.MapPost(
   "/api/sales/{id:guid}/cancel",
   async (
@@ -637,6 +656,59 @@ app.MapPost(
   })
   .RequireAuthorization()
   .WithTags(salesTag);
+
+app.MapGet(
+  "/api/invoices",
+  async (
+    [AsParameters] InvoiceEndpointRequest request,
+    GetInvoicesHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new GetInvoicesQuery(
+        request.Status,
+        request.Query,
+        request.DateFrom,
+        request.DateTo,
+        request.Page ?? 1,
+        request.PageSize ?? 10),
+      cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(invoicesTag);
+
+app.MapGet(
+  "/api/invoices/{id:guid}",
+  async (
+    Guid id,
+    GetInvoiceByIdHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new GetInvoiceByIdQuery(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(invoicesTag);
+
+app.MapPost(
+  "/api/invoices/{id:guid}/cancel",
+  async (
+    Guid id,
+    CancelInvoiceHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new CancelInvoiceCommand(id), cancellationToken);
+
+    return ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
+  .WithTags(invoicesTag);
 
 app.MapPost(
   "/api/catalog/products",
@@ -1257,6 +1329,8 @@ static string ToPublicErrorCode(string code)
       "suppliers.invalid_supplier" or
       "purchases.invalid_purchase" or
       "purchases.invalid_state" or
+      "invoices.invalid_invoice" or
+      "invoices.invalid_state" or
       "sales.invalid_state" => ApiErrorCodes.ValidationError,
     "identity.invalid_credentials" or
       "identity.invalid_refresh_token" or
@@ -1267,6 +1341,7 @@ static string ToPublicErrorCode(string code)
       "inventory.user_context_required" or
       "customers.user_context_required" or
       "credits.user_context_required" or
+      "invoices.user_context_required" or
       "sales.user_context_required" or
       "suppliers.user_context_required" or
       "purchases.user_context_required" => ApiErrorCodes.TenantContextMissing,
@@ -1277,6 +1352,8 @@ static string ToPublicErrorCode(string code)
       "customers.customer_not_found" or
       "credits.customer_not_found" or
       "credits.sale_not_found" or
+      "invoices.invoice_not_found" or
+      "invoices.sale_not_found" or
       "sales.sale_not_found" or
       "sales.customer_not_found" or
       "suppliers.supplier_not_found" or

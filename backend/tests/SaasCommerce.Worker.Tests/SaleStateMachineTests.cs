@@ -131,7 +131,7 @@ public sealed class SaleStateMachineTests
   }
 
   [Fact]
-  public async Task SaleStateMachineShouldRequestInvoiceGenerationWhenPaymentRegistered()
+  public async Task SaleStateMachineShouldCompleteWhenPaymentRegistered()
   {
     await using var provider = CreateProvider();
     var harness = provider.GetRequiredService<ITestHarness>();
@@ -148,10 +148,8 @@ public sealed class SaleStateMachineTests
       await harness.Bus.Publish(CreateInventoryDeducted(created));
       await harness.Bus.Publish(CreatePaymentRegistered(created));
 
-      (await sagaHarness.Exists(created.CorrelationId, state => state.InvoiceGenerationPending))
-        .Should()
-        .NotBeNull();
-      outbox.Events.Should().Contain(@event => @event is InvoiceGenerationRequestedEventV1);
+      (await sagaHarness.Exists(created.CorrelationId, state => state.Completed)).Should().NotBeNull();
+      outbox.Events.Should().Contain(@event => @event is SaleCompletedEventV1);
     }
     finally
     {
@@ -160,7 +158,7 @@ public sealed class SaleStateMachineTests
   }
 
   [Fact]
-  public async Task SaleStateMachineShouldCompleteWhenInvoiceGenerated()
+  public async Task SaleStateMachineShouldIgnoreInvoiceGeneratedAfterCompletion()
   {
     await using var provider = CreateProvider();
     var harness = provider.GetRequiredService<ITestHarness>();
@@ -180,7 +178,7 @@ public sealed class SaleStateMachineTests
       await harness.Bus.Publish(CreateInvoiceGenerated(created, paymentRegistered.PaymentId));
 
       (await sagaHarness.Exists(created.CorrelationId, state => state.Completed)).Should().NotBeNull();
-      outbox.Events.Should().Contain(@event => @event is SaleCompletedEventV1);
+      outbox.Events.OfType<SaleCompletedEventV1>().Should().ContainSingle();
     }
     finally
     {
@@ -189,7 +187,7 @@ public sealed class SaleStateMachineTests
   }
 
   [Fact]
-  public async Task SaleStateMachineShouldFailWhenInvoiceFailed()
+  public async Task SaleStateMachineShouldIgnoreInvoiceFailedAfterCompletion()
   {
     await using var provider = CreateProvider();
     var harness = provider.GetRequiredService<ITestHarness>();
@@ -216,7 +214,7 @@ public sealed class SaleStateMachineTests
         "invoice failed",
         DateTimeOffset.UtcNow));
 
-      (await sagaHarness.Exists(created.CorrelationId, state => state.Failed)).Should().NotBeNull();
+      (await sagaHarness.Exists(created.CorrelationId, state => state.Completed)).Should().NotBeNull();
     }
     finally
     {
