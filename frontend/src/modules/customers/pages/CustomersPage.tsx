@@ -98,7 +98,7 @@ export function CustomersPage() {
               <option value={25}>25 por pagina</option>
               <option value={50}>50 por pagina</option>
             </select>
-            <Button onClick={() => void customers.refetch()} type="button" variant="secondary">Filtrar</Button>
+            <Button onClick={() => customers.refetch()} type="button" variant="secondary">Filtrar</Button>
           </div>
         </CardHeader>
       </Card>

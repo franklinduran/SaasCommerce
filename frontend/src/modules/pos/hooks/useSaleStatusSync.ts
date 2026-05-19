@@ -43,8 +43,8 @@ export function useSaleStatusSync({
       }
     }
 
-    void syncSale()
-    const intervalId = window.setInterval(() => void syncSale(), 2000)
+    syncSale()
+    const intervalId = window.setInterval(() => syncSale(), 2000)
 
     return () => {
       isActive = false

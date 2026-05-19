@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -19,6 +20,89 @@ export function DashboardPage() {
   useDashboardRealtimeInvalidation()
 
   const data = summary.data
+
+  let recentSalesContent: ReactNode
+  if (summary.isLoading) {
+    recentSalesContent = <LoadingRows />
+  } else if (!data?.recentSales.length) {
+    recentSalesContent = <EmptyTable message="Sin ventas hoy" />
+  } else {
+    recentSalesContent = (
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[520px] text-sm">
+          <thead>
+            <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
+              <th className="px-4 py-2.5 text-left">Nro. Venta</th>
+              <th className="px-4 py-2.5 text-left">Método</th>
+              <th className="px-4 py-2.5 text-left">Estado</th>
+              <th className="px-4 py-2.5 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.recentSales.map((sale) => (
+              <tr
+                className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
+                key={sale.saleId}
+              >
+                <td className="px-4 py-3 font-medium text-stone-900">{sale.saleNumber}</td>
+                <td className="px-4 py-3 text-stone-600">{sale.paymentMethod}</td>
+                <td className="px-4 py-3">
+                  <SaleStatusBadge status={sale.status} />
+                </td>
+                <td className="px-4 py-3 text-right font-semibold text-stone-900">
+                  {formatMoney(sale.total)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  let recentInvoicesContent: ReactNode
+  if (summary.isLoading) {
+    recentInvoicesContent = <LoadingRows />
+  } else if (!data?.recentInvoices.length) {
+    recentInvoicesContent = <EmptyTable message="Sin facturas hoy" />
+  } else {
+    recentInvoicesContent = (
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[520px] text-sm">
+          <thead>
+            <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
+              <th className="px-4 py-2.5 text-left">Nro. Factura</th>
+              <th className="px-4 py-2.5 text-left">Estado</th>
+              <th className="px-4 py-2.5 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.recentInvoices.map((invoice) => (
+              <tr
+                className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
+                key={invoice.invoiceId}
+              >
+                <td className="px-4 py-3 font-medium text-stone-900">
+                  <Link
+                    className="hover:underline"
+                    to={`/invoices/${invoice.invoiceId}`}
+                  >
+                    {invoice.invoiceNumber}
+                  </Link>
+                </td>
+                <td className="px-4 py-3">
+                  <InvoiceStatusBadge status={invoice.status} />
+                </td>
+                <td className="px-4 py-3 text-right font-semibold text-stone-900">
+                  {formatMoney(invoice.total)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
 
   return (
     <section className="min-h-full bg-surface-subtle p-4 lg:p-6">
@@ -122,41 +206,7 @@ export function DashboardPage() {
               </Link>
             </CardHeader>
             <CardContent className="p-0">
-              {summary.isLoading ? (
-                <LoadingRows />
-              ) : !data?.recentSales.length ? (
-                <EmptyTable message="Sin ventas hoy" />
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] text-sm">
-                    <thead>
-                      <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
-                        <th className="px-4 py-2.5 text-left">Nro. Venta</th>
-                        <th className="px-4 py-2.5 text-left">Método</th>
-                        <th className="px-4 py-2.5 text-left">Estado</th>
-                        <th className="px-4 py-2.5 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.recentSales.map((sale) => (
-                        <tr
-                          className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
-                          key={sale.saleId}
-                        >
-                          <td className="px-4 py-3 font-medium text-stone-900">{sale.saleNumber}</td>
-                          <td className="px-4 py-3 text-stone-600">{sale.paymentMethod}</td>
-                          <td className="px-4 py-3">
-                            <SaleStatusBadge status={sale.status} />
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold text-stone-900">
-                            {formatMoney(sale.total)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {recentSalesContent}
             </CardContent>
           </Card>
 
@@ -173,46 +223,7 @@ export function DashboardPage() {
               </Link>
             </CardHeader>
             <CardContent className="p-0">
-              {summary.isLoading ? (
-                <LoadingRows />
-              ) : !data?.recentInvoices.length ? (
-                <EmptyTable message="Sin facturas hoy" />
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] text-sm">
-                    <thead>
-                      <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
-                        <th className="px-4 py-2.5 text-left">Nro. Factura</th>
-                        <th className="px-4 py-2.5 text-left">Estado</th>
-                        <th className="px-4 py-2.5 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.recentInvoices.map((invoice) => (
-                        <tr
-                          className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
-                          key={invoice.invoiceId}
-                        >
-                          <td className="px-4 py-3 font-medium text-stone-900">
-                            <Link
-                              className="hover:underline"
-                              to={`/invoices/${invoice.invoiceId}`}
-                            >
-                              {invoice.invoiceNumber}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">
-                            <InvoiceStatusBadge status={invoice.status} />
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold text-stone-900">
-                            {formatMoney(invoice.total)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {recentInvoicesContent}
             </CardContent>
           </Card>
         </section>
@@ -303,7 +314,7 @@ type MetricCardProps = {
   isLoading: boolean
 }
 
-function MetricCard({ label, value, sub, icon: Icon, iconBox, isLoading }: MetricCardProps) {
+function MetricCard({ label, value, sub, icon: Icon, iconBox, isLoading }: Readonly<MetricCardProps>) {
   return (
     <Card className="bg-white shadow-none">
       <CardHeader>
@@ -336,7 +347,7 @@ function LoadingRows() {
   )
 }
 
-function EmptyTable({ message }: { message: string }) {
+function EmptyTable({ message }: Readonly<{ message: string }>) {
   return (
     <div className="flex items-center justify-center py-10 text-sm font-medium text-stone-400">
       {message}
@@ -344,7 +355,7 @@ function EmptyTable({ message }: { message: string }) {
   )
 }
 
-function SaleStatusBadge({ status }: { status: string }) {
+function SaleStatusBadge({ status }: Readonly<{ status: string }>) {
   const map: Record<string, string> = {
     Completed: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
     Cancelled: 'bg-red-50 text-red-700 ring-1 ring-red-200',
@@ -358,7 +369,7 @@ function SaleStatusBadge({ status }: { status: string }) {
   )
 }
 
-function InvoiceStatusBadge({ status }: { status: string }) {
+function InvoiceStatusBadge({ status }: Readonly<{ status: string }>) {
   const map: Record<string, string> = {
     Issued: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200',
     Cancelled: 'bg-red-50 text-red-700 ring-1 ring-red-200',

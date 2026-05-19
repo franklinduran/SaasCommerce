@@ -82,7 +82,7 @@ export function useProductsRealtimeInvalidation() {
 
     const handler = (payload: { businessId?: string }) => {
       if (payload.businessId === businessId) {
-        void queryClient.invalidateQueries({ queryKey: ['products'] })
+        queryClient.invalidateQueries({ queryKey: ['products'] })
       }
     }
 

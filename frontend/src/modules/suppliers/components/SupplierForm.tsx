@@ -98,7 +98,7 @@ export function SupplierForm({ supplier, onSaved }: Readonly<SupplierFormProps>)
         {isEditing && (
           <label className="flex h-11 items-center gap-3 rounded-md bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm ring-1 ring-stone-200">
             <input className="h-4 w-4 accent-stone-900" type="checkbox" {...register('isActive')} />
-            Activo
+            <span>Activo</span>
           </label>
         )}
       </div>

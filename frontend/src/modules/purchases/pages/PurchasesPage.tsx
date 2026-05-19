@@ -84,7 +84,7 @@ export function PurchasesPage() {
             </select>
             <input className={selectClass} onChange={(event) => updateFilters({ dateFrom: event.target.value })} type="date" value={filters.dateFrom} />
             <input className={selectClass} onChange={(event) => updateFilters({ dateTo: event.target.value })} type="date" value={filters.dateTo} />
-            <Button onClick={() => void purchases.refetch()} type="button" variant="secondary">Filtrar</Button>
+            <Button onClick={() => purchases.refetch()} type="button" variant="secondary">Filtrar</Button>
           </div>
         </CardHeader>
       </Card>

@@ -85,10 +85,10 @@ export function usePurchaseRealtimeInvalidation(purchaseId?: string) {
         return
       }
 
-      void invalidatePurchaseData(queryClient)
+      invalidatePurchaseData(queryClient)
 
       if (purchaseId && (!payload.purchaseId || payload.purchaseId === purchaseId)) {
-        void queryClient.invalidateQueries({ queryKey: purchaseKeys.detail(purchaseId) })
+        queryClient.invalidateQueries({ queryKey: purchaseKeys.detail(purchaseId) })
       }
     }
 

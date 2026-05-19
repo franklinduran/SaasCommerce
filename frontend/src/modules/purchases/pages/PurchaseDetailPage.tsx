@@ -28,7 +28,7 @@ export function PurchaseDetailPage() {
     return (
       <section className="space-y-4 p-6 lg:p-8">
         <p className="text-sm font-semibold text-red-700">No se pudo cargar la compra.</p>
-        <Button onClick={() => void purchase.refetch()} type="button" variant="secondary">
+        <Button onClick={() => purchase.refetch()} type="button" variant="secondary">
           <RefreshCw size={16} />
           Reintentar
         </Button>
@@ -52,11 +52,11 @@ export function PurchaseDetailPage() {
         <div className="flex gap-2">
           {item.status === 'Draft' && (
             <>
-              <Button disabled={receivePurchase.isPending} onClick={() => void receivePurchase.mutateAsync(item.purchaseId)} type="button">
+              <Button disabled={receivePurchase.isPending} onClick={() => receivePurchase.mutateAsync(item.purchaseId)} type="button">
                 <CheckCircle2 size={16} />
                 Recibir
               </Button>
-              <Button disabled={cancelPurchase.isPending} onClick={() => void cancelPurchase.mutateAsync(item.purchaseId)} type="button" variant="secondary">
+              <Button disabled={cancelPurchase.isPending} onClick={() => cancelPurchase.mutateAsync(item.purchaseId)} type="button" variant="secondary">
                 <Ban size={16} />
                 Cancelar
               </Button>

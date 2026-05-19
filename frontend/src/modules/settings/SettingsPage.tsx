@@ -85,9 +85,9 @@ export function SettingsPage() {
   const isError = me.isError || business.isError || branch.isError
 
   function refetchAll() {
-    void me.refetch()
-    void business.refetch()
-    void branch.refetch()
+    me.refetch()
+    business.refetch()
+    branch.refetch()
   }
 
   return (

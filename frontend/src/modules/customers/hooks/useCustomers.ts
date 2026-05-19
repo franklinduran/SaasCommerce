@@ -78,11 +78,11 @@ export function useCustomerCreditInvalidation(customerId?: string) {
         return
       }
 
-      void queryClient.invalidateQueries({ queryKey: customerKeys.all })
+      queryClient.invalidateQueries({ queryKey: customerKeys.all })
 
       if (customerId && payload.customerId === customerId) {
-        void queryClient.invalidateQueries({ queryKey: customerKeys.credit(customerId) })
-        void queryClient.invalidateQueries({ queryKey: customerKeys.movements(customerId) })
+        queryClient.invalidateQueries({ queryKey: customerKeys.credit(customerId) })
+        queryClient.invalidateQueries({ queryKey: customerKeys.movements(customerId) })
       }
     }
 

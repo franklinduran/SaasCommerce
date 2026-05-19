@@ -111,7 +111,7 @@ export function PurchaseForm() {
           <p className="text-sm font-semibold uppercase text-stone-500">Compras</p>
           <h2 className="mt-1 text-2xl font-semibold text-stone-950">Nueva compra</h2>
         </div>
-        <Button disabled={createPurchase.isPending} onClick={() => void submit()} type="button">
+        <Button disabled={createPurchase.isPending} onClick={submit} type="button">
           <Save size={16} />
           Guardar compra
         </Button>
@@ -148,7 +148,7 @@ export function PurchaseForm() {
             </label>
             <label className="flex h-11 items-center gap-3 self-end rounded-md bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm ring-1 ring-stone-200">
               <input checked={receiveNow} className="h-4 w-4 accent-stone-900" onChange={(event) => setReceiveNow(event.target.checked)} type="checkbox" />
-              Recibir inventario
+              <span>Recibir inventario</span>
             </label>
             <label className="space-y-1.5 md:col-span-2">
               <span className="text-sm font-semibold text-stone-700">Notas</span>

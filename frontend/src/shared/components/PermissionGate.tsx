@@ -11,7 +11,7 @@ type PermissionGateProps = {
   fallback?: ReactNode
 }
 
-export function PermissionGate({ permission, children, fallback = null }: PermissionGateProps) {
+export function PermissionGate({ permission, children, fallback = null }: Readonly<PermissionGateProps>) {
   const { data, isLoading } = useCurrentUserPermissions()
 
   if (isLoading || !data) {

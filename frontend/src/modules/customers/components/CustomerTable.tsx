@@ -61,9 +61,15 @@ export function CreditStatusBadge({ status }: Readonly<{ status: Customer['credi
     Closed: 'bg-stone-100 text-stone-700 ring-stone-200',
   }[status]
 
+  const labels: Record<Customer['creditStatus'], string> = {
+    Active: 'Activo',
+    Blocked: 'Bloqueado',
+    Closed: 'Cerrado',
+  }
+
   return (
     <span className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ring-1 ${classes}`}>
-      {status === 'Active' ? 'Activo' : status === 'Blocked' ? 'Bloqueado' : 'Cerrado'}
+      {labels[status]}
     </span>
   )
 }

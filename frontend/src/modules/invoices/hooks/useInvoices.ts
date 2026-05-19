@@ -68,7 +68,7 @@ export function useInvoiceRealtimeInvalidation() {
         return
       }
 
-      void queryClient.invalidateQueries({ queryKey: invoiceKeys.all })
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.all })
     }
 
     onRealtimeEvent('invoice.generated', handler)

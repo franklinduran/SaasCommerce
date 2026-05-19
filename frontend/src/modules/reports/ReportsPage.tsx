@@ -546,7 +546,7 @@ function PurchasesPanel() {
 
 // ── Shared UI primitives ───────────────────────────────────────────────────
 
-function FiltersRow({ children }: { children: React.ReactNode }) {
+function FiltersRow({ children }: Readonly<{ children: React.ReactNode }>) {
   return <div className="flex flex-wrap items-center gap-2">{children}</div>
 }
 
@@ -554,11 +554,11 @@ function SearchInput({
   value,
   onChange,
   placeholder,
-}: {
+}: Readonly<{
   value: string
   onChange: (v: string) => void
   placeholder?: string
-}) {
+}>) {
   return (
     <label className="relative block">
       <span className="sr-only">{placeholder ?? 'Buscar'}</span>
@@ -577,11 +577,11 @@ function DateInput({
   value,
   onChange,
   label,
-}: {
+}: Readonly<{
   value: string
   onChange: (v: string) => void
   label: string
-}) {
+}>) {
   return (
     <input
       aria-label={label}
@@ -599,12 +599,12 @@ function SelectInput({
   onChange,
   options,
   label,
-}: {
+}: Readonly<{
   value: string
   onChange: (v: string) => void
   options: { value: string; label: string }[]
   label: string
-}) {
+}>) {
   return (
     <select
       aria-label={label}
@@ -621,7 +621,7 @@ function SelectInput({
   )
 }
 
-function ExportButton({ href, label }: { href: string; label: string }) {
+function ExportButton({ href, label }: Readonly<{ href: string; label: string }>) {
   return (
     <PermissionGate permission={Permission.ReportsExport}>
       <a
@@ -636,7 +636,7 @@ function ExportButton({ href, label }: { href: string; label: string }) {
   )
 }
 
-function TableHead({ columns }: { columns: string[] }) {
+function TableHead({ columns }: Readonly<{ columns: string[] }>) {
   return (
     <thead>
       <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
@@ -650,7 +650,7 @@ function TableHead({ columns }: { columns: string[] }) {
   )
 }
 
-function SummaryBar({ children }: { children: React.ReactNode }) {
+function SummaryBar({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="flex flex-wrap gap-6 border-b border-stone-100 bg-stone-50 px-4 py-3">
       {children}
@@ -658,7 +658,7 @@ function SummaryBar({ children }: { children: React.ReactNode }) {
   )
 }
 
-function SummaryStat({ label, value }: { label: string; value: string }) {
+function SummaryStat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div>
       <p className="text-xs font-medium text-stone-500">{label}</p>
@@ -667,7 +667,7 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: Readonly<{ status: string }>) {
   const map: Record<string, string> = {
     Completed: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
     Issued: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200',
@@ -689,11 +689,11 @@ function PaginationBar({
   data,
   onPrev,
   onNext,
-}: {
+}: Readonly<{
   data: { hasPreviousPage: boolean; hasNextPage: boolean; page: number; totalPages: number }
   onPrev: () => void
   onNext: () => void
-}) {
+}>) {
   return (
     <div className="flex items-center justify-between">
       <p className="text-sm font-medium text-stone-500">
@@ -729,7 +729,7 @@ function ErrorState() {
   )
 }
 
-function EmptyState({ message }: { message?: string }) {
+function EmptyState({ message }: Readonly<{ message?: string }>) {
   return (
     <div className="flex items-center justify-center py-10 text-sm font-medium text-stone-400">
       {message ?? 'Sin resultados para el período seleccionado'}

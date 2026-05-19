@@ -72,7 +72,7 @@ export function POSPage() {
       if (payload.status === 'Completed') {
         clearCart()
         setSaleErrorMessage(null)
-        void queryClient.invalidateQueries({ queryKey: ['pos-products'] })
+        queryClient.invalidateQueries({ queryKey: ['pos-products'] })
       }
 
       if (payload.status === 'Failed') {
@@ -100,7 +100,7 @@ export function POSPage() {
 
     const handler = (payload: { businessId?: string }) => {
       if (payload.businessId === session.user.businessId) {
-        void queryClient.invalidateQueries({ queryKey: ['pos-products'] })
+        queryClient.invalidateQueries({ queryKey: ['pos-products'] })
       }
     }
 
@@ -213,7 +213,7 @@ export function POSPage() {
           <ProductSearch
             isFetching={products.isFetching}
             onQueryChange={setProductQuery}
-            onRefresh={() => void products.refetch()}
+            onRefresh={() => products.refetch()}
             query={productQuery}
           />
 
@@ -221,7 +221,7 @@ export function POSPage() {
             isError={products.isError}
             isLoading={products.isLoading}
             onAddProduct={handleAddProduct}
-            onRetry={() => void products.refetch()}
+            onRetry={() => products.refetch()}
             products={productsForPOS}
           />
         </div>
@@ -253,7 +253,7 @@ export function POSPage() {
             disabled={createSaleMutation.isPending || !branchId}
             isSubmitting={createSaleMutation.isPending}
             itemCount={cart.itemCount}
-            onProcessSale={() => void handleProcessSale()}
+            onProcessSale={handleProcessSale}
             subtotal={cart.subtotal}
             validationMessage={validationMessage}
           />

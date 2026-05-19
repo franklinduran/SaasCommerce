@@ -31,7 +31,7 @@ export function useDashboardRealtimeInvalidation() {
       if (payload.businessId && payload.businessId !== businessId) {
         return
       }
-      void queryClient.invalidateQueries({ queryKey: dashboardKeys.summary() })
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.summary() })
     }
 
     onRealtimeEvent('sale.statusChanged', invalidate)

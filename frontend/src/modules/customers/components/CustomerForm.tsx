@@ -45,7 +45,7 @@ export function CustomerForm({
   return (
     <form className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_180px_minmax(0,1fr)_auto]" onSubmit={handleSubmit}>
       <label className="grid gap-1 text-sm font-semibold text-stone-700">
-        Nombre
+        <span>Nombre</span>
         <input
           className={inputClass}
           onChange={(event) => setFullName(event.target.value)}
@@ -54,7 +54,7 @@ export function CustomerForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-semibold text-stone-700">
-        Telefono
+        <span>Telefono</span>
         <input
           className={inputClass}
           onChange={(event) => setPhone(event.target.value)}
@@ -63,7 +63,7 @@ export function CustomerForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-semibold text-stone-700">
-        Email
+        <span>Email</span>
         <input
           className={inputClass}
           onChange={(event) => setEmail(event.target.value)}

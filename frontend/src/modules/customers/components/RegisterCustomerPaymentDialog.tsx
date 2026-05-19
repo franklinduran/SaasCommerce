@@ -56,7 +56,7 @@ export function RegisterCustomerPaymentDialog({
         </CardHeader>
         <form className="space-y-4 p-5" onSubmit={handleSubmit}>
           <label className="grid gap-1 text-sm font-semibold text-stone-700">
-            Monto
+            <span>Monto</span>
             <input
               className={inputClass}
               min="0"
@@ -67,7 +67,7 @@ export function RegisterCustomerPaymentDialog({
             />
           </label>
           <label className="grid gap-1 text-sm font-semibold text-stone-700">
-            Nota
+            <span>Nota</span>
             <textarea
               className="min-h-24 rounded-md bg-white px-3 py-2 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
               onChange={(event) => setNote(event.target.value)}

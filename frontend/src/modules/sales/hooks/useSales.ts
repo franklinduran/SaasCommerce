@@ -47,7 +47,7 @@ export function useSaleStatusInvalidation(visibleSaleIds: string[]) {
         return
       }
 
-      void queryClient.invalidateQueries({ queryKey: salesKeys.all })
+      queryClient.invalidateQueries({ queryKey: salesKeys.all })
     }
 
     onRealtimeEvent('sale.statusChanged', handler)

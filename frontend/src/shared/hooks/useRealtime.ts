@@ -7,14 +7,14 @@ export function useRealtime() {
 
   useEffect(() => {
     if (!accessToken) {
-      void stopRealtimeConnection()
+      stopRealtimeConnection()
       return undefined
     }
 
-    void startRealtimeConnection(accessToken).catch(() => undefined)
+    startRealtimeConnection(accessToken).catch(() => undefined)
 
     return () => {
-      void stopRealtimeConnection()
+      stopRealtimeConnection()
     }
   }, [accessToken])
 }

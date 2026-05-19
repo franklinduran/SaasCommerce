@@ -73,10 +73,10 @@ export function useInventoryRealtimeInvalidation(productId?: string) {
         return
       }
 
-      void queryClient.invalidateQueries({ queryKey: inventoryKeys.all })
+      queryClient.invalidateQueries({ queryKey: inventoryKeys.all })
 
       if (productId && (!payload.productId || payload.productId === productId)) {
-        void queryClient.invalidateQueries({ queryKey: inventoryKeys.detail(productId) })
+        queryClient.invalidateQueries({ queryKey: inventoryKeys.detail(productId) })
       }
     }
 

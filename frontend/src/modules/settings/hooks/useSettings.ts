@@ -42,7 +42,7 @@ export function useUpdateProfileMutation() {
   return useMutation({
     mutationFn: updateMyProfile,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.me })
+      queryClient.invalidateQueries({ queryKey: settingsKeys.me })
     },
   })
 }
@@ -57,8 +57,8 @@ export function useUpdateBusinessMutation() {
   return useMutation({
     mutationFn: updateCurrentBusiness,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.business })
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.me })
+      queryClient.invalidateQueries({ queryKey: settingsKeys.business })
+      queryClient.invalidateQueries({ queryKey: settingsKeys.me })
     },
   })
 }
@@ -69,8 +69,8 @@ export function useUpdateBranchMutation() {
   return useMutation({
     mutationFn: updateCurrentBranch,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.branch })
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.me })
+      queryClient.invalidateQueries({ queryKey: settingsKeys.branch })
+      queryClient.invalidateQueries({ queryKey: settingsKeys.me })
     },
   })
 }

@@ -54,7 +54,7 @@ export function InventoryPage() {
         error={inventory.isError}
         isLoading={inventory.isLoading}
         items={items}
-        onRetry={() => void inventory.refetch()}
+        onRetry={() => inventory.refetch()}
       />
 
       <div className="flex items-center justify-between rounded-md bg-white px-4 py-3 text-sm font-medium text-stone-600 shadow-sm ring-1 ring-stone-200">

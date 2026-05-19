@@ -273,7 +273,7 @@ export function ProductsPage() {
                       </Button>
                       <Button
                         disabled={activateProduct.isPending || deactivateProduct.isPending}
-                        onClick={() => void handleToggleStatus(product)}
+                        onClick={() => handleToggleStatus(product)}
                         size="sm"
                         type="button"
                         variant="ghost"

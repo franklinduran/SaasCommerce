@@ -90,7 +90,7 @@ export function SuppliersPage() {
               <option value="true">Activos</option>
               <option value="false">Inactivos</option>
             </select>
-            <Button onClick={() => void suppliers.refetch()} type="button" variant="secondary">
+            <Button onClick={() => suppliers.refetch()} type="button" variant="secondary">
               Filtrar
             </Button>
           </div>
@@ -102,8 +102,8 @@ export function SuppliersPage() {
         isLoading={suppliers.isLoading}
         items={items}
         onEdit={openEdit}
-        onRetry={() => void suppliers.refetch()}
-        onToggle={(supplier) => void toggleStatus(supplier)}
+        onRetry={() => suppliers.refetch()}
+        onToggle={(supplier) => toggleStatus(supplier)}
       />
 
       <div className="flex items-center justify-between rounded-md bg-white px-4 py-3 text-sm font-medium text-stone-600 shadow-sm ring-1 ring-stone-200">
