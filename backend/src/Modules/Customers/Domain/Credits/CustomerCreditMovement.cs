@@ -8,7 +8,7 @@ public sealed class CustomerCreditMovement
   {
   }
 
-  public CustomerCreditMovement(
+  public CustomerCreditMovement( // NOSONAR S107 — credit movement requires full audit trail of balance transition
     Guid id,
     BusinessId businessId,
     Guid customerId,

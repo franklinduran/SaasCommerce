@@ -1,3 +1,4 @@
+#pragma warning disable S3776 // Minimal API program file — endpoint complexity is spread across many lambdas
 using System.Globalization;
 using System.Net.Sockets;
 using System.Reflection;
@@ -64,6 +65,7 @@ const string systemTag = "System";
 const string tenancyTag = "Tenancy";
 const string usersTag = "Users";
 const string auditTag = "Audit";
+const string contentTypeCsv = "text/csv";
 const int generatedJwtSecretBytes = 32;
 const int rabbitMqDefaultPort = 5672;
 const int readyCheckTimeoutSeconds = 2;
@@ -1314,7 +1316,7 @@ app.MapGet(
 
     var csv = await exportService.ExportSalesAsync(businessId, criteria, cancellationToken);
 
-    return Results.File(csv, "text/csv", "ventas.csv");
+    return Results.File(csv, contentTypeCsv, "ventas.csv");
   })
   .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
@@ -1369,7 +1371,7 @@ app.MapGet(
 
     var csv = await exportService.ExportInvoicesAsync(businessId, criteria, cancellationToken);
 
-    return Results.File(csv, "text/csv", "facturas.csv");
+    return Results.File(csv, contentTypeCsv, "facturas.csv");
   })
   .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
@@ -1422,7 +1424,7 @@ app.MapGet(
 
     var csv = await exportService.ExportAccountsReceivableAsync(businessId, criteria, cancellationToken);
 
-    return Results.File(csv, "text/csv", "cuentas-por-cobrar.csv");
+    return Results.File(csv, contentTypeCsv, "cuentas-por-cobrar.csv");
   })
   .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
@@ -1471,7 +1473,7 @@ app.MapGet(
 
     var csv = await exportService.ExportLowStockAsync(businessId, criteria, cancellationToken);
 
-    return Results.File(csv, "text/csv", "inventario-bajo.csv");
+    return Results.File(csv, contentTypeCsv, "inventario-bajo.csv");
   })
   .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
@@ -1526,7 +1528,7 @@ app.MapGet(
 
     var csv = await exportService.ExportPurchasesAsync(businessId, criteria, cancellationToken);
 
-    return Results.File(csv, "text/csv", "compras.csv");
+    return Results.File(csv, contentTypeCsv, "compras.csv");
   })
   .RequireAuthorization($"Permission:{SystemPermissions.ReportsExport}")
   .WithTags(reportsTag);
@@ -1599,18 +1601,13 @@ app.MapPut(
 app.MapGet(
   "/api/audit-logs",
   async (
-    DateTimeOffset? dateFrom,
-    Guid? userId,
-    string? action,
-    string? entityName,
-    int? page,
-    int? pageSize,
+    [AsParameters] AuditLogEndpointRequest request,
     GetAuditLogsHandler handler,
     ICorrelationIdProvider correlationIdProvider,
     CancellationToken cancellationToken) =>
   {
     var result = await handler.Handle(
-      new GetAuditLogsQuery(dateFrom, userId, action, entityName, page ?? 1, pageSize ?? 25),
+      new GetAuditLogsQuery(request.DateFrom, request.UserId, request.Action, request.EntityName, request.Page ?? 1, request.PageSize ?? 25),
       cancellationToken);
 
     return ToApiResult(result, correlationIdProvider);

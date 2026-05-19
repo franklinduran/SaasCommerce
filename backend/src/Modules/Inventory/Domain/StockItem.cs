@@ -36,7 +36,7 @@ public sealed class StockItem
 
   public DateTimeOffset? UpdatedAt { get; private set; }
 
-  public InventoryMovement ApplyAdjustment(
+  public InventoryMovement ApplyAdjustment( // NOSONAR S107 — movement requires quantity, reason, user, and optional sale/purchase context
     decimal quantity,
     InventoryMovementReason reason,
     Guid userId,

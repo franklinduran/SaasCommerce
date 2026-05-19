@@ -1,8 +1,5 @@
 namespace SaasCommerce.Modules.Purchasing.Application;
 
-public sealed class PurchasingApplicationMarker
+internal interface PurchasingApplicationMarker
 {
-  private PurchasingApplicationMarker()
-  {
-  }
 }

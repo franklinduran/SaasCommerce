@@ -1,8 +1,5 @@
 namespace SaasCommerce.Modules.Purchasing.Infrastructure;
 
-public sealed class PurchasingInfrastructureMarker
+internal interface PurchasingInfrastructureMarker
 {
-  private PurchasingInfrastructureMarker()
-  {
-  }
 }

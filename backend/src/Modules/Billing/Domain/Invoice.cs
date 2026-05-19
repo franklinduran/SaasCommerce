@@ -8,7 +8,7 @@ public sealed class Invoice
   {
   }
 
-  private Invoice(
+  private Invoice( // NOSONAR S107 — invoice requires all financial fields for integrity
     Guid id,
     BusinessId businessId,
     BranchId branchId,
@@ -87,7 +87,7 @@ public sealed class Invoice
 
   public DateTimeOffset? CancelledAt { get; private set; }
 
-  public static Invoice Issue(
+  public static Invoice Issue( // NOSONAR S107 — factory mirrors constructor; all fields are required
     Guid id,
     BusinessId businessId,
     BranchId branchId,

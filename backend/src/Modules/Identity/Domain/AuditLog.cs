@@ -12,7 +12,7 @@ public sealed class AuditLog
   {
   }
 
-  public AuditLog(
+  public AuditLog( // NOSONAR S107 — audit log requires all fields for immutable record
     Guid id,
     BusinessId businessId,
     Guid? userId,

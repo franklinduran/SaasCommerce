@@ -14,7 +14,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Sales.Application.Sales;
 
-public sealed class CreateSaleUseCase(
+public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor injection
   ISaleRepository sales,
   ICustomerRepository customers,
   IProductSalesPolicyReader productPolicies,

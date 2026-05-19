@@ -8,7 +8,7 @@ public sealed class Supplier
   {
   }
 
-  public Supplier(
+  public Supplier( // NOSONAR S107 — supplier requires all contact fields at creation
     Guid id,
     BusinessId businessId,
     string name,

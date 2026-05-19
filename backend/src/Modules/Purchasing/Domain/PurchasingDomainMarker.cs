@@ -1,8 +1,5 @@
 namespace SaasCommerce.Modules.Purchasing.Domain;
 
-public sealed class PurchasingDomainMarker
+internal interface PurchasingDomainMarker
 {
-  private PurchasingDomainMarker()
-  {
-  }
 }

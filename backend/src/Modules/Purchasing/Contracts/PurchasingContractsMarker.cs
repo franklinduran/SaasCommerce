@@ -1,8 +1,5 @@
 namespace SaasCommerce.Modules.Purchasing.Contracts;
 
-public sealed class PurchasingContractsMarker
+internal interface PurchasingContractsMarker
 {
-  private PurchasingContractsMarker()
-  {
-  }
 }

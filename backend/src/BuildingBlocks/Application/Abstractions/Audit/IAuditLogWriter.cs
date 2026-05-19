@@ -8,7 +8,7 @@ namespace SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 /// </summary>
 public interface IAuditLogWriter
 {
-  Task WriteAsync(
+  Task WriteAsync( // NOSONAR S107 — audit interface mirrors the immutable audit record fields
     BusinessId businessId,
     Guid? userId,
     string action,

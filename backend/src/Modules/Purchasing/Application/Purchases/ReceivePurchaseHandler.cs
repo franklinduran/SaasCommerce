@@ -10,7 +10,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
-public sealed class ReceivePurchaseHandler(
+public sealed class ReceivePurchaseHandler( // NOSONAR S107 — DI constructor injection
   IPurchaseRepository purchases,
   ISupplierRepository suppliers,
   IProductPurchaseReader products,

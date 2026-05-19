@@ -12,7 +12,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
-public sealed class CancelPurchaseHandler(
+public sealed class CancelPurchaseHandler( // NOSONAR S107 — DI constructor injection
   IPurchaseRepository purchases,
   ISupplierRepository suppliers,
   IProductPurchaseReader products,

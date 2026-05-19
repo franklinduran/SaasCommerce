@@ -10,7 +10,7 @@ public sealed class Purchase
   {
   }
 
-  private Purchase(
+  private Purchase( // NOSONAR S107 — purchase aggregate requires all identity/state fields at creation
     Guid id,
     BusinessId businessId,
     BranchId branchId,
@@ -79,7 +79,7 @@ public sealed class Purchase
 
   public IReadOnlyCollection<PurchaseItem> Items => items.AsReadOnly();
 
-  public static Purchase Create(
+  public static Purchase Create( // NOSONAR S107 — factory requires all identity and line-item data for aggregate creation
     Guid id,
     BusinessId businessId,
     BranchId branchId,
