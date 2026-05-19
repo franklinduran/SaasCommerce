@@ -374,6 +374,73 @@ public sealed class CatalogInventoryTests
   }
 
   [Fact]
+  public async Task AdjustInventoryShouldFailWhenBranchIdIsMissing()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create() with { BranchId = null };
+    var productId = Guid.NewGuid();
+    var handler = CreateInventoryHandler(
+      dbContext,
+      currentUser,
+      ProductInventoryPolicy(productId, currentUser.BusinessId!.Value));
+
+    var result = await handler.Handle(new AdjustInventoryCommand(productId, 1, "Adjustment"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InventoryErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task AdjustInventoryShouldFailWhenQuantityIsZero()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var productId = Guid.NewGuid();
+    var handler = CreateInventoryHandler(
+      dbContext,
+      currentUser,
+      ProductInventoryPolicy(productId, currentUser.BusinessId!.Value));
+
+    var result = await handler.Handle(new AdjustInventoryCommand(productId, 0, "Adjustment"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InventoryErrors.InvalidAdjustment);
+  }
+
+  [Fact]
+  public async Task AdjustInventoryShouldFailWhenProductIdIsEmpty()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = CreateInventoryHandler(
+      dbContext,
+      currentUser,
+      ProductInventoryPolicy(Guid.NewGuid(), currentUser.BusinessId!.Value));
+
+    var result = await handler.Handle(new AdjustInventoryCommand(Guid.Empty, 5, "Adjustment"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InventoryErrors.InvalidAdjustment);
+  }
+
+  [Fact]
+  public async Task AdjustInventoryShouldFailWhenReasonIsInvalid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var productId = Guid.NewGuid();
+    var handler = CreateInventoryHandler(
+      dbContext,
+      currentUser,
+      ProductInventoryPolicy(productId, currentUser.BusinessId!.Value));
+
+    var result = await handler.Handle(new AdjustInventoryCommand(productId, 5, "NotARealReason"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InventoryErrors.InvalidAdjustment);
+  }
+
+  [Fact]
   public async Task AdjustInventory_ShouldPublishLowStockDetectedEvent_WhenStockFallsBelowMinimum()
   {
     await using var dbContext = CreateDbContext();
