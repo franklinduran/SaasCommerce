@@ -106,6 +106,49 @@ public sealed class BillingInvoiceTests
     scenario.Outbox.Events.Should().ContainSingle(@event => @event is InvoiceCancelledEventV1);
   }
 
+  [Fact]
+  public async Task GenerateInvoice_ShouldFail_WhenSaleIdEmpty()
+  {
+    var scenario = Scenario.Create();
+    var handler = scenario.CreateGenerateHandler();
+
+    var result = await handler.Handle(new GenerateInvoiceCommand(Guid.Empty));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.InvalidInvoice);
+  }
+
+  [Fact]
+  public async Task GenerateInvoice_ShouldFail_WhenSaleNotFound()
+  {
+    var scenario = Scenario.Create();
+    var handler = scenario.CreateGenerateHandler();
+
+    var result = await handler.Handle(new GenerateInvoiceCommand(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.SaleNotFound);
+  }
+
+  [Fact]
+  public async Task GenerateInvoice_ShouldPublishFailureEvents_WhenPublishFailureEventTrue()
+  {
+    var scenario = Scenario.Create();
+    var handler = scenario.CreateGenerateHandler();
+
+    var result = await handler.Handle(new GenerateInvoiceCommand(
+      Guid.NewGuid(),
+      CorrelationId: scenario.CorrelationId,
+      BusinessId: scenario.BusinessId,
+      UserId: scenario.UserId,
+      PaymentId: Guid.NewGuid(),
+      PublishFailureEvent: true));
+
+    result.IsFailure.Should().BeTrue();
+    scenario.Outbox.Events.OfType<InvoiceGenerationFailedEventV1>().Should().ContainSingle();
+    scenario.Outbox.Events.OfType<InvoiceFailedEventV1>().Should().ContainSingle();
+  }
+
   // ── GetInvoiceByIdHandler ────────────────────────────────────────────────
 
   [Fact]

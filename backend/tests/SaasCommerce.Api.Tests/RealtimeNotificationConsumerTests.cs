@@ -7,6 +7,8 @@ using SaasCommerce.Api.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Contracts.Events.V1;
+using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
@@ -270,6 +272,94 @@ public sealed class RealtimeNotificationConsumerTests
 
     await realtime.DidNotReceive().NotifyBusinessAsync(
       Arg.Any<Guid>(),
+      Arg.Any<string>(),
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task CustomerCreditDebitedRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = new CustomerCreditDebitedEventV1(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+      Guid.NewGuid(), 150, 350, Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new CustomerCreditDebitedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(CustomerCreditDebitedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<CustomerCreditDebitedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      Arg.Any<string>(),
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task CustomerPaymentRegisteredRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = new CustomerPaymentRegisteredEventV1(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+      Guid.NewGuid(), 75, 275, Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new CustomerPaymentRegisteredRealtimeConsumer(
+      InboxStore(message.EventId, nameof(CustomerPaymentRegisteredRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<CustomerPaymentRegisteredRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      Arg.Any<string>(),
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task InvoiceGeneratedRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = new InvoiceGeneratedEventV1(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 236, Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new InvoiceGeneratedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(InvoiceGeneratedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<InvoiceGeneratedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      Arg.Any<string>(),
+      Arg.Any<object>(),
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task InvoiceCancelledRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = new InvoiceCancelledEventV1(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+      Guid.NewGuid(), Guid.NewGuid(), "RI-00000001", Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new InvoiceCancelledRealtimeConsumer(
+      InboxStore(message.EventId, nameof(InvoiceCancelledRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<InvoiceCancelledRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
       Arg.Any<string>(),
       Arg.Any<object>(),
       Arg.Any<CancellationToken>());

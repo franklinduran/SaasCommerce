@@ -276,6 +276,399 @@ public sealed class PurchasingTests
     outbox.Events.OfType<PurchaseCancelledEventV1>().Should().ContainSingle();
   }
 
+  [Fact]
+  public async Task GetSuppliers_ShouldReturnSuppliers_WhenValid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    dbContext.Add(new Supplier(Guid.NewGuid(), businessId, "Proveedor A",
+      new SupplierContactInfo("101", "809", "a@test.com", "SD"), clock.UtcNow));
+    dbContext.Add(new Supplier(Guid.NewGuid(), businessId, "Proveedor B",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow));
+    await dbContext.SaveChangesAsync();
+    var handler = new GetSuppliersHandler(new EfSupplierRepository(dbContext), currentUser);
+
+    var result = await handler.Handle(new GetSuppliersQuery("Proveedor", true, 1, 10, "Name", "Asc"));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Items.Should().HaveCountGreaterThanOrEqualTo(1);
+    result.Value.TotalItems.Should().BeGreaterThan(0);
+  }
+
+  [Fact]
+  public async Task GetSuppliers_ShouldFail_WhenPageInvalid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = new GetSuppliersHandler(new EfSupplierRepository(dbContext), currentUser);
+
+    var result = await handler.Handle(new GetSuppliersQuery(null, null, 0, 10, null, null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SupplierErrors.InvalidSupplier);
+  }
+
+  [Fact]
+  public async Task GetSuppliers_ShouldFail_WhenNoBusinessContext()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create() with { BusinessId = null };
+    var handler = new GetSuppliersHandler(new EfSupplierRepository(dbContext), currentUser);
+
+    var result = await handler.Handle(new GetSuppliersQuery(null, null, 1, 10, null, null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SupplierErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task GetPurchases_ShouldReturnPurchases_WhenValid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var branchId = new BranchId(currentUser.BranchId!.Value);
+    var clock = new FixedClock();
+    var productId = Guid.NewGuid();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Proveedor",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    var purchase = Purchase.Create(
+      new PurchaseCreationData(Guid.NewGuid(), businessId, branchId, supplier.Id,
+        currentUser.UserId!.Value, "FAC-1", clock.UtcNow, null, clock.UtcNow),
+      [new PurchaseLine(productId, 2, 50)]);
+    dbContext.Add(supplier);
+    dbContext.Add(Product(productId, businessId, costPrice: 50));
+    dbContext.Add(purchase);
+    await dbContext.SaveChangesAsync();
+    var handler = new GetPurchasesHandler(
+      new EfPurchaseRepository(dbContext),
+      new EfSupplierRepository(dbContext),
+      new EfProductPurchaseReader(dbContext),
+      currentUser);
+
+    var result = await handler.Handle(new GetPurchasesQuery(
+      null, null, null, null, null, null, 1, 10, "PurchaseDate", "Desc"));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Items.Should().ContainSingle();
+  }
+
+  [Fact]
+  public async Task GetPurchases_ShouldFail_WhenPageSizeInvalid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = new GetPurchasesHandler(
+      new EfPurchaseRepository(dbContext),
+      new EfSupplierRepository(dbContext),
+      new EfProductPurchaseReader(dbContext),
+      currentUser);
+
+    var result = await handler.Handle(new GetPurchasesQuery(
+      null, null, null, null, null, null, 1, 999, null, null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.InvalidPurchase);
+  }
+
+  [Fact]
+  public async Task GetPurchaseById_ShouldReturnPurchase_WhenExists()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var branchId = new BranchId(currentUser.BranchId!.Value);
+    var clock = new FixedClock();
+    var productId = Guid.NewGuid();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Proveedor",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    var purchase = Purchase.Create(
+      new PurchaseCreationData(Guid.NewGuid(), businessId, branchId, supplier.Id,
+        currentUser.UserId!.Value, "FAC-2", clock.UtcNow, null, clock.UtcNow),
+      [new PurchaseLine(productId, 3, 25)]);
+    dbContext.Add(supplier);
+    dbContext.Add(Product(productId, businessId, costPrice: 25));
+    dbContext.Add(purchase);
+    await dbContext.SaveChangesAsync();
+    var handler = new GetPurchaseByIdHandler(
+      new EfPurchaseRepository(dbContext),
+      new EfSupplierRepository(dbContext),
+      new EfProductPurchaseReader(dbContext),
+      new EfPurchaseMovementReader(dbContext),
+      currentUser);
+
+    var result = await handler.Handle(new GetPurchaseByIdQuery(purchase.Id));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.PurchaseId.Should().Be(purchase.Id);
+  }
+
+  [Fact]
+  public async Task GetPurchaseById_ShouldFail_WhenNotFound()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = new GetPurchaseByIdHandler(
+      new EfPurchaseRepository(dbContext),
+      new EfSupplierRepository(dbContext),
+      new EfProductPurchaseReader(dbContext),
+      new EfPurchaseMovementReader(dbContext),
+      currentUser);
+
+    var result = await handler.Handle(new GetPurchaseByIdQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.PurchaseNotFound);
+  }
+
+  [Fact]
+  public async Task GetPurchaseById_ShouldFail_WhenNoBusinessContext()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create() with { BusinessId = null };
+    var handler = new GetPurchaseByIdHandler(
+      new EfPurchaseRepository(dbContext),
+      new EfSupplierRepository(dbContext),
+      new EfProductPurchaseReader(dbContext),
+      new EfPurchaseMovementReader(dbContext),
+      currentUser);
+
+    var result = await handler.Handle(new GetPurchaseByIdQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldFail_WhenNoUserContext()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create() with { BusinessId = null };
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      Guid.NewGuid(), null, [new CreatePurchaseItemCommand(Guid.NewGuid(), 1, 10)],
+      null, null, null, ReceiveNow: false));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldFail_WhenSupplierIdEmpty()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      Guid.Empty, currentUser.BranchId, [new CreatePurchaseItemCommand(Guid.NewGuid(), 1, 10)],
+      null, null, null, ReceiveNow: false));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.InvalidPurchase);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldFail_WhenNoItems()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      Guid.NewGuid(), currentUser.BranchId, [],
+      null, null, null, ReceiveNow: false));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.InvalidPurchase);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldFail_WhenSupplierNotFound()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      Guid.NewGuid(), currentUser.BranchId, [new CreatePurchaseItemCommand(Guid.NewGuid(), 1, 10)],
+      null, null, null, ReceiveNow: false));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.SupplierNotFound);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldFail_WhenLineQuantityInvalid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Prov",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    dbContext.Add(supplier);
+    await dbContext.SaveChangesAsync();
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      supplier.Id, currentUser.BranchId, [new CreatePurchaseItemCommand(Guid.NewGuid(), 0, 10)],
+      null, null, null, ReceiveNow: false));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.InvalidPurchase);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldFail_WhenProductNotFound()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Prov",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    dbContext.Add(supplier);
+    await dbContext.SaveChangesAsync();
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      supplier.Id, currentUser.BranchId, [new CreatePurchaseItemCommand(Guid.NewGuid(), 1, 10)],
+      null, null, null, ReceiveNow: false));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(PurchaseErrors.ProductNotFound);
+  }
+
+  [Fact]
+  public async Task CreatePurchase_ShouldSucceed_WithoutReceiveNow()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    var productId = Guid.NewGuid();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Prov",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    dbContext.Add(supplier);
+    dbContext.Add(Product(productId, businessId, costPrice: 50));
+    await dbContext.SaveChangesAsync();
+    var outbox = new RecordingOutboxWriter();
+    var handler = CreatePurchaseHandler(dbContext, currentUser, outbox);
+
+    var result = await handler.Handle(new CreatePurchaseCommand(
+      supplier.Id, currentUser.BranchId,
+      [new CreatePurchaseItemCommand(productId, 2, 25)],
+      "FAC-99", clock.UtcNow, "nota", ReceiveNow: false));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Status.Should().Be("Draft");
+    outbox.Events.OfType<PurchaseCreatedEventV1>().Should().ContainSingle();
+    outbox.Events.OfType<PurchaseReceivedEventV1>().Should().BeEmpty();
+  }
+
+  [Fact]
+  public async Task UpdateSupplier_ShouldUpdate_WhenValid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Original",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    dbContext.Add(supplier);
+    await dbContext.SaveChangesAsync();
+    var handler = new UpdateSupplierHandler(
+      new EfSupplierRepository(dbContext), currentUser, clock, new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new UpdateSupplierCommand(
+      supplier.Id, "Actualizado", "101222333", "8095550000", "n@p.com", "Calle 2", true));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Name.Should().Be("Actualizado");
+  }
+
+  [Fact]
+  public async Task UpdateSupplier_ShouldFail_WhenNoBusinessContext()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create() with { BusinessId = null };
+    var handler = new UpdateSupplierHandler(
+      new EfSupplierRepository(dbContext), currentUser, new FixedClock(), new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new UpdateSupplierCommand(
+      Guid.NewGuid(), "X", null, null, null, null, true));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SupplierErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task UpdateSupplier_ShouldFail_WhenNotFound()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var handler = new UpdateSupplierHandler(
+      new EfSupplierRepository(dbContext), currentUser, new FixedClock(), new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new UpdateSupplierCommand(
+      Guid.NewGuid(), "X", null, null, null, null, true));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SupplierErrors.SupplierNotFound);
+  }
+
+  [Fact]
+  public async Task UpdateSupplier_ShouldFail_WhenNameTooLong()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Original",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    dbContext.Add(supplier);
+    await dbContext.SaveChangesAsync();
+    var handler = new UpdateSupplierHandler(
+      new EfSupplierRepository(dbContext), currentUser, clock, new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new UpdateSupplierCommand(
+      supplier.Id, new string('x', 300), null, null, null, null, true));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SupplierErrors.InvalidSupplier);
+  }
+
+  [Fact]
+  public async Task UpdateSupplier_ShouldFail_WhenEmailInvalid()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var clock = new FixedClock();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Original",
+      new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    dbContext.Add(supplier);
+    await dbContext.SaveChangesAsync();
+    var handler = new UpdateSupplierHandler(
+      new EfSupplierRepository(dbContext), currentUser, clock, new EfUnitOfWork(dbContext));
+
+    var result = await handler.Handle(new UpdateSupplierCommand(
+      supplier.Id, "Valido", null, null, "bademail", null, true));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SupplierErrors.InvalidSupplier);
+  }
+
   private static Purchase CreatePurchase(IReadOnlyCollection<PurchaseLine> lines)
   {
     var clock = new FixedClock();
