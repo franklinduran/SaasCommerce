@@ -41,10 +41,7 @@ public sealed class CreateSupplierHandler(
         Guid.NewGuid(),
         new BusinessId(businessId),
         command.Name,
-        command.Rnc,
-        command.Phone,
-        command.Email,
-        command.Address,
+        new SupplierContactInfo(command.Rnc, command.Phone, command.Email, command.Address),
         clock.UtcNow);
     }
     catch (ArgumentOutOfRangeException)

@@ -91,6 +91,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<CreateSupplierHandler>();
     services.AddScoped<UpdateSupplierHandler>();
     services.AddScoped<GetSuppliersHandler>();
+    services.AddScoped<PurchaseHandlerContext>();
     services.AddScoped<PurchaseReceiptProcessor>();
     services.AddScoped<CreatePurchaseHandler>();
     services.AddScoped<ReceivePurchaseHandler>();
@@ -126,6 +127,7 @@ public static class ModulesServiceCollectionExtensions
     // Sales
     services.AddScoped<ISaleRepository, EfSaleRepository>();
     services.AddScoped<ISaleReadRepository, EfSaleReadRepository>();
+    services.AddScoped<SaleHandlerContext>();
     services.AddScoped<ICreateSaleUseCase, CreateSaleUseCase>();
     services.AddScoped<ISaleEventWriter, SaleEventWriter>();
     services.AddScoped<IGetSaleByIdUseCase, GetSaleByIdUseCase>();

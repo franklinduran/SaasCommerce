@@ -1,10 +1,4 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
-using SaasCommerce.Modules.Catalog.Contracts.Purchasing;
-using SaasCommerce.Modules.Purchasing.Application.Abstractions;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Contracts.Responses;
 using SaasCommerce.SharedKernel;
@@ -12,15 +6,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
-public sealed class CancelPurchaseHandler( // NOSONAR S107 — DI constructor injection
-  IPurchaseRepository purchases,
-  ISupplierRepository suppliers,
-  IProductPurchaseReader products,
-  ICurrentUserService currentUser,
-  IOutboxWriter outbox,
-  ICorrelationIdProvider correlationIdProvider,
-  IClock clock,
-  IUnitOfWork unitOfWork)
+public sealed class CancelPurchaseHandler(PurchaseHandlerContext context, ICorrelationIdProvider correlationIdProvider)
 {
   public Task<Result<PurchaseResponse>> Handle(
     CancelPurchaseCommand command,
@@ -35,14 +21,14 @@ public sealed class CancelPurchaseHandler( // NOSONAR S107 — DI constructor in
     CancelPurchaseCommand command,
     CancellationToken cancellationToken)
   {
-    if (currentUser.BusinessId is not Guid businessId ||
-        currentUser.UserId is not Guid userId)
+    if (context.CurrentUser.BusinessId is not Guid businessId ||
+        context.CurrentUser.UserId is not Guid userId)
     {
       return Result.Failure<PurchaseResponse>(PurchaseErrors.UserContextRequired);
     }
 
     var tenantId = new BusinessId(businessId);
-    var purchase = await purchases.GetAsync(tenantId, command.PurchaseId, cancellationToken);
+    var purchase = await context.Purchases.GetAsync(tenantId, command.PurchaseId, cancellationToken);
 
     if (purchase is null)
     {
@@ -51,14 +37,14 @@ public sealed class CancelPurchaseHandler( // NOSONAR S107 — DI constructor in
 
     try
     {
-      purchase.Cancel(clock.UtcNow);
+      purchase.Cancel(context.Clock.UtcNow);
     }
     catch (InvalidOperationException)
     {
       return Result.Failure<PurchaseResponse>(PurchaseErrors.InvalidPurchaseState);
     }
 
-    await outbox.AddAsync(
+    await context.Outbox.AddAsync(
       new PurchaseCancelledEventV1(
         Guid.NewGuid(),
         ResolveCorrelationId(),
@@ -67,12 +53,12 @@ public sealed class CancelPurchaseHandler( // NOSONAR S107 — DI constructor in
         purchase.BranchId.Value,
         purchase.SupplierId,
         userId,
-        clock.UtcNow),
+        context.Clock.UtcNow),
       cancellationToken);
-    await unitOfWork.SaveChangesAsync(cancellationToken);
+    await context.UnitOfWork.SaveChangesAsync(cancellationToken);
 
-    var supplier = await suppliers.GetAsync(tenantId, purchase.SupplierId, cancellationToken);
-    var productMap = await products.ListAsync(
+    var supplier = await context.Suppliers.GetAsync(tenantId, purchase.SupplierId, cancellationToken);
+    var productMap = await context.Products.ListAsync(
       businessId,
       purchase.Items.Select(item => item.ProductId).Distinct().ToArray(),
       cancellationToken);

@@ -437,13 +437,14 @@ public sealed class CustomersSalesApiWorkflowTests
 
     public CreateSaleUseCase CreateSaleUseCase()
       => new(
-        Sales,
-        Customers,
-        ProductPolicies,
-        CurrentUser,
-        SaleEvents,
-        Clock,
-        UnitOfWork);
+        new SaleHandlerContext(
+          Sales,
+          Customers,
+          ProductPolicies,
+          CurrentUser,
+          SaleEvents,
+          Clock,
+          UnitOfWork));
 
     public async Task<Customer> AddCustomerAsync()
     {
@@ -504,10 +505,7 @@ public sealed class CustomersSalesApiWorkflowTests
 
   private sealed class NoopAuditLogWriter : IAuditLogWriter
   {
-    public Task WriteAsync(
-      BusinessId businessId, Guid? userId, string action, string entityName,
-      Guid? entityId, string? description = null, string? ipAddress = null,
-      CancellationToken cancellationToken = default)
+    public Task WriteAsync(AuditEntry entry, CancellationToken cancellationToken = default)
       => Task.CompletedTask;
   }
 

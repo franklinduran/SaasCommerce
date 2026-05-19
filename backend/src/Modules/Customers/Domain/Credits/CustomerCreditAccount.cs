@@ -96,15 +96,10 @@ public sealed class CustomerCreditAccount
     UpdatedAt = createdAt;
 
     return new CustomerCreditMovement(
-      movementId,
-      BusinessId,
-      CustomerId,
-      saleId,
-      null,
+      new CreditMovementIdentifiers(movementId, BusinessId, CustomerId, new CreditMovementSource(SaleId: saleId)),
       CustomerCreditMovementType.Debit,
       amount,
-      previousBalance,
-      newBalance,
+      new CreditMovementBalance(previousBalance, newBalance),
       note,
       createdAt,
       createdBy);
@@ -136,15 +131,10 @@ public sealed class CustomerCreditAccount
     UpdatedAt = createdAt;
 
     return new CustomerCreditMovement(
-      movementId,
-      BusinessId,
-      CustomerId,
-      null,
-      paymentId,
+      new CreditMovementIdentifiers(movementId, BusinessId, CustomerId, new CreditMovementSource(PaymentId: paymentId)),
       CustomerCreditMovementType.Payment,
       amount,
-      previousBalance,
-      newBalance,
+      new CreditMovementBalance(previousBalance, newBalance),
       note,
       createdAt,
       createdBy);

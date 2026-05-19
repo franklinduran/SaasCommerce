@@ -134,8 +134,7 @@ public sealed class PurchaseReceiptProcessor(
       userId,
       product.AllowNegativeStock,
       clock.UtcNow,
-      purchaseId: purchase.Id,
-      note: $"Purchase {purchase.Id:D}");
+      new InventoryMovementSource(PurchaseId: purchase.Id, Note: $"Purchase {purchase.Id:D}"));
 
     if (isNewStockItem)
     {

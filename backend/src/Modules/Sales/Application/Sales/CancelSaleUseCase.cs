@@ -65,13 +65,14 @@ public sealed class CancelSaleUseCase(
     await unitOfWork.SaveChangesAsync(cancellationToken);
 
     await auditLog.WriteAsync(
-      new BusinessId(businessId),
-      userId,
-      "sale.cancelled",
-      "Sale",
-      sale.Id,
-      $"Sale cancelled. Reason: {reason}",
-      cancellationToken: cancellationToken);
+      new AuditEntry(
+        new BusinessId(businessId),
+        userId,
+        "sale.cancelled",
+        "Sale",
+        sale.Id,
+        $"Sale cancelled. Reason: {reason}"),
+      cancellationToken);
 
     await realtime.NotifyBusinessAsync(
       businessId,

@@ -1,3 +1,4 @@
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Identity.Domain;
@@ -12,28 +13,20 @@ public sealed class AuditLog
   {
   }
 
-  public AuditLog( // NOSONAR S107 — audit log requires all fields for immutable record
-    Guid id,
-    BusinessId businessId,
-    Guid? userId,
-    string action,
-    string entityName,
-    Guid? entityId,
-    string? description,
-    string? ipAddress,
-    DateTimeOffset createdAt)
+  public AuditLog(Guid id, AuditEntry entry, DateTimeOffset createdAt)
   {
-    ArgumentException.ThrowIfNullOrWhiteSpace(action);
-    ArgumentException.ThrowIfNullOrWhiteSpace(entityName);
+    ArgumentNullException.ThrowIfNull(entry);
+    ArgumentException.ThrowIfNullOrWhiteSpace(entry.Action);
+    ArgumentException.ThrowIfNullOrWhiteSpace(entry.EntityName);
 
     Id = id;
-    BusinessId = businessId;
-    UserId = userId;
-    Action = action;
-    EntityName = entityName;
-    EntityId = entityId;
-    Description = description;
-    IpAddress = ipAddress;
+    BusinessId = entry.BusinessId;
+    UserId = entry.UserId;
+    Action = entry.Action;
+    EntityName = entry.EntityName;
+    EntityId = entry.EntityId;
+    Description = entry.Description;
+    IpAddress = entry.IpAddress;
     CreatedAt = createdAt;
   }
 

@@ -37,13 +37,14 @@ public sealed class SalesWorkflowTests
     var scenario = TestScenario.Create();
     var saleCreated = SaleCreated(scenario);
     var useCase = new CreateSaleUseCase(
-      scenario.Sales,
-      scenario.Customers,
-      scenario.ProductPolicies,
-      scenario.CurrentUser,
-      scenario.SaleEvents,
-      scenario.Clock,
-      scenario.UnitOfWork);
+      new SaleHandlerContext(
+        scenario.Sales,
+        scenario.Customers,
+        scenario.ProductPolicies,
+        scenario.CurrentUser,
+        scenario.SaleEvents,
+        scenario.Clock,
+        scenario.UnitOfWork));
 
     var result = await useCase.ExecuteAsync(saleCreated);
     var persisted = await scenario.Sales.GetAsync(new BusinessId(scenario.BusinessId), scenario.SaleId);
@@ -61,13 +62,14 @@ public sealed class SalesWorkflowTests
     var scenario = TestScenario.Create();
     await scenario.Sales.AddAsync(CreateProcessingSale(scenario));
     var useCase = new CreateSaleUseCase(
-      scenario.Sales,
-      scenario.Customers,
-      scenario.ProductPolicies,
-      scenario.CurrentUser,
-      scenario.SaleEvents,
-      scenario.Clock,
-      scenario.UnitOfWork);
+      new SaleHandlerContext(
+        scenario.Sales,
+        scenario.Customers,
+        scenario.ProductPolicies,
+        scenario.CurrentUser,
+        scenario.SaleEvents,
+        scenario.Clock,
+        scenario.UnitOfWork));
 
     var result = await useCase.ExecuteAsync(SaleCreated(scenario));
 
@@ -81,13 +83,14 @@ public sealed class SalesWorkflowTests
   {
     var scenario = TestScenario.Create();
     var useCase = new CreateSaleUseCase(
-      scenario.Sales,
-      scenario.Customers,
-      scenario.ProductPolicies,
-      scenario.CurrentUser,
-      scenario.SaleEvents,
-      scenario.Clock,
-      scenario.UnitOfWork);
+      new SaleHandlerContext(
+        scenario.Sales,
+        scenario.Customers,
+        scenario.ProductPolicies,
+        scenario.CurrentUser,
+        scenario.SaleEvents,
+        scenario.Clock,
+        scenario.UnitOfWork));
 
     var result = await useCase.ExecuteAsync(new SaleCreatedEventV1(
       Guid.NewGuid(),

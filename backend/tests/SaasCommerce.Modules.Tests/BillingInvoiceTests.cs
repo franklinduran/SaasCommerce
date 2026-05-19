@@ -71,15 +71,10 @@ public sealed class BillingInvoiceTests
     scenario.Invoices.Items.Add(scenario.CreateInvoice());
     scenario.Invoices.Items.Add(Invoice.Issue(
       Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      new BranchId(Guid.NewGuid()),
       Guid.NewGuid(),
-      null,
       1,
-      90,
-      0,
-      0,
-      90,
+      new InvoiceContext(new BusinessId(Guid.NewGuid()), new BranchId(Guid.NewGuid()), null),
+      new InvoiceFinancials(90, 0, 0, 90),
       Now));
     var handler = new GetInvoicesHandler(scenario.Invoices, scenario.CurrentUser);
 
@@ -177,15 +172,10 @@ public sealed class BillingInvoiceTests
     public Invoice CreateInvoice()
       => Invoice.Issue(
         Guid.NewGuid(),
-        new BusinessId(BusinessId),
-        new BranchId(BranchId),
         SaleId,
-        CustomerId,
         1,
-        250,
-        0,
-        0,
-        250,
+        new InvoiceContext(new BusinessId(BusinessId), new BranchId(BranchId), CustomerId),
+        new InvoiceFinancials(250, 0, 0, 250),
         Now);
   }
 

@@ -601,7 +601,7 @@ public sealed class CatalogInventoryTests
       Guid.NewGuid(),
       false,
       new FixedClock().UtcNow,
-      saleId: Guid.NewGuid());
+      new InventoryMovementSource(SaleId: Guid.NewGuid()));
 
     stockItem.Quantity.Should().Be(6);
     movement.PreviousStock.Should().Be(10);
@@ -918,10 +918,7 @@ public sealed class CatalogInventoryTests
 
   private sealed class NoopAuditLogWriter : IAuditLogWriter
   {
-    public Task WriteAsync(
-      BusinessId businessId, Guid? userId, string action, string entityName,
-      Guid? entityId, string? description = null, string? ipAddress = null,
-      CancellationToken cancellationToken = default)
+    public Task WriteAsync(AuditEntry entry, CancellationToken cancellationToken = default)
       => Task.CompletedTask;
   }
 

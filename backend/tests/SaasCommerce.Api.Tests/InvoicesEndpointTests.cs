@@ -119,15 +119,10 @@ public sealed class InvoicesEndpointTests
       .MaxAsync(CancellationToken.None) ?? 0;
     var invoice = Invoice.Issue(
       Guid.NewGuid(),
-      new BusinessId(businessId),
-      new BranchId(branchId),
       saleId,
-      null,
       sequenceNumber + 1,
-      300,
-      0,
-      0,
-      300,
+      new InvoiceContext(new BusinessId(businessId), new BranchId(branchId), null),
+      new InvoiceFinancials(300, 0, 0, 300),
       DateTimeOffset.UtcNow);
 
     dbContext.Set<Invoice>().Add(invoice);

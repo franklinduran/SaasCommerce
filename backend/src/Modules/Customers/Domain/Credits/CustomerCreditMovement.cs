@@ -2,34 +2,38 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Customers.Domain.Credits;
 
+public sealed record CreditMovementBalance(decimal PreviousBalance, decimal NewBalance);
+
+public sealed record CreditMovementSource(Guid? SaleId = null, Guid? PaymentId = null);
+
+public sealed record CreditMovementIdentifiers(Guid Id, BusinessId BusinessId, Guid CustomerId, CreditMovementSource Source);
+
 public sealed class CustomerCreditMovement
 {
   private CustomerCreditMovement()
   {
   }
 
-  public CustomerCreditMovement( // NOSONAR S107 — credit movement requires full audit trail of balance transition
-    Guid id,
-    BusinessId businessId,
-    Guid customerId,
-    Guid? saleId,
-    Guid? paymentId,
+  public CustomerCreditMovement(
+    CreditMovementIdentifiers ids,
     CustomerCreditMovementType type,
     decimal amount,
-    decimal previousBalance,
-    decimal newBalance,
+    CreditMovementBalance balance,
     string? note,
     DateTimeOffset createdAt,
     Guid? createdBy)
   {
-    if (id == Guid.Empty)
+    ArgumentNullException.ThrowIfNull(ids);
+    ArgumentNullException.ThrowIfNull(balance);
+
+    if (ids.Id == Guid.Empty)
     {
-      throw new ArgumentException("Credit movement id is required.", nameof(id));
+      throw new ArgumentException("Credit movement id is required.", nameof(ids));
     }
 
-    if (customerId == Guid.Empty)
+    if (ids.CustomerId == Guid.Empty)
     {
-      throw new ArgumentException("Customer id is required.", nameof(customerId));
+      throw new ArgumentException("Customer id is required.", nameof(ids));
     }
 
     if (amount <= 0)
@@ -37,25 +41,25 @@ public sealed class CustomerCreditMovement
       throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be greater than zero.");
     }
 
-    if (previousBalance < 0 || newBalance < 0)
+    if (balance.PreviousBalance < 0 || balance.NewBalance < 0)
     {
-      throw new ArgumentOutOfRangeException(nameof(newBalance), "Balances cannot be negative.");
+      throw new ArgumentOutOfRangeException(nameof(balance), "Balances cannot be negative.");
     }
 
-    if (!HasConsistentBalance(type, amount, previousBalance, newBalance))
+    if (!HasConsistentBalance(type, amount, balance.PreviousBalance, balance.NewBalance))
     {
-      throw new ArgumentException("Movement balances are inconsistent.", nameof(newBalance));
+      throw new ArgumentException("Movement balances are inconsistent.", nameof(balance));
     }
 
-    Id = id;
-    BusinessId = businessId;
-    CustomerId = customerId;
-    SaleId = saleId;
-    PaymentId = paymentId;
+    Id = ids.Id;
+    BusinessId = ids.BusinessId;
+    CustomerId = ids.CustomerId;
+    SaleId = ids.Source?.SaleId;
+    PaymentId = ids.Source?.PaymentId;
     Type = type;
     Amount = amount;
-    PreviousBalance = previousBalance;
-    NewBalance = newBalance;
+    PreviousBalance = balance.PreviousBalance;
+    NewBalance = balance.NewBalance;
     Note = NormalizeNote(note);
     CreatedAt = createdAt;
     CreatedBy = createdBy;

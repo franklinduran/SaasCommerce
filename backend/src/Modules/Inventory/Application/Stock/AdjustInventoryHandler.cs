@@ -88,7 +88,7 @@ public sealed class AdjustInventoryHandler(
         userId,
         productPolicy.AllowNegativeStock,
         clock.UtcNow,
-        note: command.Note);
+        new InventoryMovementSource(Note: command.Note));
     }
     catch (InvalidOperationException)
     {
@@ -134,13 +134,14 @@ public sealed class AdjustInventoryHandler(
     await unitOfWork.SaveChangesAsync(cancellationToken);
 
     await auditLog.WriteAsync(
-      tenantId,
-      userId,
-      "inventory.adjusted",
-      "StockItem",
-      stockItem.Id,
-      $"Product {command.ProductId}: {movement.PreviousStock} → {movement.NewStock} ({command.Reason})",
-      cancellationToken: cancellationToken);
+      new AuditEntry(
+        tenantId,
+        userId,
+        "inventory.adjusted",
+        "StockItem",
+        stockItem.Id,
+        $"Product {command.ProductId}: {movement.PreviousStock} → {movement.NewStock} ({command.Reason})"),
+      cancellationToken);
 
     return Result.Success(new InventoryAdjustmentResponse(
       InventoryResponseMapper.ToResponse(stockItem, null),

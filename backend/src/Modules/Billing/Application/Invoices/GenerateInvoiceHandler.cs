@@ -69,15 +69,10 @@ public sealed class GenerateInvoiceHandler(
     var now = clock.UtcNow;
     var invoice = Invoice.Issue(
       Guid.NewGuid(),
-      tenantId,
-      new BranchId(sale.BranchId),
       sale.SaleId,
-      sale.CustomerId,
       await invoices.GetNextSequenceAsync(tenantId, cancellationToken),
-      sale.Total,
-      0,
-      0,
-      sale.Total,
+      new InvoiceContext(tenantId, new BranchId(sale.BranchId), sale.CustomerId),
+      new InvoiceFinancials(sale.Total, 0, 0, sale.Total),
       now);
 
     await invoices.AddAsync(invoice, cancellationToken);

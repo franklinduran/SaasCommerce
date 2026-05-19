@@ -1,11 +1,7 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
-using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Domain.Credits;
-using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Contracts.Responses;
 using SaasCommerce.Modules.Sales.Domain;
@@ -14,14 +10,8 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Sales.Application.Sales;
 
-public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor injection
-  ISaleRepository sales,
-  ICustomerRepository customers,
-  IProductSalesPolicyReader productPolicies,
-  ICurrentUserService currentUser,
-  ISaleEventWriter saleEvents,
-  IClock clock,
-  IUnitOfWork unitOfWork,
+public sealed class CreateSaleUseCase(
+  SaleHandlerContext context,
   ICustomerCreditRepository? customerCredits = null) : ICreateSaleUseCase
 {
   public Task<Result<SaleResponse>> ExecuteAsync(
@@ -39,7 +29,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
   {
     ArgumentNullException.ThrowIfNull(saleCreated);
 
-    var existingSale = await sales.GetAsync(
+    var existingSale = await context.Sales.GetAsync(
       new BusinessId(saleCreated.BusinessId),
       saleCreated.SaleId,
       cancellationToken);
@@ -62,7 +52,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
         saleCreated.PaymentMethod,
         saleCreated.CreatedAt);
 
-      sale.MarkAsProcessing(clock.UtcNow);
+      sale.MarkAsProcessing(context.Clock.UtcNow);
     }
     catch (ArgumentException)
     {
@@ -73,10 +63,10 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
       return Result.Failure(SalesErrors.InvalidSale);
     }
 
-    await sales.AddAsync(sale, cancellationToken);
-    await saleEvents.AddAsync(saleCreated, cancellationToken);
-    await unitOfWork.SaveChangesAsync(cancellationToken);
-    await saleEvents.NotifyStatusChangedAsync(
+    await context.Sales.AddAsync(sale, cancellationToken);
+    await context.SaleEvents.AddAsync(saleCreated, cancellationToken);
+    await context.UnitOfWork.SaveChangesAsync(cancellationToken);
+    await context.SaleEvents.NotifyStatusChangedAsync(
       saleCreated,
       SaleStatus.Processing,
       null,
@@ -101,16 +91,16 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
       return Result.Failure<SaleResponse>(SalesErrors.InvalidSale);
     }
 
-    var context = userContext.Value;
-    var branchId = command.BranchId ?? context.BranchId;
+    var ctx = userContext.Value;
+    var branchId = command.BranchId ?? ctx.BranchId;
 
-    if (branchId != context.BranchId)
+    if (branchId != ctx.BranchId)
     {
       return Result.Failure<SaleResponse>(SalesErrors.InvalidSale);
     }
 
     var customerResult = await EnsureCustomerCanBeUsedAsync(
-      new BusinessId(context.BusinessId),
+      new BusinessId(ctx.BusinessId),
       command.CustomerId,
       cancellationToken);
 
@@ -120,7 +110,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
     }
 
     var linesResult = await BuildSaleLinesAsync(
-      context.BusinessId,
+      ctx.BusinessId,
       command.Items,
       cancellationToken);
 
@@ -130,7 +120,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
     }
 
     var creditResult = await EnsureCreditSaleCanBeCreatedAsync(
-      new BusinessId(context.BusinessId),
+      new BusinessId(ctx.BusinessId),
       command,
       linesResult.Value,
       cancellationToken);
@@ -142,7 +132,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
 
     var saleResult = CreateSale(
       command,
-      context,
+      ctx,
       branchId,
       linesResult.Value);
 
@@ -152,16 +142,16 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
     }
 
     var sale = saleResult.Value;
-    var saleCreated = await saleEvents.AddSaleCreatedAsync(
+    var saleCreated = await context.SaleEvents.AddSaleCreatedAsync(
       sale,
-      context.BusinessId,
+      ctx.BusinessId,
       branchId,
-      context.UserId,
+      ctx.UserId,
       cancellationToken);
 
-    await sales.AddAsync(sale, cancellationToken);
-    await unitOfWork.SaveChangesAsync(cancellationToken);
-    await saleEvents.NotifyStatusChangedAsync(
+    await context.Sales.AddAsync(sale, cancellationToken);
+    await context.UnitOfWork.SaveChangesAsync(cancellationToken);
+    await context.SaleEvents.NotifyStatusChangedAsync(
       saleCreated,
       SaleStatus.Received,
       null,
@@ -172,9 +162,9 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
 
   private Result<SaleUserContext> ResolveUserContext()
   {
-    if (currentUser.BusinessId is not Guid businessId ||
-        currentUser.UserId is not Guid userId ||
-        currentUser.BranchId is not Guid branchId)
+    if (context.CurrentUser.BusinessId is not Guid businessId ||
+        context.CurrentUser.UserId is not Guid userId ||
+        context.CurrentUser.BranchId is not Guid branchId)
     {
       return Result.Failure<SaleUserContext>(SalesErrors.UserContextRequired);
     }
@@ -196,7 +186,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
       return Result.Success();
     }
 
-    var customer = await customers.GetAsync(
+    var customer = await context.Customers.GetAsync(
       businessId,
       customerId.Value,
       cancellationToken);
@@ -259,7 +249,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
 
     if (account is null)
     {
-      account = new CustomerCreditAccount(Guid.NewGuid(), businessId, customerId, 0, clock.UtcNow);
+      account = new CustomerCreditAccount(Guid.NewGuid(), businessId, customerId, 0, context.Clock.UtcNow);
       await customerCredits.AddAccountAsync(account, cancellationToken);
     }
 
@@ -295,7 +285,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
       return Result.Failure<SaleLine>(SalesErrors.InvalidSale);
     }
 
-    var productPolicy = await productPolicies.GetSalesPolicyAsync(
+    var productPolicy = await context.ProductPolicies.GetSalesPolicyAsync(
       businessId,
       item.ProductId,
       cancellationToken);
@@ -313,7 +303,7 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
 
   private Result<Sale> CreateSale(
     CreateSaleCommand command,
-    SaleUserContext context,
+    SaleUserContext ctx,
     Guid branchId,
     IReadOnlyCollection<SaleLine> lines)
   {
@@ -321,12 +311,12 @@ public sealed class CreateSaleUseCase( // NOSONAR S107 — DI constructor inject
     {
       var sale = Sale.Create(
         Guid.NewGuid(),
-        new BusinessId(context.BusinessId),
+        new BusinessId(ctx.BusinessId),
         new BranchId(branchId),
-        context.UserId,
+        ctx.UserId,
         lines,
         command.PaymentMethod,
-        clock.UtcNow);
+        context.Clock.UtcNow);
 
       if (command.CustomerId.HasValue)
       {

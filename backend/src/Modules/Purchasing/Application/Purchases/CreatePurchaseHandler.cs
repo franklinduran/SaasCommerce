@@ -1,10 +1,4 @@
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
-using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
-using SaasCommerce.Modules.Catalog.Contracts.Purchasing;
-using SaasCommerce.Modules.Purchasing.Application.Abstractions;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Contracts.Responses;
 using SaasCommerce.Modules.Purchasing.Domain;
@@ -13,16 +7,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
-public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor injection
-  IPurchaseRepository purchases,
-  ISupplierRepository suppliers,
-  IProductPurchaseReader products,
-  PurchaseReceiptProcessor receiptProcessor,
-  ICurrentUserService currentUser,
-  IOutboxWriter outbox,
-  ICorrelationIdProvider correlationIdProvider,
-  IClock clock,
-  IUnitOfWork unitOfWork)
+public sealed class CreatePurchaseHandler(PurchaseHandlerContext context, PurchaseReceiptProcessor receiptProcessor, ICorrelationIdProvider correlationIdProvider)
 {
   public Task<Result<PurchaseResponse>> Handle(
     CreatePurchaseCommand command,
@@ -37,23 +22,23 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
     CreatePurchaseCommand command,
     CancellationToken cancellationToken)
   {
-    var context = ResolveUserContext();
+    var userContext = ResolveUserContext();
 
-    if (context.IsFailure)
+    if (userContext.IsFailure)
     {
       return Result.Failure<PurchaseResponse>(PurchaseErrors.UserContextRequired);
     }
 
-    var userContext = context.Value;
-    var branchId = command.BranchId ?? userContext.BranchId;
+    var ctx = userContext.Value;
+    var branchId = command.BranchId ?? ctx.BranchId;
 
     if (!IsValidCommand(command) || branchId == Guid.Empty)
     {
       return Result.Failure<PurchaseResponse>(PurchaseErrors.InvalidPurchase);
     }
 
-    var supplier = await suppliers.GetAsync(
-      new BusinessId(userContext.BusinessId),
+    var supplier = await context.Suppliers.GetAsync(
+      new BusinessId(ctx.BusinessId),
       command.SupplierId,
       cancellationToken);
 
@@ -63,7 +48,7 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
     }
 
     var lines = await BuildPurchaseLinesAsync(
-      userContext.BusinessId,
+      ctx.BusinessId,
       command.Items,
       cancellationToken);
 
@@ -72,7 +57,7 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
       return Result.Failure<PurchaseResponse>(lines.Error);
     }
 
-    var purchase = CreatePurchase(command, userContext, branchId, lines.Value);
+    var purchase = CreatePurchase(command, ctx, branchId, lines.Value);
 
     if (purchase.IsFailure)
     {
@@ -81,8 +66,8 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
 
     var entity = purchase.Value;
     var correlationId = ResolveCorrelationId();
-    await purchases.AddAsync(entity, cancellationToken);
-    await outbox.AddAsync(
+    await context.Purchases.AddAsync(entity, cancellationToken);
+    await context.Outbox.AddAsync(
       ToCreatedEvent(entity, correlationId),
       cancellationToken);
 
@@ -90,7 +75,7 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
     {
       var receipt = await receiptProcessor.ProcessAsync(
         entity,
-        userContext.UserId,
+        ctx.UserId,
         correlationId,
         markAsReceived: true,
         cancellationToken);
@@ -100,13 +85,13 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
         return Result.Failure<PurchaseResponse>(receipt.Error);
       }
 
-      await outbox.AddAsync(ToReceivedEvent(entity, correlationId), cancellationToken);
+      await context.Outbox.AddAsync(ToReceivedEvent(entity, correlationId), cancellationToken);
     }
 
-    await unitOfWork.SaveChangesAsync(cancellationToken);
+    await context.UnitOfWork.SaveChangesAsync(cancellationToken);
 
-    var productMap = await products.ListAsync(
-      userContext.BusinessId,
+    var productMap = await context.Products.ListAsync(
+      ctx.BusinessId,
       entity.Items.Select(item => item.ProductId).Distinct().ToArray(),
       cancellationToken);
 
@@ -115,9 +100,9 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
 
   private Result<PurchaseUserContext> ResolveUserContext()
   {
-    if (currentUser.BusinessId is not Guid businessId ||
-        currentUser.UserId is not Guid userId ||
-        currentUser.BranchId is not Guid branchId)
+    if (context.CurrentUser.BusinessId is not Guid businessId ||
+        context.CurrentUser.UserId is not Guid userId ||
+        context.CurrentUser.BranchId is not Guid branchId)
     {
       return Result.Failure<PurchaseUserContext>(PurchaseErrors.UserContextRequired);
     }
@@ -160,7 +145,7 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
       return Result.Failure<PurchaseLine>(PurchaseErrors.InvalidPurchase);
     }
 
-    var product = await products.GetAsync(businessId, item.ProductId, cancellationToken);
+    var product = await context.Products.GetAsync(businessId, item.ProductId, cancellationToken);
 
     if (product is null || !product.IsActive)
     {
@@ -177,23 +162,25 @@ public sealed class CreatePurchaseHandler( // NOSONAR S107 — DI constructor in
 
   private Result<Purchase> CreatePurchase(
     CreatePurchaseCommand command,
-    PurchaseUserContext context,
+    PurchaseUserContext ctx,
     Guid branchId,
     IReadOnlyCollection<PurchaseLine> lines)
   {
     try
     {
+      var now = context.Clock.UtcNow;
       return Result.Success(Purchase.Create(
-        Guid.NewGuid(),
-        new BusinessId(context.BusinessId),
-        new BranchId(branchId),
-        command.SupplierId,
-        context.UserId,
-        lines,
-        command.SupplierInvoiceNumber,
-        command.PurchaseDate ?? clock.UtcNow,
-        command.Notes,
-        clock.UtcNow));
+        new PurchaseCreationData(
+          Guid.NewGuid(),
+          new BusinessId(ctx.BusinessId),
+          new BranchId(branchId),
+          command.SupplierId,
+          ctx.UserId,
+          command.SupplierInvoiceNumber,
+          command.PurchaseDate ?? now,
+          command.Notes,
+          now),
+        lines));
     }
     catch (ArgumentOutOfRangeException)
     {

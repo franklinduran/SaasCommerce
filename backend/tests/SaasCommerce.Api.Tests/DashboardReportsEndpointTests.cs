@@ -362,15 +362,10 @@ public sealed class DashboardReportsEndpointTests
       .MaxAsync(CancellationToken.None) ?? 0;
     var invoice = Invoice.Issue(
       Guid.NewGuid(),
-      new BusinessId(businessId),
-      new BranchId(branchId),
       saleId,
-      null,
       seq + 1,
-      500,
-      0,
-      0,
-      500,
+      new InvoiceContext(new BusinessId(businessId), new BranchId(branchId), null),
+      new InvoiceFinancials(500, 0, 0, 500),
       DateTimeOffset.UtcNow);
 
     dbContext.Set<Invoice>().Add(invoice);

@@ -2,20 +2,19 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Domain;
 
+public sealed record SupplierContactInfo(string? Rnc, string? Phone, string? Email, string? Address);
+
 public sealed class Supplier
 {
   private Supplier()
   {
   }
 
-  public Supplier( // NOSONAR S107 — supplier requires all contact fields at creation
+  public Supplier(
     Guid id,
     BusinessId businessId,
     string name,
-    string? rnc,
-    string? phone,
-    string? email,
-    string? address,
+    SupplierContactInfo contact,
     DateTimeOffset createdAt)
   {
     if (id == Guid.Empty)
@@ -23,13 +22,13 @@ public sealed class Supplier
       throw new ArgumentException("Supplier id is required.", nameof(id));
     }
 
-    Validate(name, email);
+    Validate(name, contact?.Email);
 
     Id = id;
     BusinessId = businessId;
     IsActive = true;
     CreatedAt = createdAt;
-    ApplyDetails(name, rnc, phone, email, address);
+    ApplyDetails(name, contact?.Rnc, contact?.Phone, contact?.Email, contact?.Address);
   }
 
   public Guid Id { get; private set; }

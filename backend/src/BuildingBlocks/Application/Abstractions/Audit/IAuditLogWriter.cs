@@ -1,5 +1,3 @@
-using SaasCommerce.SharedKernel.Tenancy;
-
 namespace SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 
 /// <summary>
@@ -8,13 +6,5 @@ namespace SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 /// </summary>
 public interface IAuditLogWriter
 {
-  Task WriteAsync( // NOSONAR S107 — audit interface mirrors the immutable audit record fields
-    BusinessId businessId,
-    Guid? userId,
-    string action,
-    string entityName,
-    Guid? entityId,
-    string? description = null,
-    string? ipAddress = null,
-    CancellationToken cancellationToken = default);
+  Task WriteAsync(AuditEntry entry, CancellationToken cancellationToken = default);
 }

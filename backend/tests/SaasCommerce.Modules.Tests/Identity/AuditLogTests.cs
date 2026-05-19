@@ -1,4 +1,5 @@
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.Modules.Identity.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -12,18 +13,11 @@ public sealed class AuditLogTests
     var id = Guid.NewGuid();
     var businessId = new BusinessId(Guid.NewGuid());
     var userId = Guid.NewGuid();
+    var entityId = Guid.NewGuid();
     var now = DateTimeOffset.UtcNow;
+    var entry = new AuditEntry(businessId, userId, "sale.cancelled", "Sale", entityId, "Test description", "192.168.1.1");
 
-    var log = new AuditLog(
-      id,
-      businessId,
-      userId,
-      "sale.cancelled",
-      "Sale",
-      Guid.NewGuid(),
-      "Test description",
-      "192.168.1.1",
-      now);
+    var log = new AuditLog(id, entry, now);
 
     log.Id.Should().Be(id);
     log.BusinessId.Should().Be(businessId);
@@ -41,16 +35,10 @@ public sealed class AuditLogTests
   [InlineData("   ")]
   public void ConstructorShouldRejectInvalidAction(string? action)
   {
-    var act = () => new AuditLog(
-      Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      Guid.NewGuid(),
-      action!,
-      "Sale",
-      null,
-      null,
-      null,
-      DateTimeOffset.UtcNow);
+    var businessId = new BusinessId(Guid.NewGuid());
+    var entry = new AuditEntry(businessId, Guid.NewGuid(), action!, "Sale", null);
+
+    var act = () => new AuditLog(Guid.NewGuid(), entry, DateTimeOffset.UtcNow);
 
     act.Should().Throw<ArgumentException>();
   }
@@ -61,16 +49,10 @@ public sealed class AuditLogTests
   [InlineData("   ")]
   public void ConstructorShouldRejectInvalidEntityName(string? entityName)
   {
-    var act = () => new AuditLog(
-      Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      Guid.NewGuid(),
-      "test.action",
-      entityName!,
-      null,
-      null,
-      null,
-      DateTimeOffset.UtcNow);
+    var businessId = new BusinessId(Guid.NewGuid());
+    var entry = new AuditEntry(businessId, Guid.NewGuid(), "test.action", entityName!, null);
+
+    var act = () => new AuditLog(Guid.NewGuid(), entry, DateTimeOffset.UtcNow);
 
     act.Should().Throw<ArgumentException>();
   }
@@ -78,16 +60,10 @@ public sealed class AuditLogTests
   [Fact]
   public void OptionalFieldsCanBeNull()
   {
-    var log = new AuditLog(
-      Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      null,
-      "test.action",
-      "TestEntity",
-      null,
-      null,
-      null,
-      DateTimeOffset.UtcNow);
+    var businessId = new BusinessId(Guid.NewGuid());
+    var entry = new AuditEntry(businessId, null, "test.action", "TestEntity", null);
+
+    var log = new AuditLog(Guid.NewGuid(), entry, DateTimeOffset.UtcNow);
 
     log.UserId.Should().BeNull();
     log.EntityId.Should().BeNull();

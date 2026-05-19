@@ -2,6 +2,17 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Domain;
 
+public sealed record PurchaseCreationData(
+    Guid Id,
+    BusinessId BusinessId,
+    BranchId BranchId,
+    Guid SupplierId,
+    Guid UserId,
+    string? SupplierInvoiceNumber,
+    DateTimeOffset PurchaseDate,
+    string? Notes,
+    DateTimeOffset CreatedAt);
+
 public sealed class Purchase
 {
   private readonly List<PurchaseItem> items = [];
@@ -10,43 +21,36 @@ public sealed class Purchase
   {
   }
 
-  private Purchase( // NOSONAR S107 — purchase aggregate requires all identity/state fields at creation
-    Guid id,
-    BusinessId businessId,
-    BranchId branchId,
-    Guid supplierId,
-    Guid userId,
-    string? supplierInvoiceNumber,
-    DateTimeOffset purchaseDate,
-    string? notes,
-    DateTimeOffset createdAt)
+  private Purchase(PurchaseCreationData data)
   {
-    if (id == Guid.Empty)
+    ArgumentNullException.ThrowIfNull(data);
+
+    if (data.Id == Guid.Empty)
     {
-      throw new ArgumentException("Purchase id is required.", nameof(id));
+      throw new ArgumentException("Purchase id is required.", nameof(data));
     }
 
-    if (supplierId == Guid.Empty)
+    if (data.SupplierId == Guid.Empty)
     {
-      throw new ArgumentException("Supplier id is required.", nameof(supplierId));
+      throw new ArgumentException("Supplier id is required.", nameof(data));
     }
 
-    if (userId == Guid.Empty)
+    if (data.UserId == Guid.Empty)
     {
-      throw new ArgumentException("User id is required.", nameof(userId));
+      throw new ArgumentException("User id is required.", nameof(data));
     }
 
-    Id = id;
-    BusinessId = businessId;
-    BranchId = branchId;
-    SupplierId = supplierId;
-    UserId = userId;
+    Id = data.Id;
+    BusinessId = data.BusinessId;
+    BranchId = data.BranchId;
+    SupplierId = data.SupplierId;
+    UserId = data.UserId;
     Status = PurchaseStatus.Draft;
-    SupplierInvoiceNumber = NormalizeOptional(supplierInvoiceNumber);
-    PurchaseDate = purchaseDate;
-    Notes = NormalizeOptional(notes);
-    CreatedAt = createdAt;
-    UpdatedAt = createdAt;
+    SupplierInvoiceNumber = NormalizeOptional(data.SupplierInvoiceNumber);
+    PurchaseDate = data.PurchaseDate;
+    Notes = NormalizeOptional(data.Notes);
+    CreatedAt = data.CreatedAt;
+    UpdatedAt = data.CreatedAt;
   }
 
   public Guid Id { get; private set; }
@@ -79,17 +83,7 @@ public sealed class Purchase
 
   public IReadOnlyCollection<PurchaseItem> Items => items.AsReadOnly();
 
-  public static Purchase Create( // NOSONAR S107 — factory requires all identity and line-item data for aggregate creation
-    Guid id,
-    BusinessId businessId,
-    BranchId branchId,
-    Guid supplierId,
-    Guid userId,
-    IReadOnlyCollection<PurchaseLine> lines,
-    string? supplierInvoiceNumber,
-    DateTimeOffset purchaseDate,
-    string? notes,
-    DateTimeOffset createdAt)
+  public static Purchase Create(PurchaseCreationData data, IReadOnlyCollection<PurchaseLine> lines)
   {
     ArgumentNullException.ThrowIfNull(lines);
 
@@ -98,16 +92,7 @@ public sealed class Purchase
       throw new InvalidOperationException("A purchase requires at least one item.");
     }
 
-    var purchase = new Purchase(
-      id,
-      businessId,
-      branchId,
-      supplierId,
-      userId,
-      supplierInvoiceNumber,
-      purchaseDate,
-      notes,
-      createdAt);
+    var purchase = new Purchase(data);
 
     foreach (var line in lines)
     {

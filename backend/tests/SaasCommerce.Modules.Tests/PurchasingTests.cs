@@ -27,17 +27,19 @@ public sealed class PurchasingTests
   [Fact]
   public void Purchase_ShouldThrow_WhenHasNoItems()
   {
+    var clock = new FixedClock();
     var action = () => Purchase.Create(
-      Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      new BranchId(Guid.NewGuid()),
-      Guid.NewGuid(),
-      Guid.NewGuid(),
-      [],
-      null,
-      new FixedClock().UtcNow,
-      null,
-      new FixedClock().UtcNow);
+      new PurchaseCreationData(
+        Guid.NewGuid(),
+        new BusinessId(Guid.NewGuid()),
+        new BranchId(Guid.NewGuid()),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        null,
+        clock.UtcNow,
+        null,
+        clock.UtcNow),
+      []);
 
     action.Should().Throw<InvalidOperationException>();
   }
@@ -111,8 +113,8 @@ public sealed class PurchasingTests
     var businessId = new BusinessId(Guid.NewGuid());
     var otherBusinessId = new BusinessId(Guid.NewGuid());
     var clock = new FixedClock();
-    dbContext.Add(new Supplier(Guid.NewGuid(), businessId, "Proveedor A", null, null, null, null, clock.UtcNow));
-    dbContext.Add(new Supplier(Guid.NewGuid(), otherBusinessId, "Proveedor B", null, null, null, null, clock.UtcNow));
+    dbContext.Add(new Supplier(Guid.NewGuid(), businessId, "Proveedor A", new SupplierContactInfo(null, null, null, null), clock.UtcNow));
+    dbContext.Add(new Supplier(Guid.NewGuid(), otherBusinessId, "Proveedor B", new SupplierContactInfo(null, null, null, null), clock.UtcNow));
     await dbContext.SaveChangesAsync();
 
     var result = await new EfSupplierRepository(dbContext)
@@ -133,7 +135,7 @@ public sealed class PurchasingTests
     var businessId = new BusinessId(currentUser.BusinessId!.Value);
     var branchId = new BranchId(currentUser.BranchId!.Value);
     var productId = Guid.NewGuid();
-    var supplier = new Supplier(Guid.NewGuid(), businessId, "Distribuidora Norte", null, null, null, null, clock.UtcNow);
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Distribuidora Norte", new SupplierContactInfo(null, null, null, null), clock.UtcNow);
     var product = Product(productId, businessId, costPrice: 10);
     var stockItem = new StockItem(Guid.NewGuid(), businessId, branchId, productId, clock.UtcNow);
     stockItem.ApplyAdjustment(10, InventoryMovementReason.InitialStock, currentUser.UserId!.Value, false, clock.UtcNow);
@@ -179,18 +181,19 @@ public sealed class PurchasingTests
     var businessId = new BusinessId(currentUser.BusinessId!.Value);
     var branchId = new BranchId(currentUser.BranchId!.Value);
     var productId = Guid.NewGuid();
-    var supplier = new Supplier(Guid.NewGuid(), businessId, "Distribuidora Norte", null, null, null, null, clock.UtcNow);
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Distribuidora Norte", new SupplierContactInfo(null, null, null, null), clock.UtcNow);
     var purchase = Purchase.Create(
-      Guid.NewGuid(),
-      businessId,
-      branchId,
-      supplier.Id,
-      currentUser.UserId!.Value,
-      [new PurchaseLine(productId, 3, 12)],
-      null,
-      clock.UtcNow,
-      null,
-      clock.UtcNow);
+      new PurchaseCreationData(
+        Guid.NewGuid(),
+        businessId,
+        branchId,
+        supplier.Id,
+        currentUser.UserId!.Value,
+        null,
+        clock.UtcNow,
+        null,
+        clock.UtcNow),
+      [new PurchaseLine(productId, 3, 12)]);
     purchase.Receive(clock.UtcNow);
     dbContext.Add(supplier);
     dbContext.Add(Product(productId, businessId, costPrice: 10));
@@ -224,32 +227,37 @@ public sealed class PurchasingTests
   }
 
   private static Purchase CreatePurchase(IReadOnlyCollection<PurchaseLine> lines)
-    => Purchase.Create(
-      Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      new BranchId(Guid.NewGuid()),
-      Guid.NewGuid(),
-      Guid.NewGuid(),
-      lines,
-      null,
-      new FixedClock().UtcNow,
-      null,
-      new FixedClock().UtcNow);
+  {
+    var clock = new FixedClock();
+    return Purchase.Create(
+      new PurchaseCreationData(
+        Guid.NewGuid(),
+        new BusinessId(Guid.NewGuid()),
+        new BranchId(Guid.NewGuid()),
+        Guid.NewGuid(),
+        Guid.NewGuid(),
+        null,
+        clock.UtcNow,
+        null,
+        clock.UtcNow),
+      lines);
+  }
 
   private static CreatePurchaseHandler CreatePurchaseHandler(
     AppDbContext dbContext,
     ICurrentUserService currentUser,
     IOutboxWriter outbox)
     => new(
-      new EfPurchaseRepository(dbContext),
-      new EfSupplierRepository(dbContext),
-      new EfProductPurchaseReader(dbContext),
+      new PurchaseHandlerContext(
+        new EfPurchaseRepository(dbContext),
+        new EfSupplierRepository(dbContext),
+        new EfProductPurchaseReader(dbContext),
+        currentUser,
+        outbox,
+        new FixedClock(),
+        new EfUnitOfWork(dbContext)),
       CreateReceiptProcessor(dbContext, outbox),
-      currentUser,
-      outbox,
-      new FixedCorrelationIdProvider(),
-      new FixedClock(),
-      new EfUnitOfWork(dbContext));
+      new FixedCorrelationIdProvider());
 
   private static PurchaseReceiptProcessor CreateReceiptProcessor(
     AppDbContext dbContext,

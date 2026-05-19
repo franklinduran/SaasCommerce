@@ -2,6 +2,8 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Inventory.Domain;
 
+public sealed record InventoryMovementSource(Guid? SaleId = null, Guid? PurchaseId = null, string? Note = null);
+
 public sealed class StockItem
 {
   private StockItem()
@@ -36,15 +38,13 @@ public sealed class StockItem
 
   public DateTimeOffset? UpdatedAt { get; private set; }
 
-  public InventoryMovement ApplyAdjustment( // NOSONAR S107 — movement requires quantity, reason, user, and optional sale/purchase context
+  public InventoryMovement ApplyAdjustment(
     decimal quantity,
     InventoryMovementReason reason,
     Guid userId,
     bool allowNegativeStock,
     DateTimeOffset occurredAt,
-    Guid? saleId = null,
-    Guid? purchaseId = null,
-    string? note = null)
+    InventoryMovementSource? source = null)
   {
     if (quantity == 0)
     {
@@ -72,9 +72,9 @@ public sealed class StockItem
         newStock,
         quantity,
         reason,
-        saleId,
-        purchaseId,
-        note),
+        source?.SaleId,
+        source?.PurchaseId,
+        source?.Note),
       userId,
       occurredAt);
   }

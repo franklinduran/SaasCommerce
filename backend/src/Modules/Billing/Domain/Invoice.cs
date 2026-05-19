@@ -2,23 +2,22 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Billing.Domain;
 
+public sealed record InvoiceContext(BusinessId BusinessId, BranchId BranchId, Guid? CustomerId);
+
+public sealed record InvoiceFinancials(decimal Subtotal, decimal DiscountTotal, decimal TaxTotal, decimal Total);
+
 public sealed class Invoice
 {
   private Invoice()
   {
   }
 
-  private Invoice( // NOSONAR S107 — invoice requires all financial fields for integrity
+  private Invoice(
     Guid id,
-    BusinessId businessId,
-    BranchId branchId,
     Guid saleId,
-    Guid? customerId,
     int sequence,
-    decimal subtotal,
-    decimal discountTotal,
-    decimal taxTotal,
-    decimal total,
+    InvoiceContext context,
+    InvoiceFinancials financials,
     DateTimeOffset createdAt)
   {
     if (id == Guid.Empty)
@@ -36,22 +35,22 @@ public sealed class Invoice
       throw new ArgumentOutOfRangeException(nameof(sequence), "Invoice sequence must be greater than zero.");
     }
 
-    EnsureNonNegative(subtotal, nameof(subtotal));
-    EnsureNonNegative(discountTotal, nameof(discountTotal));
-    EnsureNonNegative(taxTotal, nameof(taxTotal));
-    EnsureNonNegative(total, nameof(total));
+    EnsureNonNegative(financials.Subtotal, nameof(financials.Subtotal));
+    EnsureNonNegative(financials.DiscountTotal, nameof(financials.DiscountTotal));
+    EnsureNonNegative(financials.TaxTotal, nameof(financials.TaxTotal));
+    EnsureNonNegative(financials.Total, nameof(financials.Total));
 
     Id = id;
-    BusinessId = businessId;
-    BranchId = branchId;
+    BusinessId = context.BusinessId;
+    BranchId = context.BranchId;
     SaleId = saleId;
-    CustomerId = customerId;
+    CustomerId = context.CustomerId;
     Sequence = sequence;
     InvoiceNumber = CreateInvoiceNumber(sequence);
-    Subtotal = subtotal;
-    DiscountTotal = discountTotal;
-    TaxTotal = taxTotal;
-    Total = total;
+    Subtotal = financials.Subtotal;
+    DiscountTotal = financials.DiscountTotal;
+    TaxTotal = financials.TaxTotal;
+    Total = financials.Total;
     Status = InvoiceStatus.Issued;
     CreatedAt = createdAt;
     UpdatedAt = createdAt;
@@ -87,30 +86,14 @@ public sealed class Invoice
 
   public DateTimeOffset? CancelledAt { get; private set; }
 
-  public static Invoice Issue( // NOSONAR S107 — factory mirrors constructor; all fields are required
+  public static Invoice Issue(
     Guid id,
-    BusinessId businessId,
-    BranchId branchId,
     Guid saleId,
-    Guid? customerId,
     int sequence,
-    decimal subtotal,
-    decimal discountTotal,
-    decimal taxTotal,
-    decimal total,
+    InvoiceContext context,
+    InvoiceFinancials financials,
     DateTimeOffset createdAt)
-    => new(
-      id,
-      businessId,
-      branchId,
-      saleId,
-      customerId,
-      sequence,
-      subtotal,
-      discountTotal,
-      taxTotal,
-      total,
-      createdAt);
+    => new(id, saleId, sequence, context, financials, createdAt);
 
   public void Cancel(DateTimeOffset cancelledAt)
   {
