@@ -73,7 +73,8 @@ $coverageExclusions = @(
   "frontend/**"
 ) -join ","
 $sourceExclusions = @(
-  "**/Migrations/**"
+  "**/Migrations/**",
+  ".claude/**"
 ) -join ","
 $sonarHostUrl = Assert-EnvironmentVariable "SONAR_HOST_URL"
 $sonarProjectKey = Assert-EnvironmentVariable "SONAR_PROJECT_KEY"
