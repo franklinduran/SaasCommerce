@@ -19,4 +19,8 @@
     <ProjectReference Include="..\Modules\SaasCommerce.Modules.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SaasCommerce.Api.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -226,6 +226,56 @@ public sealed class PurchasingTests
       .Be(1);
   }
 
+  [Fact]
+  public async Task CancelPurchase_ShouldCancelPurchase_WhenPurchaseIsPending()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var clock = new FixedClock();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var branchId = new BranchId(currentUser.BranchId!.Value);
+    var productId = Guid.NewGuid();
+    var supplier = new Supplier(
+      Guid.NewGuid(),
+      businessId,
+      "Proveedor Cancel",
+      new SupplierContactInfo(null, null, null, null),
+      clock.UtcNow);
+    var purchase = Purchase.Create(
+      new PurchaseCreationData(
+        Guid.NewGuid(),
+        businessId,
+        branchId,
+        supplier.Id,
+        currentUser.UserId!.Value,
+        null,
+        clock.UtcNow,
+        null,
+        clock.UtcNow),
+      [new PurchaseLine(productId, 2, 50)]);
+    dbContext.Add(supplier);
+    dbContext.Add(Product(productId, businessId, costPrice: 50));
+    dbContext.Add(purchase);
+    await dbContext.SaveChangesAsync();
+    var outbox = new RecordingOutboxWriter();
+    var handler = new CancelPurchaseHandler(
+      new PurchaseHandlerContext(
+        new EfPurchaseRepository(dbContext),
+        new EfSupplierRepository(dbContext),
+        new EfProductPurchaseReader(dbContext),
+        currentUser,
+        outbox,
+        clock,
+        new EfUnitOfWork(dbContext)),
+      new FixedCorrelationIdProvider());
+
+    var result = await handler.Handle(new CancelPurchaseCommand(purchase.Id));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Status.Should().Be("Cancelled");
+    outbox.Events.OfType<PurchaseCancelledEventV1>().Should().ContainSingle();
+  }
+
   private static Purchase CreatePurchase(IReadOnlyCollection<PurchaseLine> lines)
   {
     var clock = new FixedClock();

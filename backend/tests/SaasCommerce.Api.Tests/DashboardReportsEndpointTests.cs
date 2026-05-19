@@ -318,6 +318,64 @@ public sealed class DashboardReportsEndpointTests
     content.Should().Contain("Producto ID");
   }
 
+  [Fact]
+  public async Task SalesExport_ShouldReturnCsvContentType()
+  {
+    using var factory = CreateFactory();
+    var tenant = await RegisterBusinessAsync(factory, "export-sales");
+
+    var response = await tenant.Client.GetAsync("/api/reports/sales/export");
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    response.Content.Headers.ContentType?.MediaType.Should().Be("text/csv");
+  }
+
+  [Fact]
+  public async Task AccountsReceivableExport_ShouldRequireAuthentication()
+  {
+    using var factory = CreateFactory();
+    var client = factory.CreateClient();
+
+    var response = await client.GetAsync("/api/reports/accounts-receivable/export");
+
+    response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+  }
+
+  [Fact]
+  public async Task AccountsReceivableExport_ShouldReturnCsvContentType()
+  {
+    using var factory = CreateFactory();
+    var tenant = await RegisterBusinessAsync(factory, "export-ar");
+
+    var response = await tenant.Client.GetAsync("/api/reports/accounts-receivable/export");
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    response.Content.Headers.ContentType?.MediaType.Should().Be("text/csv");
+  }
+
+  [Fact]
+  public async Task PurchasesExport_ShouldRequireAuthentication()
+  {
+    using var factory = CreateFactory();
+    var client = factory.CreateClient();
+
+    var response = await client.GetAsync("/api/reports/purchases/export");
+
+    response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+  }
+
+  [Fact]
+  public async Task PurchasesExport_ShouldReturnCsvContentType()
+  {
+    using var factory = CreateFactory();
+    var tenant = await RegisterBusinessAsync(factory, "export-purch");
+
+    var response = await tenant.Client.GetAsync("/api/reports/purchases/export");
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    response.Content.Headers.ContentType?.MediaType.Should().Be("text/csv");
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   private static async Task<RegisteredTenant> RegisterBusinessAsync(

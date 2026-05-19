@@ -106,6 +106,120 @@ public sealed class BillingInvoiceTests
     scenario.Outbox.Events.Should().ContainSingle(@event => @event is InvoiceCancelledEventV1);
   }
 
+  // ── GetInvoiceByIdHandler ────────────────────────────────────────────────
+
+  [Fact]
+  public async Task GetInvoiceById_ShouldReturnInvoice_WhenExists()
+  {
+    var scenario = Scenario.Create();
+    var invoice = scenario.CreateInvoice();
+    scenario.Invoices.Items.Add(invoice);
+    var handler = new GetInvoiceByIdHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoiceByIdQuery(invoice.Id));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.InvoiceId.Should().Be(invoice.Id);
+  }
+
+  [Fact]
+  public async Task GetInvoiceById_ShouldFail_WhenNotFound()
+  {
+    var scenario = Scenario.Create();
+    var handler = new GetInvoiceByIdHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoiceByIdQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.InvoiceNotFound);
+  }
+
+  [Fact]
+  public async Task GetInvoiceById_ShouldFail_WhenIdIsEmpty()
+  {
+    var scenario = Scenario.Create();
+    var handler = new GetInvoiceByIdHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoiceByIdQuery(Guid.Empty));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.InvalidInvoice);
+  }
+
+  // ── GetInvoiceBySaleHandler ──────────────────────────────────────────────
+
+  [Fact]
+  public async Task GetInvoiceBySale_ShouldReturnInvoice_WhenExists()
+  {
+    var scenario = Scenario.Create();
+    var invoice = scenario.CreateInvoice();
+    scenario.Invoices.Items.Add(invoice);
+    var handler = new GetInvoiceBySaleHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoiceBySaleQuery(scenario.SaleId));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.SaleId.Should().Be(scenario.SaleId);
+  }
+
+  [Fact]
+  public async Task GetInvoiceBySale_ShouldFail_WhenNotFound()
+  {
+    var scenario = Scenario.Create();
+    var handler = new GetInvoiceBySaleHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoiceBySaleQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.InvoiceNotFound);
+  }
+
+  [Fact]
+  public async Task GetInvoiceBySale_ShouldFail_WhenSaleIdIsEmpty()
+  {
+    var scenario = Scenario.Create();
+    var handler = new GetInvoiceBySaleHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoiceBySaleQuery(Guid.Empty));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.InvalidInvoice);
+  }
+
+  // ── CancelInvoice edge cases ─────────────────────────────────────────────
+
+  [Fact]
+  public async Task CancelInvoice_ShouldFail_WhenInvoiceNotFound()
+  {
+    var scenario = Scenario.Create();
+    var handler = new CancelInvoiceHandler(
+      scenario.Invoices,
+      scenario.CurrentUser,
+      scenario.Outbox,
+      new TestCorrelationIdProvider(scenario.CorrelationId),
+      scenario.Clock,
+      scenario.UnitOfWork);
+
+    var result = await handler.Handle(new CancelInvoiceCommand(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(InvoiceErrors.InvoiceNotFound);
+  }
+
+  [Fact]
+  public async Task GetInvoices_ShouldReturnPaginatedResults()
+  {
+    var scenario = Scenario.Create();
+    scenario.Invoices.Items.Add(scenario.CreateInvoice());
+    var handler = new GetInvoicesHandler(scenario.Invoices, scenario.CurrentUser);
+
+    var result = await handler.Handle(new GetInvoicesQuery(null, null, null, null, 1, 10));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.TotalItems.Should().Be(1);
+    result.Value.Items.Should().ContainSingle();
+  }
+
   [Fact]
   public void InvoiceGeneratedEventV1_ShouldExposeRequiredContractFields()
   {

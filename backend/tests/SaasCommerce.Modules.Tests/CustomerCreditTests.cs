@@ -5,6 +5,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
@@ -154,6 +155,75 @@ public sealed class CustomerCreditTests
     scenario.Credits.Movements.Where(movement => movement.SaleId == scenario.SaleId).Should().ContainSingle();
   }
 
+  [Fact]
+  public async Task BlockCustomerCredit_ShouldBlockAccount_WhenCustomerExists()
+  {
+    var scenario = TestScenario.Create();
+    await scenario.Customers.AddAsync(scenario.CreateCustomer());
+    await scenario.Credits.AddAccountAsync(scenario.CreateAccount(creditLimit: 500));
+
+    var result = await scenario.CreateBlockCreditUseCase()
+      .ExecuteAsync(new BlockCustomerCreditCommand(scenario.CustomerId));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Status.Should().Be(CustomerCreditStatus.Blocked.ToString());
+    scenario.Realtime.Notifications.Should().ContainSingle();
+  }
+
+  [Fact]
+  public async Task BlockCustomerCredit_ShouldFail_WhenCustomerNotFound()
+  {
+    var scenario = TestScenario.Create();
+
+    var result = await scenario.CreateBlockCreditUseCase()
+      .ExecuteAsync(new BlockCustomerCreditCommand(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CustomerCreditErrors.CustomerNotFound);
+  }
+
+  [Fact]
+  public async Task BlockCustomerCredit_ShouldCreateAccountAndBlock_WhenNoAccountExists()
+  {
+    var scenario = TestScenario.Create();
+    await scenario.Customers.AddAsync(scenario.CreateCustomer());
+
+    var result = await scenario.CreateBlockCreditUseCase()
+      .ExecuteAsync(new BlockCustomerCreditCommand(scenario.CustomerId));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Status.Should().Be(CustomerCreditStatus.Blocked.ToString());
+  }
+
+  [Fact]
+  public async Task UnblockCustomerCredit_ShouldUnblockAccount_WhenAccountIsBlocked()
+  {
+    var scenario = TestScenario.Create();
+    await scenario.Customers.AddAsync(scenario.CreateCustomer());
+    var account = scenario.CreateAccount(creditLimit: 500);
+    account.Block(Now);
+    await scenario.Credits.AddAccountAsync(account);
+
+    var result = await scenario.CreateUnblockCreditUseCase()
+      .ExecuteAsync(new UnblockCustomerCreditCommand(scenario.CustomerId));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Status.Should().Be(CustomerCreditStatus.Active.ToString());
+    scenario.Realtime.Notifications.Should().ContainSingle();
+  }
+
+  [Fact]
+  public async Task UnblockCustomerCredit_ShouldFail_WhenCustomerNotFound()
+  {
+    var scenario = TestScenario.Create();
+
+    var result = await scenario.CreateUnblockCreditUseCase()
+      .ExecuteAsync(new UnblockCustomerCreditCommand(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CustomerCreditErrors.CustomerNotFound);
+  }
+
   private sealed class TestScenario
   {
     private TestScenario()
@@ -176,8 +246,15 @@ public sealed class CustomerCreditTests
     public FixedClock Clock { get; } = new();
     public NoopUnitOfWork UnitOfWork { get; } = new();
     public FixedCorrelationIdProvider Correlation { get; } = new();
+    public RecordingRealtimeNotifier Realtime { get; } = new();
 
     public static TestScenario Create() => new();
+
+    public BlockCustomerCreditUseCase CreateBlockCreditUseCase()
+      => new(Customers, Credits, CurrentUser, Realtime, Clock, UnitOfWork);
+
+    public UnblockCustomerCreditUseCase CreateUnblockCreditUseCase()
+      => new(Customers, Credits, CurrentUser, Realtime, Clock, UnitOfWork);
 
     public Customer CreateCustomer()
       => new(CustomerId, new BusinessId(BusinessId), "Cliente Fiado", "8095550000", null, Now);
@@ -350,6 +427,35 @@ public sealed class CustomerCreditTests
 
     public Task<IReadOnlyCollection<Sale>> ListAsync(BusinessId businessId, SaleSearchCriteria criteria, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Sale>>(sales.Values.Where(sale => sale.BusinessId == businessId).ToArray());
+  }
+
+  private sealed class RecordingRealtimeNotifier : IRealtimeNotifier
+  {
+    public List<object> Notifications { get; } = [];
+
+    public Task NotifyBusinessAsync(
+      Guid businessId,
+      string eventName,
+      object payload,
+      CancellationToken cancellationToken = default)
+    {
+      Notifications.Add(payload);
+      return Task.CompletedTask;
+    }
+
+    public Task NotifyBranchAsync(
+      Guid branchId,
+      string eventName,
+      object payload,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
+
+    public Task NotifyUserAsync(
+      Guid userId,
+      string eventName,
+      object payload,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
   }
 }
 

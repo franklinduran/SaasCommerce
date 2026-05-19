@@ -11,11 +11,14 @@ using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.Modules.Catalog.Contracts.Sales;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Application.Customers;
+using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Domain;
+using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Domain;
+using SaasCommerce.Modules.Sales.Contracts.Responses;
 using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Tests;
@@ -356,6 +359,24 @@ public sealed class CustomersSalesApiWorkflowTests
   }
 
   [Fact]
+  public async Task CancelSale_ShouldFail_WhenSaleNotFound()
+  {
+    var scenario = TestScenario.Create();
+    var useCase = new CancelSaleUseCase(
+      scenario.Sales,
+      scenario.CurrentUser,
+      scenario.Realtime,
+      new NoopAuditLogWriter(),
+      scenario.Clock,
+      scenario.UnitOfWork);
+
+    var result = await useCase.ExecuteAsync(new CancelSaleCommand(Guid.NewGuid(), "not found"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SalesErrors.SaleNotFound);
+  }
+
+  [Fact]
   public async Task CancelSale_ShouldFail_WhenSaleIsCompleted()
   {
     var scenario = TestScenario.Create();
@@ -374,6 +395,137 @@ public sealed class CustomersSalesApiWorkflowTests
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(SalesErrors.InvalidSaleState);
+  }
+
+  // ── Credit sale paths ───────────────────────────────────────────────────
+
+  [Fact]
+  public async Task CreateSale_CreditSale_ShouldFail_WhenNoCustomerId()
+  {
+    var scenario = TestScenario.Create();
+    scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, 100));
+    var creditRepo = new InMemoryCustomerCreditRepository();
+    var useCase = scenario.CreateCreditSaleUseCase(creditRepo);
+
+    // Credit payment method with no customer
+    var result = await useCase.ExecuteAsync(new CreateSaleCommand(
+      scenario.BranchId,
+      null,
+      "Credit",
+      [new CreateSaleItemCommand(scenario.ProductId, 1)]));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(SalesErrors.InvalidSale);
+  }
+
+  [Fact]
+  public async Task CreateSale_CreditSale_ShouldSucceed_WhenCustomerHasUnlimitedCredit()
+  {
+    var scenario = TestScenario.Create();
+    var customer = await scenario.AddCustomerAsync();
+    scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, 100));
+    var creditRepo = new InMemoryCustomerCreditRepository();
+    var useCase = scenario.CreateCreditSaleUseCase(creditRepo);
+
+    // Credit limit = 0 means unlimited
+    var result = await useCase.ExecuteAsync(new CreateSaleCommand(
+      scenario.BranchId,
+      customer.Id,
+      "Credit",
+      [new CreateSaleItemCommand(scenario.ProductId, 1)]));
+
+    result.IsSuccess.Should().BeTrue();
+    // A new credit account was auto-created
+    creditRepo.Accounts.Should().ContainSingle();
+  }
+
+  [Fact]
+  public async Task CreateSale_CreditSale_ShouldFail_WhenAccountIsBlocked()
+  {
+    var scenario = TestScenario.Create();
+    var customer = await scenario.AddCustomerAsync();
+    scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, 100));
+    var creditRepo = new InMemoryCustomerCreditRepository();
+
+    // Create a blocked account
+    var account = new CustomerCreditAccount(Guid.NewGuid(), new BusinessId(scenario.BusinessId), customer.Id, 1000, Now);
+    account.Block(Now);
+    creditRepo.Accounts.Add(account);
+
+    var useCase = scenario.CreateCreditSaleUseCase(creditRepo);
+
+    var result = await useCase.ExecuteAsync(new CreateSaleCommand(
+      scenario.BranchId,
+      customer.Id,
+      "Credit",
+      [new CreateSaleItemCommand(scenario.ProductId, 1)]));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CustomerCreditErrors.CreditAccountBlocked);
+  }
+
+  [Fact]
+  public async Task CreateSale_CreditSale_ShouldFail_WhenCreditLimitExceeded()
+  {
+    var scenario = TestScenario.Create();
+    var customer = await scenario.AddCustomerAsync();
+    scenario.ProductPolicies.Add(Policy(scenario.ProductId, scenario.BusinessId, 500));
+    var creditRepo = new InMemoryCustomerCreditRepository();
+
+    // Account with only 100 credit limit, sale total = 500
+    var account = new CustomerCreditAccount(Guid.NewGuid(), new BusinessId(scenario.BusinessId), customer.Id, 100, Now);
+    creditRepo.Accounts.Add(account);
+
+    var useCase = scenario.CreateCreditSaleUseCase(creditRepo);
+
+    var result = await useCase.ExecuteAsync(new CreateSaleCommand(
+      scenario.BranchId,
+      customer.Id,
+      "Credit",
+      [new CreateSaleItemCommand(scenario.ProductId, 1)]));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CustomerCreditErrors.CreditLimitExceeded);
+  }
+
+  // ── SaleCreatedEventV1 consumer overload ────────────────────────────────
+
+  [Fact]
+  public async Task HandleSaleCreatedEvent_ShouldReturnSuccess_WhenSaleAlreadyExists()
+  {
+    var scenario = TestScenario.Create();
+    var sale = scenario.CreateReceivedSale();
+    await scenario.Sales.AddAsync(sale);
+    var useCase = scenario.CreateSaleUseCase();
+    var saleEvent = new SaleCreatedEventV1(
+      Guid.NewGuid(), Guid.NewGuid(), sale.Id,
+      scenario.BusinessId, scenario.BranchId, scenario.UserId,
+      [new SaleItemV1(scenario.ProductId, 1, 125)],
+      125, "Cash", Now);
+
+    var result = await useCase.ExecuteAsync(saleEvent);
+
+    result.IsSuccess.Should().BeTrue();
+    // Sale was already there — no duplicate added
+    scenario.Sales.CountAll().Should().Be(1);
+  }
+
+  [Fact]
+  public async Task HandleSaleCreatedEvent_ShouldCreateAndProcessSale_WhenSaleIsNew()
+  {
+    var scenario = TestScenario.Create();
+    var useCase = scenario.CreateSaleUseCase();
+    var saleId = Guid.NewGuid();
+    var saleEvent = new SaleCreatedEventV1(
+      Guid.NewGuid(), Guid.NewGuid(), saleId,
+      scenario.BusinessId, scenario.BranchId, scenario.UserId,
+      [new SaleItemV1(scenario.ProductId, 1, 125)],
+      125, "Cash", Now);
+
+    var result = await useCase.ExecuteAsync(saleEvent);
+
+    result.IsSuccess.Should().BeTrue();
+    scenario.Sales.CountAll().Should().Be(1);
   }
 
   private static ProductSalesPolicy Policy(
@@ -445,6 +597,18 @@ public sealed class CustomersSalesApiWorkflowTests
           SaleEvents,
           Clock,
           UnitOfWork));
+
+    public CreateSaleUseCase CreateCreditSaleUseCase(ICustomerCreditRepository? creditRepo = null)
+      => new(
+        new SaleHandlerContext(
+          Sales,
+          Customers,
+          ProductPolicies,
+          CurrentUser,
+          SaleEvents,
+          Clock,
+          UnitOfWork),
+        creditRepo);
 
     public async Task<Customer> AddCustomerAsync()
     {
@@ -605,6 +769,8 @@ public sealed class CustomersSalesApiWorkflowTests
   {
     private readonly Dictionary<(Guid BusinessId, Guid SaleId), Sale> sales = [];
 
+    public int CountAll() => sales.Count;
+
     public Task<Sale?> GetAsync(
       BusinessId businessId,
       Guid saleId,
@@ -632,6 +798,71 @@ public sealed class CustomersSalesApiWorkflowTests
       CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Sale>>(
         sales.Values.Where(sale => sale.BusinessId == businessId).ToArray());
+  }
+
+  private sealed class InMemoryCustomerCreditRepository : ICustomerCreditRepository
+  {
+    public List<CustomerCreditAccount> Accounts { get; } = [];
+
+    public Task<CustomerCreditAccount?> GetAccountAsync(
+      BusinessId businessId,
+      Guid customerId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(
+        Accounts.FirstOrDefault(a => a.BusinessId == businessId && a.CustomerId == customerId));
+
+    public Task<IReadOnlyDictionary<Guid, CustomerCreditAccount>> ListAccountsAsync(
+      BusinessId businessId,
+      IReadOnlyCollection<Guid> customerIds,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyDictionary<Guid, CustomerCreditAccount>>(
+        Accounts
+          .Where(a => a.BusinessId == businessId && customerIds.Contains(a.CustomerId))
+          .ToDictionary(a => a.CustomerId));
+
+    public Task AddAccountAsync(
+      CustomerCreditAccount account,
+      CancellationToken cancellationToken = default)
+    {
+      Accounts.Add(account);
+      return Task.CompletedTask;
+    }
+
+    public Task AddMovementAsync(
+      CustomerCreditMovement movement,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
+
+    public Task AddPaymentAsync(
+      CustomerPayment payment,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
+
+    public Task<bool> HasDebitForSaleAsync(
+      BusinessId businessId,
+      Guid saleId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(false);
+
+    public Task<bool> HasPaymentAsync(
+      BusinessId businessId,
+      Guid paymentId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(false);
+
+    public Task<int> CountMovementsAsync(
+      BusinessId businessId,
+      Guid customerId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(0);
+
+    public Task<IReadOnlyCollection<CustomerCreditMovement>> ListMovementsAsync(
+      BusinessId businessId,
+      Guid customerId,
+      int page,
+      int pageSize,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<CustomerCreditMovement>>([]);
   }
 }
 
