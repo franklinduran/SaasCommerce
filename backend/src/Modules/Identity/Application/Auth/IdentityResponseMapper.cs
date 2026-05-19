@@ -15,6 +15,7 @@ internal static class IdentityResponseMapper
       user.DefaultBranchId?.Value,
       user.FullName,
       user.Email,
-      user.Roles.Select(role => role.Name).Order(StringComparer.Ordinal).ToArray());
+      user.Roles.Select(role => role.Name).Order(StringComparer.Ordinal).ToArray(),
+      user.MustChangePassword);
   }
 }

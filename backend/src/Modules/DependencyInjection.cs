@@ -160,6 +160,11 @@ public static class ModulesServiceCollectionExtensions
     // Identity — user management
     services.AddScoped<IUserManagementRepository, EfUserManagementRepository>();
     services.AddScoped<GetUsersHandler>();
+    services.AddScoped<GetUserByIdHandler>();
+    services.AddScoped<CreateUserHandler>();
+    services.AddScoped<UpdateUserHandler>();
+    services.AddScoped<ActivateUserHandler>();
+    services.AddScoped<ResetUserPasswordHandler>();
     services.AddScoped<UpdateUserRoleHandler>();
     services.AddScoped<DisableUserHandler>();
 

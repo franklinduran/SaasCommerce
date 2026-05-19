@@ -90,6 +90,16 @@ const SettingsPage = lazy(() =>
   })),
 )
 const UsersPage = lazy(() => import('@/modules/users/UsersPage'))
+const CreateUserPage = lazy(() =>
+  import('@/modules/users/pages/CreateUserPage').then((module) => ({
+    default: module.CreateUserPage,
+  })),
+)
+const UserDetailPage = lazy(() =>
+  import('@/modules/users/pages/UserDetailPage').then((module) => ({
+    default: module.UserDetailPage,
+  })),
+)
 const AuditLogsPage = lazy(() => import('@/modules/audit/AuditLogsPage'))
 const ForbiddenPage = lazy(() =>
   import('@/shared/components/ForbiddenPage').then((module) => ({
@@ -174,6 +184,16 @@ export function SettingsRoute() {
 }
 
 export function UsersRoute() {
+  const { pathname } = window.location
+
+  if (pathname === '/users/new') {
+    return <CreateUserPage />
+  }
+
+  if (/^\/users\/[a-f0-9-]+$/.exec(pathname)) {
+    return <UserDetailPage />
+  }
+
   return <UsersPage />
 }
 

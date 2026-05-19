@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { Button } from '@/shared/components/ui/button'
@@ -85,6 +86,13 @@ export function AppShell() {
   const navigate = useNavigate()
   const pageTitle = getPageTitle(location.pathname)
   const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
+
+  // Redirigir a /change-password si el usuario debe cambiar contraseña
+  useEffect(() => {
+    if (session?.user.mustChangePassword && location.pathname !== '/change-password') {
+      navigate('/change-password', { replace: true })
+    }
+  }, [session?.user.mustChangePassword, navigate, location.pathname])
 
   function handleLogout() {
     clearSession()

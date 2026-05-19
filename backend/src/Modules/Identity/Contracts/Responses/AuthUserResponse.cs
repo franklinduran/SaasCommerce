@@ -6,4 +6,5 @@ public sealed record AuthUserResponse(
   Guid? BranchId,
   string FullName,
   string Email,
-  IReadOnlyCollection<string> Roles);
+  IReadOnlyCollection<string> Roles,
+  bool MustChangePassword);

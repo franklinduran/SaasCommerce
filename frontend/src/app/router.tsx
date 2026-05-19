@@ -61,6 +61,8 @@ export const router = createBrowserRouter([
       { path: 'invoices/:invoiceId', element: withPageLoading(<InvoiceDetailRoute />) },
       { path: 'reports', element: withPageLoading(<ReportsRoute />) },
       { path: 'users', element: withPageLoading(<UsersRoute />) },
+      { path: 'users/new', element: withPageLoading(<UsersRoute />) },
+      { path: 'users/:userId', element: withPageLoading(<UsersRoute />) },
       { path: 'audit-logs', element: withPageLoading(<AuditLogsRoute />) },
       { path: 'forbidden', element: withPageLoading(<ForbiddenRoute />) },
       { path: 'settings', element: withPageLoading(<SettingsRoute />) },

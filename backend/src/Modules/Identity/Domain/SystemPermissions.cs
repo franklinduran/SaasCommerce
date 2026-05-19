@@ -51,9 +51,11 @@ public static class SystemPermissions
 
   // Users
   public const string UsersView = "users.view";
-  public const string UsersInvite = "users.invite";
+  public const string UsersCreate = "users.create";
+  public const string UsersUpdate = "users.update";
   public const string UsersUpdateRole = "users.updateRole";
   public const string UsersDisable = "users.disable";
+  public const string UsersResetPassword = "users.resetPassword";
 
   // Audit
   public const string AuditView = "audit.view";

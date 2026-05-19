@@ -19,4 +19,18 @@ public interface IUserManagementRepository
     Guid excludeUserId,
     BusinessId businessId,
     CancellationToken cancellationToken = default);
+
+  Task<bool> EmailExistsInBusinessAsync(
+    string email,
+    BusinessId businessId,
+    CancellationToken cancellationToken = default);
+
+  Task CreateUserAsync(
+    User user,
+    Role role,
+    CancellationToken cancellationToken = default);
+
+  Task<User?> GetByIdAsync(
+    Guid userId,
+    CancellationToken cancellationToken = default);
 }

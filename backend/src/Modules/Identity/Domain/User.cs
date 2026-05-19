@@ -90,17 +90,32 @@ public sealed class User
     UpdatedAt = updatedAt;
   }
 
+  public bool MustChangePassword { get; private set; }
+
   public void ChangePasswordHash(string passwordHash, DateTimeOffset updatedAt)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
 
     PasswordHash = passwordHash;
+    MustChangePassword = false;
     UpdatedAt = updatedAt;
   }
 
   public void Deactivate(DateTimeOffset updatedAt)
   {
     IsActive = false;
+    UpdatedAt = updatedAt;
+  }
+
+  public void Activate(DateTimeOffset updatedAt)
+  {
+    IsActive = true;
+    UpdatedAt = updatedAt;
+  }
+
+  public void ForcePasswordChange(DateTimeOffset updatedAt)
+  {
+    MustChangePassword = true;
     UpdatedAt = updatedAt;
   }
 

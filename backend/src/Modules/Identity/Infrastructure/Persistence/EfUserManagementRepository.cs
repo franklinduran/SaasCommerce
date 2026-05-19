@@ -57,4 +57,38 @@ public sealed class EfUserManagementRepository(AppDbContext dbContext) : IUserMa
         u.IsActive &&
         u.Roles.Any(r => r.Name == SystemRoles.Admin || r.Name == SystemRoles.Owner))
       .AnyAsync(cancellationToken);
+
+  public Task<bool> EmailExistsInBusinessAsync(
+    string email,
+    BusinessId businessId,
+    CancellationToken cancellationToken = default)
+  {
+    var normalizedEmail = email.Trim().ToLowerInvariant();
+    return dbContext.Set<User>()
+      .Where(u => u.BusinessId == businessId && u.Email == normalizedEmail)
+      .AnyAsync(cancellationToken);
+  }
+
+  public async Task CreateUserAsync(
+    User user,
+    Role role,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(user);
+    ArgumentNullException.ThrowIfNull(role);
+
+    user.AddRole(role);
+    dbContext.Set<User>().Add(user);
+
+    await Task.CompletedTask;
+  }
+
+  public Task<User?> GetByIdAsync(
+    Guid userId,
+    CancellationToken cancellationToken = default)
+    => dbContext.Set<User>()
+      .Include(u => u.Roles)
+      .SingleOrDefaultAsync(
+        u => u.Id == userId,
+        cancellationToken);
 }

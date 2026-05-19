@@ -45,9 +45,11 @@ public static class RolePermissionMatrix
     SystemPermissions.ReportsExport,
 
     SystemPermissions.UsersView,
-    SystemPermissions.UsersInvite,
+    SystemPermissions.UsersCreate,
+    SystemPermissions.UsersUpdate,
     SystemPermissions.UsersUpdateRole,
     SystemPermissions.UsersDisable,
+    SystemPermissions.UsersResetPassword,
 
     SystemPermissions.AuditView
   };

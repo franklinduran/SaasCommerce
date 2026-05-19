@@ -1,7 +1,9 @@
 #pragma warning disable CA1707
 
 using FluentAssertions;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using System.Security.Claims;
@@ -32,7 +34,7 @@ public sealed class IdentityHandlerTests
     var user = MakeUser(businessId);
     var repo = new StubUserRepo(user);
     var currentUser = MakeCurrentUser(businessId.Value, Guid.NewGuid());
-    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new DisableUserCommand(user.Id));
 
@@ -48,7 +50,7 @@ public sealed class IdentityHandlerTests
     var user = MakeUser(businessId, userId);
     var repo = new StubUserRepo(user);
     var currentUser = MakeCurrentUser(businessId.Value, userId);
-    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new DisableUserCommand(userId));
 
@@ -62,7 +64,7 @@ public sealed class IdentityHandlerTests
     var businessId = new BusinessId(Guid.NewGuid());
     var repo = new StubUserRepo(null);
     var currentUser = MakeCurrentUser(businessId.Value, Guid.NewGuid());
-    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new DisableUserCommand(Guid.NewGuid()));
 
@@ -75,7 +77,7 @@ public sealed class IdentityHandlerTests
   {
     var repo = new StubUserRepo(null);
     var currentUser = new UnauthenticatedUser();
-    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new DisableUserHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new DisableUserCommand(Guid.NewGuid()));
 
@@ -92,7 +94,7 @@ public sealed class IdentityHandlerTests
     var user = MakeUser(businessId);
     var repo = new StubUserRepo(user);
     var currentUser = MakeCurrentUser(businessId.Value, Guid.NewGuid());
-    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new UpdateUserRoleCommand(user.Id, SystemRoles.Cashier));
 
@@ -106,7 +108,7 @@ public sealed class IdentityHandlerTests
     var user = MakeUser(businessId);
     var repo = new StubUserRepo(user);
     var currentUser = MakeCurrentUser(businessId.Value, Guid.NewGuid());
-    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new UpdateUserRoleCommand(user.Id, "SuperAdmin"));
 
@@ -120,7 +122,7 @@ public sealed class IdentityHandlerTests
     var businessId = new BusinessId(Guid.NewGuid());
     var repo = new StubUserRepo(null);
     var currentUser = MakeCurrentUser(businessId.Value, Guid.NewGuid());
-    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new UpdateUserRoleCommand(Guid.NewGuid(), SystemRoles.Cashier));
 
@@ -135,7 +137,7 @@ public sealed class IdentityHandlerTests
     var user = MakeUser(businessId, role: SystemRoles.Owner);
     var repo = new StubUserRepo(user, hasOtherAdmin: false);
     var currentUser = MakeCurrentUser(businessId.Value, Guid.NewGuid());
-    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork());
+    var handler = new UpdateUserRoleHandler(repo, currentUser, new FixedClock(), new NoopUnitOfWork(), new NoopAuditLogWriter(), new NoopEventBus());
 
     var result = await handler.Handle(new UpdateUserRoleCommand(user.Id, SystemRoles.Cashier));
 
@@ -349,6 +351,38 @@ public sealed class IdentityHandlerTests
       BusinessId businessId,
       CancellationToken cancellationToken = default)
       => Task.FromResult(hasOtherAdmin);
+
+    public Task<bool> EmailExistsInBusinessAsync(
+      string email,
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(false);
+
+    public Task CreateUserAsync(
+      User user,
+      Role role,
+      CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
+
+    public Task<User?> GetByIdAsync(
+      Guid userId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(user?.Id == userId ? user : null);
+  }
+
+  private sealed class NoopAuditLogWriter : IAuditLogWriter
+  {
+    public Task WriteAsync(AuditEntry entry, CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
+  }
+
+  private sealed class NoopEventBus : IEventBus
+  {
+    public Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default)
+      where TMessage : class => Task.CompletedTask;
+
+    public Task PublishAsync(object message, Type messageType, CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
   }
 
   private sealed class StubAuditLogRepo : IAuditLogReadRepository

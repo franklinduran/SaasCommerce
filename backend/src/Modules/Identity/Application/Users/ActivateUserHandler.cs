@@ -10,9 +10,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Identity.Application.Users;
 
-public sealed record DisableUserCommand(Guid TargetUserId);
-
-public sealed class DisableUserHandler(
+public sealed class ActivateUserHandler(
   IUserManagementRepository repository,
   ICurrentUserService currentUser,
   IClock clock,
@@ -21,7 +19,7 @@ public sealed class DisableUserHandler(
   IEventBus eventBus)
 {
   public async Task<Result> Handle(
-    DisableUserCommand command,
+    ActivateUserCommand command,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(command);
@@ -29,11 +27,6 @@ public sealed class DisableUserHandler(
     if (!currentUser.IsAuthenticated || currentUser.BusinessId is not { } businessId)
     {
       return Result.Failure(IdentityPermissionsErrors.UserContextRequired);
-    }
-
-    if (currentUser.UserId == command.TargetUserId)
-    {
-      return Result.Failure(IdentityPermissionsErrors.CannotDisableSelf);
     }
 
     var businessIdVo = new BusinessId(businessId);
@@ -47,8 +40,13 @@ public sealed class DisableUserHandler(
       return Result.Failure(IdentityPermissionsErrors.UserNotFound);
     }
 
+    if (user.IsActive)
+    {
+      return Result.Failure(IdentityPermissionsErrors.UserAlreadyActive);
+    }
+
     var now = clock.UtcNow;
-    user.Deactivate(now);
+    user.Activate(now);
 
     await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -56,15 +54,15 @@ public sealed class DisableUserHandler(
     var auditEntry = new AuditEntry(
       businessIdVo,
       currentUser.UserId,
-      "user.deactivated",
+      "user.activated",
       "User",
       command.TargetUserId,
-      "User deactivated");
+      "User activated");
 
     await auditLogWriter.WriteAsync(auditEntry, cancellationToken);
 
     // Publish integration event
-    var integrationEvent = new UserDeactivatedIntegrationEventV1(
+    var integrationEvent = new UserActivatedIntegrationEventV1(
       Guid.NewGuid(),
       Guid.NewGuid(),
       businessId,

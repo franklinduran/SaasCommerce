@@ -87,8 +87,15 @@ internal static class ApiHelpers
         "purchases.supplier_not_found" => ApiErrorCodes.NotFound,
       "identity.cannot_disable_self" or
         "identity.cannot_remove_last_owner" or
-        "identity.invalid_role" => ApiErrorCodes.ValidationError,
-      "account.duplicate_email" or
+        "identity.invalid_role" or
+        "identity.password_too_short" or
+        "identity.invalid_email" or
+        "identity.cannot_create_owner_role" or
+        "identity.cannot_reset_own_password" or
+        "identity.user_already_active" or
+        "identity.user_already_inactive" => ApiErrorCodes.ValidationError,
+      "identity.duplicate_email" or
+        "account.duplicate_email" or
         "account.duplicate_identification" or
         "tenancy.duplicate_identification" or
         "catalog.duplicate_category" => ApiErrorCodes.Conflict,
