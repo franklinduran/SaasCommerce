@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SyntheticEvent } from 'react'
 import { X } from 'lucide-react'
 import { registerCustomerPaymentSchema } from '@/modules/customers/schemas/customerSchemas'
 import { Button } from '@/shared/components/ui/button'
@@ -25,7 +25,7 @@ export function RegisterCustomerPaymentDialog({
     return null
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     const parsedAmount = Number(amount)
     const validation = registerCustomerPaymentSchema.safeParse({

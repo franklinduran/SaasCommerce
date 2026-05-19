@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SyntheticEvent } from 'react'
 import { Save } from 'lucide-react'
 import { customerSchema } from '@/modules/customers/schemas/customerSchemas'
 import type { Customer, CustomerUpsertRequest } from '@/modules/customers/types'
@@ -23,7 +23,7 @@ export function CustomerForm({
   const [email, setEmail] = useState(customer?.email ?? '')
   const [error, setError] = useState<string | null>(null)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     const payload = {
       email: email.trim() || null,

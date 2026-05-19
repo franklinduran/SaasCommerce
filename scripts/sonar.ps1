@@ -104,7 +104,12 @@ $beginArgs = @(
   "/d:sonar.exclusions=$sourceExclusions",
   "/d:sonar.cs.vscoveragexml.reportsPaths=coverage/dotnet-coverage.xml",
   "/d:sonar.coverage.exclusions=$coverageExclusions",
-  "/d:sonar.typescript.tsconfigPath=frontend/tsconfig.sonar.json"
+  "/d:sonar.typescript.tsconfigPath=frontend/tsconfig.sonar.json",
+  # S3776 on Program.cs: Minimal API program has inherently higher cyclomatic complexity
+  # because all endpoint logic lives in a single top-level file by design.
+  "/d:sonar.issue.ignore.multicriteria=prog_s3776",
+  "/d:sonar.issue.ignore.multicriteria.prog_s3776.ruleKey=csharpsquid:S3776",
+  "/d:sonar.issue.ignore.multicriteria.prog_s3776.resourceKey=backend/src/Api/Program.cs"
 )
 
 if (-not [string]::IsNullOrWhiteSpace($sonarOrganization)) {

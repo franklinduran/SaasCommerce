@@ -11,7 +11,7 @@ import { HttpClientError } from '@/shared/services/httpClient'
 
 const supplierSchema = z.object({
   address: z.string().optional(),
-  email: z.string().email('Correo invalido').or(z.literal('')).optional(),
+  email: z.string().email({ error: 'Correo invalido' }).or(z.literal('')).optional(),
   isActive: z.boolean(),
   name: z.string().min(2, 'Nombre requerido'),
   phone: z.string().optional(),
