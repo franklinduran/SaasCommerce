@@ -20,8 +20,28 @@ internal static class AuditEndpointExtensions
         CancellationToken cancellationToken) =>
       {
         var result = await handler.Handle(
-          new GetAuditLogsQuery(request.DateFrom, request.UserId, request.Action, request.EntityName, request.Page ?? 1, request.PageSize ?? 25),
+          new GetAuditLogsQuery(request.DateFrom, request.DateTo, request.UserId, request.Action, request.EntityName, request.Page ?? 1, request.PageSize ?? 25),
           cancellationToken);
+
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
+      })
+      .RequireAuthorization($"Permission:{SystemPermissions.AuditView}")
+      .WithTags(AuditTag);
+
+    app.MapGet(
+      "/api/audit-logs/{id:guid}",
+      async (
+        Guid id,
+        GetAuditLogByIdHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(new GetAuditLogByIdQuery(id), cancellationToken);
+
+        if (result.IsFailure && result.Error == SaasCommerce.Modules.Identity.Application.Permissions.IdentityPermissionsErrors.UserNotFound)
+        {
+          return Results.NotFound();
+        }
 
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })

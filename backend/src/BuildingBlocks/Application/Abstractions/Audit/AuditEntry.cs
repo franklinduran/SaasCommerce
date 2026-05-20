@@ -13,4 +13,7 @@ public sealed record AuditEntry(
     string EntityName,
     Guid? EntityId,
     string? Description = null,
-    string? IpAddress = null);
+    string? IpAddress = null,
+    Guid? CorrelationId = null,
+    string? UserAgent = null,
+    string? MetadataJson = null);

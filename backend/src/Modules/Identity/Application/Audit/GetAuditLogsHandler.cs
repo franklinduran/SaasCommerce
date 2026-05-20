@@ -8,6 +8,7 @@ namespace SaasCommerce.Modules.Identity.Application.Audit;
 
 public sealed record GetAuditLogsQuery(
   DateTimeOffset? DateFrom,
+  DateTimeOffset? DateTo,
   Guid? UserId,
   string? Action,
   string? EntityName,
@@ -34,7 +35,7 @@ public sealed class GetAuditLogsHandler(
 
     var response = await repository.GetAuditLogsAsync(
       new BusinessId(businessId),
-      new AuditLogCriteria(query.DateFrom, query.UserId, query.Action, query.EntityName, page, pageSize),
+      new AuditLogCriteria(query.DateFrom, query.DateTo, query.UserId, query.Action, query.EntityName, page, pageSize),
       cancellationToken);
 
     return Result.Success(response);

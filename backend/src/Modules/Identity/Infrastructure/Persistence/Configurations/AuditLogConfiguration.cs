@@ -37,6 +37,16 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
       .HasMaxLength(45)
       .IsRequired(false);
 
+    builder.Property(log => log.CorrelationId).IsRequired(false);
+
+    builder.Property(log => log.UserAgent)
+      .HasMaxLength(512)
+      .IsRequired(false);
+
+    builder.Property(log => log.MetadataJson)
+      .HasMaxLength(2000)
+      .IsRequired(false);
+
     builder.Property(log => log.CreatedAt).IsRequired();
 
     builder.HasIndex(log => log.BusinessId).HasDatabaseName("ix_audit_logs_business_id");
@@ -44,5 +54,7 @@ public sealed class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
       .HasDatabaseName("ix_audit_logs_business_id_created_at");
     builder.HasIndex(log => new { log.BusinessId, log.UserId })
       .HasDatabaseName("ix_audit_logs_business_id_user_id");
+    builder.HasIndex(log => new { log.BusinessId, log.CorrelationId })
+      .HasDatabaseName("ix_audit_logs_business_id_correlation_id");
   }
 }

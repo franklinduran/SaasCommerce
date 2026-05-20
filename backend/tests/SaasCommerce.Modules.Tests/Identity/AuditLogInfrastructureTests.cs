@@ -62,7 +62,7 @@ public sealed class AuditLogInfrastructureTests
     await SeedAuditLogAsync(dbContext, otherBusinessId, clock, "user.created", "User");
 
     var repo = new EfAuditLogReadRepository(dbContext);
-    var result = await repo.GetAuditLogsAsync(businessId, new AuditLogCriteria(null, null, null, null, 1, 50));
+    var result = await repo.GetAuditLogsAsync(businessId, new AuditLogCriteria(null, null, null, null, null, 1, 50));
 
     result.Items.Should().ContainSingle();
     result.TotalItems.Should().Be(1);
@@ -82,7 +82,7 @@ public sealed class AuditLogInfrastructureTests
     var repo = new EfAuditLogReadRepository(dbContext);
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(null, null, "sale.cancelled", null, 1, 50));
+      new AuditLogCriteria(null, null, null, "sale.cancelled", null, 1, 50));
 
     result.Items.Should().ContainSingle();
     result.Items.First().Action.Should().Be("sale.cancelled");
@@ -101,7 +101,7 @@ public sealed class AuditLogInfrastructureTests
     var repo = new EfAuditLogReadRepository(dbContext);
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(null, null, null, "Sale", 1, 50));
+      new AuditLogCriteria(null, null, null, null, "Sale", 1, 50));
 
     result.Items.Should().ContainSingle();
     result.Items.First().EntityName.Should().Be("Sale");
@@ -121,7 +121,7 @@ public sealed class AuditLogInfrastructureTests
     var repo = new EfAuditLogReadRepository(dbContext);
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(null, userId, null, null, 1, 50));
+      new AuditLogCriteria(null, null, userId, null, null, 1, 50));
 
     result.Items.Should().ContainSingle();
     result.Items.First().UserId.Should().Be(userId);
@@ -146,7 +146,7 @@ public sealed class AuditLogInfrastructureTests
     var repo = new EfAuditLogReadRepository(dbContext);
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(dateFrom, null, null, null, 1, 50));
+      new AuditLogCriteria(dateFrom, null, null, null, null, 1, 50));
 
     result.Items.Should().ContainSingle();
     result.Items.First().Action.Should().Be("new.action");
@@ -174,7 +174,7 @@ public sealed class AuditLogInfrastructureTests
     var repo = new EfAuditLogReadRepository(dbContext);
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(null, null, null, null, 1, 50));
+      new AuditLogCriteria(null, null, null, null, null, 1, 50));
 
     result.Items.Should().ContainSingle();
     result.Items.First().UserFullName.Should().Be("Juan Perez");
@@ -197,7 +197,7 @@ public sealed class AuditLogInfrastructureTests
     // Page 1 of 2 (pageSize=3, totalItems=5)
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(null, null, null, null, 1, 3));
+      new AuditLogCriteria(null, null, null, null, null, 1, 3));
 
     result.TotalItems.Should().Be(5);
     result.TotalPages.Should().Be(2);
@@ -215,7 +215,7 @@ public sealed class AuditLogInfrastructureTests
     var repo = new EfAuditLogReadRepository(dbContext);
     var result = await repo.GetAuditLogsAsync(
       businessId,
-      new AuditLogCriteria(null, null, null, null, 1, 50));
+      new AuditLogCriteria(null, null, null, null, null, 1, 50));
 
     result.Items.Should().BeEmpty();
     result.TotalItems.Should().Be(0);

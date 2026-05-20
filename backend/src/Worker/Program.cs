@@ -42,6 +42,12 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InventoryAdjustedConsumer>();
     massTransit.AddConsumer<InventoryDeductedConsumer>();
     massTransit.AddConsumer<LowStockDetectedConsumer>();
+    massTransit.AddConsumer<SaleCompletedAuditConsumer>();
+    massTransit.AddConsumer<SaleFailedAuditConsumer>();
+    massTransit.AddConsumer<PaymentRegisteredAuditConsumer>();
+    massTransit.AddConsumer<InvoiceGeneratedAuditConsumer>();
+    massTransit.AddConsumer<PurchaseReceivedAuditConsumer>();
+    massTransit.AddConsumer<InventoryAdjustedAuditConsumer>();
     massTransit.AddSagaStateMachine<SaleStateMachine, SaleSagaState>()
       .EntityFrameworkRepository(repository =>
       {

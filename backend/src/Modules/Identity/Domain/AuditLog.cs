@@ -27,6 +27,9 @@ public sealed class AuditLog
     EntityId = entry.EntityId;
     Description = entry.Description;
     IpAddress = entry.IpAddress;
+    CorrelationId = entry.CorrelationId;
+    UserAgent = entry.UserAgent;
+    MetadataJson = entry.MetadataJson;
     CreatedAt = createdAt;
   }
 
@@ -47,6 +50,12 @@ public sealed class AuditLog
   public string? Description { get; private set; }
 
   public string? IpAddress { get; private set; }
+
+  public Guid? CorrelationId { get; private set; }
+
+  public string? UserAgent { get; private set; }
+
+  public string? MetadataJson { get; private set; }
 
   public DateTimeOffset CreatedAt { get; private set; }
 }

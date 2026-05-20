@@ -156,6 +156,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IAuditLogWriter, EfAuditLogWriter>();
     services.AddScoped<IAuditLogReadRepository, EfAuditLogReadRepository>();
     services.AddScoped<GetAuditLogsHandler>();
+    services.AddScoped<GetAuditLogByIdHandler>();
 
     // Identity — user management
     services.AddScoped<IUserManagementRepository, EfUserManagementRepository>();

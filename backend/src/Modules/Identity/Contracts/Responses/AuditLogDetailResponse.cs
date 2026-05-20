@@ -1,15 +1,6 @@
 namespace SaasCommerce.Modules.Identity.Contracts.Responses;
 
-public sealed record AuditLogListResponse(
-  IReadOnlyCollection<AuditLogItemResponse> Items,
-  int Page,
-  int PageSize,
-  int TotalItems,
-  int TotalPages,
-  bool HasPreviousPage,
-  bool HasNextPage);
-
-public sealed record AuditLogItemResponse(
+public sealed record AuditLogDetailResponse(
   Guid AuditLogId,
   Guid? UserId,
   string? UserFullName,
@@ -18,4 +9,7 @@ public sealed record AuditLogItemResponse(
   Guid? EntityId,
   string? Description,
   string? IpAddress,
+  string? UserAgent,
+  Guid? CorrelationId,
+  string? MetadataJson,
   DateTimeOffset CreatedAt);

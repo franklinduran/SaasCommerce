@@ -188,7 +188,7 @@ public sealed class IdentityHandlerTests
     var repo = new StubAuditLogRepo();
     var handler = new GetAuditLogsHandler(repo, currentUser);
 
-    var result = await handler.Handle(new GetAuditLogsQuery(null, null, null, null, 1, 20));
+    var result = await handler.Handle(new GetAuditLogsQuery(null, null, null, null, null, 1, 20));
 
     result.IsSuccess.Should().BeTrue();
     result.Value.Items.Should().BeEmpty();
@@ -201,7 +201,7 @@ public sealed class IdentityHandlerTests
     var repo = new StubAuditLogRepo();
     var handler = new GetAuditLogsHandler(repo, currentUser);
 
-    var result = await handler.Handle(new GetAuditLogsQuery(null, null, null, null, 1, 20));
+    var result = await handler.Handle(new GetAuditLogsQuery(null, null, null, null, null, 1, 20));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(IdentityPermissionsErrors.UserContextRequired);
@@ -216,11 +216,56 @@ public sealed class IdentityHandlerTests
     var handler = new GetAuditLogsHandler(repo, currentUser);
 
     // Page 0 and pageSize 0 should be clamped to 1 and 1
-    var result = await handler.Handle(new GetAuditLogsQuery(null, null, null, null, 0, 0));
+    var result = await handler.Handle(new GetAuditLogsQuery(null, null, null, null, null, 0, 0));
 
     result.IsSuccess.Should().BeTrue();
     repo.LastPage.Should().Be(1);
     repo.LastPageSize.Should().Be(1);
+  }
+
+  // ── GetAuditLogByIdHandler ──────────────────────────────────────────────
+
+  [Fact]
+  public async Task GetAuditLogById_ShouldReturnDetail_WhenFound()
+  {
+    var businessId = Guid.NewGuid();
+    var detail = new AuditLogDetailResponse(
+      Guid.NewGuid(), null, null, "sale.completed", "Sale",
+      Guid.NewGuid(), "desc", null, null, null, null, Now);
+    var repo = new StubAuditLogRepo(detail);
+    var currentUser = MakeCurrentUser(businessId, Guid.NewGuid());
+    var handler = new GetAuditLogByIdHandler(repo, currentUser);
+
+    var result = await handler.Handle(new GetAuditLogByIdQuery(detail.AuditLogId));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Action.Should().Be("sale.completed");
+  }
+
+  [Fact]
+  public async Task GetAuditLogById_ShouldFail_WhenNotAuthenticated()
+  {
+    var repo = new StubAuditLogRepo();
+    var handler = new GetAuditLogByIdHandler(repo, new UnauthenticatedUser());
+
+    var result = await handler.Handle(new GetAuditLogByIdQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(IdentityPermissionsErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task GetAuditLogById_ShouldFail_WhenNotFound()
+  {
+    var businessId = Guid.NewGuid();
+    var repo = new StubAuditLogRepo();
+    var currentUser = MakeCurrentUser(businessId, Guid.NewGuid());
+    var handler = new GetAuditLogByIdHandler(repo, currentUser);
+
+    var result = await handler.Handle(new GetAuditLogByIdQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(IdentityPermissionsErrors.UserNotFound);
   }
 
   // ── GetUsersHandler ─────────────────────────────────────────────────────
@@ -385,7 +430,7 @@ public sealed class IdentityHandlerTests
       => Task.CompletedTask;
   }
 
-  private sealed class StubAuditLogRepo : IAuditLogReadRepository
+  private sealed class StubAuditLogRepo(AuditLogDetailResponse? detail = null) : IAuditLogReadRepository
   {
     public int LastPage { get; private set; }
     public int LastPageSize { get; private set; }
@@ -399,6 +444,12 @@ public sealed class IdentityHandlerTests
       LastPageSize = criteria.PageSize;
       return Task.FromResult(new AuditLogListResponse([], criteria.Page, criteria.PageSize, 0, 0, false, false));
     }
+
+    public Task<AuditLogDetailResponse?> GetByIdAsync(
+      Guid id,
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(detail);
   }
 
   private sealed class FakeCurrentUser(Guid businessId, Guid userId, IReadOnlyCollection<string> roles) : ICurrentUserService

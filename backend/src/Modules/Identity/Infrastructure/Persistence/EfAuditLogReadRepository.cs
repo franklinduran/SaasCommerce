@@ -23,6 +23,11 @@ public sealed class EfAuditLogReadRepository(AppDbContext dbContext) : IAuditLog
       query = query.Where(log => log.CreatedAt >= criteria.DateFrom.Value);
     }
 
+    if (criteria.DateTo.HasValue)
+    {
+      query = query.Where(log => log.CreatedAt <= criteria.DateTo.Value);
+    }
+
     if (criteria.UserId.HasValue)
     {
       query = query.Where(log => log.UserId == criteria.UserId.Value);
@@ -66,6 +71,7 @@ public sealed class EfAuditLogReadRepository(AppDbContext dbContext) : IAuditLog
         log.EntityName,
         log.EntityId,
         log.Description,
+        log.IpAddress,
         log.CreatedAt
       })
       .ToListAsync(cancellationToken);
@@ -79,6 +85,7 @@ public sealed class EfAuditLogReadRepository(AppDbContext dbContext) : IAuditLog
         log.EntityName,
         log.EntityId,
         log.Description,
+        log.IpAddress,
         log.CreatedAt))
       .ToArray();
 
@@ -90,5 +97,59 @@ public sealed class EfAuditLogReadRepository(AppDbContext dbContext) : IAuditLog
       totalPages,
       criteria.Page > 1,
       totalPages > criteria.Page);
+  }
+
+  public async Task<AuditLogDetailResponse?> GetByIdAsync(
+    Guid id,
+    BusinessId businessId,
+    CancellationToken cancellationToken = default)
+  {
+    var log = await dbContext.Set<AuditLog>()
+      .AsNoTracking()
+      .Where(l => l.Id == id && l.BusinessId == businessId)
+      .Select(l => new
+      {
+        l.Id,
+        l.UserId,
+        l.Action,
+        l.EntityName,
+        l.EntityId,
+        l.Description,
+        l.IpAddress,
+        l.UserAgent,
+        l.CorrelationId,
+        l.MetadataJson,
+        l.CreatedAt
+      })
+      .FirstOrDefaultAsync(cancellationToken);
+
+    if (log is null)
+    {
+      return null;
+    }
+
+    string? userFullName = null;
+    if (log.UserId.HasValue)
+    {
+      userFullName = await dbContext.Set<User>()
+        .AsNoTracking()
+        .Where(u => u.Id == log.UserId.Value)
+        .Select(u => u.FullName)
+        .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    return new AuditLogDetailResponse(
+      log.Id,
+      log.UserId,
+      userFullName,
+      log.Action,
+      log.EntityName,
+      log.EntityId,
+      log.Description,
+      log.IpAddress,
+      log.UserAgent,
+      log.CorrelationId,
+      log.MetadataJson,
+      log.CreatedAt);
   }
 }
