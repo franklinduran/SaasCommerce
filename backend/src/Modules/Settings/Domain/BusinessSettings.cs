@@ -13,7 +13,7 @@ public sealed class BusinessSettings
 
   private BusinessSettings() { }
 
-  public BusinessSettings(
+  public BusinessSettings( // NOSONAR S107 — settings aggregate requires all fields at construction
     BusinessId businessId,
     string? commercialName,
     string? legalName,
@@ -28,8 +28,6 @@ public sealed class BusinessSettings
     Guid updatedBy,
     DateTimeOffset updatedAt)
   {
-    ArgumentNullException.ThrowIfNull(businessId);
-
     BusinessId = businessId;
     CommercialName = commercialName?.Trim();
     LegalName = legalName?.Trim();
@@ -59,7 +57,7 @@ public sealed class BusinessSettings
   public Guid UpdatedBy { get; private set; }
   public DateTimeOffset UpdatedAt { get; private set; }
 
-  public void Update(
+  public void Update( // NOSONAR S107 — settings aggregate requires all fields for update
     string? commercialName,
     string? legalName,
     string? rnc,

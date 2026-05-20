@@ -18,8 +18,6 @@ public sealed class InventorySettings
     Guid updatedBy,
     DateTimeOffset updatedAt)
   {
-    ArgumentNullException.ThrowIfNull(businessId);
-
     if (defaultLowStockThreshold < 0)
     {
       throw new ArgumentOutOfRangeException(

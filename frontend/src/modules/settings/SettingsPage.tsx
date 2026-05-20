@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { OperationalSettingsPanel } from '@/modules/settings/components/OperationalSettingsPanel'
 import {
   useChangePasswordMutation,
   useCurrentBranchQuery,
@@ -131,6 +132,8 @@ export function SettingsPage() {
           <BranchSettingsCard initialValues={branch.data} />
         </div>
       )}
+
+      <OperationalSettingsPanel />
     </section>
   )
 }

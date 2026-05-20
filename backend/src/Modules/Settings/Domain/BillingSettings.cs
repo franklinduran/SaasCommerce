@@ -12,7 +12,7 @@ public sealed class BillingSettings
 
   private BillingSettings() { }
 
-  public BillingSettings(
+  public BillingSettings( // NOSONAR S107 — settings aggregate requires all fields at construction
     BusinessId businessId,
     string? receiptHeaderText,
     string? receiptFooterText,
@@ -24,7 +24,6 @@ public sealed class BillingSettings
     Guid updatedBy,
     DateTimeOffset updatedAt)
   {
-    ArgumentNullException.ThrowIfNull(businessId);
 
     if (invoiceSequenceStart < 1)
     {
@@ -58,7 +57,7 @@ public sealed class BillingSettings
   public Guid UpdatedBy { get; private set; }
   public DateTimeOffset UpdatedAt { get; private set; }
 
-  public void Update(
+  public void Update( // NOSONAR S107 — settings aggregate requires all fields for update
     string? receiptHeaderText,
     string? receiptFooterText,
     bool showLogoOnReceipt,

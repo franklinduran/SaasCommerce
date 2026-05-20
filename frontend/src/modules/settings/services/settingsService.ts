@@ -1,12 +1,20 @@
 import { useAuthStore } from '@/modules/auth/authStore'
 import type {
+  BillingSettingsData,
+  BusinessSettingsData,
   ChangePasswordRequest,
   CurrentBranch,
   CurrentBusiness,
   CurrentUser,
+  InventorySettingsData,
+  SalesSettingsData,
+  UpdateBillingSettingsRequest,
   UpdateBranchRequest,
   UpdateBusinessRequest,
+  UpdateBusinessSettingsRequest,
+  UpdateInventorySettingsRequest,
   UpdateProfileRequest,
+  UpdateSalesSettingsRequest,
 } from '@/modules/settings/types'
 import { httpClient } from '@/shared/services/httpClient'
 
@@ -75,6 +83,80 @@ export async function updateCurrentBranch(
     method: 'PUT',
   })
 
+  return response.data!
+}
+
+// ── Operational / SaaS settings ─────────────────────────────────────────────
+
+export async function getBusinessSettings(): Promise<BusinessSettingsData> {
+  const response = await httpClient<BusinessSettingsData>('/api/settings/business', {
+    accessToken: getAccessToken(),
+  })
+  return response.data!
+}
+
+export async function updateBusinessSettings(
+  request: UpdateBusinessSettingsRequest,
+): Promise<BusinessSettingsData> {
+  const response = await httpClient<BusinessSettingsData>('/api/settings/business', {
+    accessToken: getAccessToken(),
+    body: JSON.stringify(request),
+    method: 'PUT',
+  })
+  return response.data!
+}
+
+export async function getSalesSettings(): Promise<SalesSettingsData> {
+  const response = await httpClient<SalesSettingsData>('/api/settings/sales', {
+    accessToken: getAccessToken(),
+  })
+  return response.data!
+}
+
+export async function updateSalesSettings(
+  request: UpdateSalesSettingsRequest,
+): Promise<SalesSettingsData> {
+  const response = await httpClient<SalesSettingsData>('/api/settings/sales', {
+    accessToken: getAccessToken(),
+    body: JSON.stringify(request),
+    method: 'PUT',
+  })
+  return response.data!
+}
+
+export async function getInventorySettings(): Promise<InventorySettingsData> {
+  const response = await httpClient<InventorySettingsData>('/api/settings/inventory', {
+    accessToken: getAccessToken(),
+  })
+  return response.data!
+}
+
+export async function updateInventorySettings(
+  request: UpdateInventorySettingsRequest,
+): Promise<InventorySettingsData> {
+  const response = await httpClient<InventorySettingsData>('/api/settings/inventory', {
+    accessToken: getAccessToken(),
+    body: JSON.stringify(request),
+    method: 'PUT',
+  })
+  return response.data!
+}
+
+export async function getBillingSettings(): Promise<BillingSettingsData> {
+  const response = await httpClient<BillingSettingsData>('/api/settings/billing', {
+    accessToken: getAccessToken(),
+  })
+  return response.data!
+}
+
+export async function updateBillingSettings(
+  request: UpdateBillingSettingsRequest,
+): Promise<BillingSettingsData> {
+  const response = await httpClient<BillingSettingsData>('/api/settings/billing', {
+    accessToken: getAccessToken(),
+    body: JSON.stringify(request),
+    method: 'PUT',
+  })
   return response.data!
 }
 

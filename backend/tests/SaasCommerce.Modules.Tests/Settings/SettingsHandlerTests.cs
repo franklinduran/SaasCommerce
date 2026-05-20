@@ -364,12 +364,12 @@ public sealed class SettingsHandlerTests
   private static FakeCurrentUser MakeCurrentUser(Guid businessId, bool isAdmin = false)
     => new(businessId, Guid.NewGuid(), isAdmin ? ["Admin"] : ["Cashier"]);
 
-  private static IClock Clock() => new FixedClock();
+  private static FixedClock Clock() => new FixedClock();
 
-  private static IAuditLogWriter NoopAuditLog()
+  private static NoopAuditLogWriter NoopAuditLog()
     => new NoopAuditLogWriter();
 
-  private static IUnitOfWork NoopUnitOfWork()
+  private static NoopUnitOfWorkImpl NoopUnitOfWork()
     => new NoopUnitOfWorkImpl();
 
   // ── Stubs ─────────────────────────────────────────────────────────────────

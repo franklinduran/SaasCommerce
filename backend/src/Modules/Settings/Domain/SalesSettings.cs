@@ -9,7 +9,7 @@ public sealed class SalesSettings
 {
   private SalesSettings() { }
 
-  public SalesSettings(
+  public SalesSettings( // NOSONAR S107 — settings aggregate requires all fields at construction
     BusinessId businessId,
     bool allowNegativeStock,
     bool allowDiscounts,
@@ -20,8 +20,6 @@ public sealed class SalesSettings
     Guid updatedBy,
     DateTimeOffset updatedAt)
   {
-    ArgumentNullException.ThrowIfNull(businessId);
-
     BusinessId = businessId;
     AllowNegativeStock = allowNegativeStock;
     AllowDiscounts = allowDiscounts;
@@ -43,7 +41,7 @@ public sealed class SalesSettings
   public Guid UpdatedBy { get; private set; }
   public DateTimeOffset UpdatedAt { get; private set; }
 
-  public void Update(
+  public void Update( // NOSONAR S107 — settings aggregate requires all fields for update
     bool allowNegativeStock,
     bool allowDiscounts,
     bool requireCustomerForCreditSale,
