@@ -1,8 +1,8 @@
 export interface UserSummary {
-  id: string
+  userId: string
   fullName: string
   email: string
-  phone?: string
+  phone?: string | null
   role: string
   isActive: boolean
   createdAt: string
@@ -41,5 +41,5 @@ export interface ResetPasswordResponse {
 
 export interface UserListResponse {
   items: UserSummary[]
-  count: number
+  totalItems: number
 }

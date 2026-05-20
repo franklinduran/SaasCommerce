@@ -44,7 +44,7 @@ export function UserTable({ users, onEdit, isLoading }: Readonly<UserTableProps>
         </thead>
         <tbody className="divide-y divide-stone-100">
           {users.map((user) => (
-            <tr key={user.id} className="hover:bg-stone-50">
+            <tr key={user.userId} className="hover:bg-stone-50">
               <td className="px-5 py-4 font-semibold text-stone-900">{user.fullName}</td>
               <td className="px-5 py-4 text-stone-600">{user.email}</td>
               <td className="px-5 py-4">
@@ -60,7 +60,7 @@ export function UserTable({ users, onEdit, isLoading }: Readonly<UserTableProps>
               <td className="px-5 py-4 text-right">
                 <Button
                   aria-label={`Acciones para ${user.fullName}`}
-                  onClick={() => onEdit(user.id)}
+                  onClick={() => onEdit(user.userId)}
                   size="sm"
                   variant="ghost"
                 >

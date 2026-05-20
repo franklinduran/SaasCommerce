@@ -255,9 +255,8 @@ export function UserDetailPage() {
                 </p>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3 p-5 pt-0">
+            <CardContent className="flex flex-col items-stretch gap-3 p-5 pt-0 sm:items-start">
               <Button
-                className="w-full sm:w-auto"
                 disabled={isSaving}
                 onClick={handleResetPassword}
                 type="button"
@@ -268,7 +267,6 @@ export function UserDetailPage() {
 
               {!user.isActive && (
                 <Button
-                  className="w-full sm:w-auto"
                   disabled={isSaving}
                   onClick={handleReactivate}
                   type="button"
@@ -280,7 +278,7 @@ export function UserDetailPage() {
 
               {user.isActive && (
                 <Button
-                  className="w-full bg-red-600 text-white hover:bg-red-700 sm:w-auto"
+                  className="bg-red-600 text-white hover:bg-red-700"
                   disabled={isSaving}
                   onClick={() => setShowDisableDialog(true)}
                   type="button"
