@@ -51,7 +51,10 @@ public static class RolePermissionMatrix
     SystemPermissions.UsersDisable,
     SystemPermissions.UsersResetPassword,
 
-    SystemPermissions.AuditView
+    SystemPermissions.AuditView,
+
+    SystemPermissions.SettingsView,
+    SystemPermissions.SettingsUpdate
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)

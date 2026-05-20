@@ -46,6 +46,8 @@ using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
+using SaasCommerce.Modules.Settings.Application;
+using SaasCommerce.Modules.Settings.Infrastructure;
 
 namespace SaasCommerce.Modules;
 
@@ -183,6 +185,20 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateCurrentBranchHandler>();
     services.AddScoped<GetCurrentUserPermissionsHandler>();
     services.AddScoped<DevelopmentDataSeeder>();
+
+    // Settings
+    services.AddScoped<IBusinessSettingsRepository, EfBusinessSettingsRepository>();
+    services.AddScoped<ISalesSettingsRepository, EfSalesSettingsRepository>();
+    services.AddScoped<IInventorySettingsRepository, EfInventorySettingsRepository>();
+    services.AddScoped<IBillingSettingsRepository, EfBillingSettingsRepository>();
+    services.AddScoped<GetBusinessSettingsHandler>();
+    services.AddScoped<UpdateBusinessSettingsHandler>();
+    services.AddScoped<GetSalesSettingsHandler>();
+    services.AddScoped<UpdateSalesSettingsHandler>();
+    services.AddScoped<GetInventorySettingsHandler>();
+    services.AddScoped<UpdateInventorySettingsHandler>();
+    services.AddScoped<GetBillingSettingsHandler>();
+    services.AddScoped<UpdateBillingSettingsHandler>();
 
     // Reporting
     services.AddScoped<IReportsReadRepository, EfReportsReadRepository>();

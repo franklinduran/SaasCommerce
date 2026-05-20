@@ -1223,6 +1223,7 @@ app.MapReportsEndpoints();
 
 app.MapUsersEndpoints();
 app.MapAuditEndpoints();
+app.MapSettingsEndpoints();
 
 app.MapHub<RealtimeHub>("/hubs/realtime")
   .RequireAuthorization()

@@ -12,4 +12,5 @@ public static class AuditEntityType
   public const string Purchase = "Purchase";
   public const string Customer = "Customer";
   public const string Supplier = "Supplier";
+  public const string Settings = "Settings";
 }

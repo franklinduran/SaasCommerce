@@ -59,4 +59,8 @@ public static class SystemPermissions
 
   // Audit
   public const string AuditView = "audit.view";
+
+  // Settings
+  public const string SettingsView = "settings.view";
+  public const string SettingsUpdate = "settings.update";
 }

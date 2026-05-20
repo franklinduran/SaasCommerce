@@ -19,4 +19,10 @@ public static class AuditActionType
   public const string UserDeactivated = "user.deactivated";
   public const string UserRoleChanged = "user.role_changed";
   public const string UserPasswordReset = "user.password_reset";
+
+  // Settings
+  public const string BusinessSettingsUpdated = "settings.business_updated";
+  public const string SalesSettingsUpdated = "settings.sales_updated";
+  public const string InventorySettingsUpdated = "settings.inventory_updated";
+  public const string BillingSettingsUpdated = "settings.billing_updated";
 }
