@@ -1,5 +1,5 @@
 import { WalletCards } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { registerCustomerPaymentSchema } from '@/modules/customers/schemas/customerSchemas'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -30,13 +30,18 @@ export function RegisterCustomerPaymentDialog({
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!isOpen) {
-      setAmount('')
-      setNote('')
-      setError(null)
+  function resetState() {
+    setAmount('')
+    setNote('')
+    setError(null)
+  }
+
+  function handleOpenChange(open: boolean) {
+    if (!open) {
+      resetState()
+      onClose()
     }
-  }, [isOpen])
+  }
 
   function handleSubmit() {
     const parsedAmount = Number(amount)
@@ -53,7 +58,7 @@ export function RegisterCustomerPaymentDialog({
   }
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
+    <Dialog onOpenChange={handleOpenChange} open={isOpen}>
       <DialogContent>
         <DialogHeader>
           <div className="flex items-start gap-3">
@@ -110,7 +115,7 @@ export function RegisterCustomerPaymentDialog({
         </form>
 
         <DialogFooter>
-          <Button disabled={isSubmitting} onClick={onClose} type="button" variant="secondary">
+          <Button disabled={isSubmitting} onClick={() => handleOpenChange(false)} type="button" variant="secondary">
             Cancelar
           </Button>
           <Button disabled={isSubmitting} onClick={handleSubmit} type="button">

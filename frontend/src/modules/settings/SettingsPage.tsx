@@ -124,6 +124,32 @@ export function SettingsPage() {
     business.refetch()
     branch.refetch()
   }
+  let sectionContent: React.ReactNode
+
+  if (isLoading) {
+    sectionContent = <SettingsSkeleton />
+  } else if (isError) {
+    sectionContent = (
+      <Card>
+        <CardContent className="p-5">
+          <p className="text-sm font-semibold text-red-700">No se pudieron cargar los ajustes.</p>
+          <p className="mt-1 text-sm font-medium text-stone-600">
+            Verifica la sesion o intenta nuevamente.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  } else {
+    sectionContent = (
+      <div className="mx-auto max-w-3xl">
+        {activeSection === 'profile' && <ProfileSettingsCard initialValues={me.data} />}
+        {activeSection === 'security' && <SecuritySettingsCard />}
+        {activeSection === 'business' && <BusinessSettingsCard initialValues={business.data} />}
+        {activeSection === 'branch' && <BranchSettingsCard initialValues={branch.data} />}
+        {activeSection === 'operational' && <OperationalSettingsPanel />}
+      </div>
+    )
+  }
 
   return (
     <section className="flex min-h-full flex-col">
@@ -180,28 +206,7 @@ export function SettingsPage() {
         </aside>
 
         {/* Section content */}
-        <div className="bg-stone-50 p-4 sm:p-6 lg:p-8">
-          {isLoading ? (
-            <SettingsSkeleton />
-          ) : isError ? (
-            <Card>
-              <CardContent className="p-5">
-                <p className="text-sm font-semibold text-red-700">No se pudieron cargar los ajustes.</p>
-                <p className="mt-1 text-sm font-medium text-stone-600">
-                  Verifica la sesion o intenta nuevamente.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="mx-auto max-w-3xl">
-              {activeSection === 'profile' && <ProfileSettingsCard initialValues={me.data} />}
-              {activeSection === 'security' && <SecuritySettingsCard />}
-              {activeSection === 'business' && <BusinessSettingsCard initialValues={business.data} />}
-              {activeSection === 'branch' && <BranchSettingsCard initialValues={branch.data} />}
-              {activeSection === 'operational' && <OperationalSettingsPanel />}
-            </div>
-          )}
-        </div>
+        <div className="bg-stone-50 p-4 sm:p-6 lg:p-8">{sectionContent}</div>
       </div>
     </section>
   )

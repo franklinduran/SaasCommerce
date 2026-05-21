@@ -260,12 +260,13 @@ function Fact({
   tone = 'default',
   value,
 }: Readonly<{ bold?: boolean; label: string; tone?: FactTone; value: string }>) {
-  const toneClass =
-    tone === 'dark'
-      ? 'bg-stone-900 text-white ring-stone-900'
-      : tone === 'red'
-        ? 'bg-red-50 text-red-700 ring-red-200'
-        : 'bg-stone-50 text-stone-900 ring-stone-200'
+  let toneClass = 'bg-stone-50 text-stone-900 ring-stone-200'
+
+  if (tone === 'dark') {
+    toneClass = 'bg-stone-900 text-white ring-stone-900'
+  } else if (tone === 'red') {
+    toneClass = 'bg-red-50 text-red-700 ring-red-200'
+  }
 
   return (
     <div className={`rounded-md p-3 ring-1 ${toneClass}`}>

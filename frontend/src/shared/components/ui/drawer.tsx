@@ -20,16 +20,20 @@ type DrawerProps = {
 
 export function Drawer({ children, onClose, size = 'lg', subtitle, title }: Readonly<DrawerProps>) {
   return (
-    <div
-      className="fixed inset-0 z-50 bg-stone-950/20"
-      onClick={onClose}
-    >
-      <div
+    <div className="fixed inset-0 z-50">
+      <button
+        aria-label="Cerrar panel"
+        className="absolute inset-0 h-full w-full cursor-default bg-stone-950/20"
+        onClick={onClose}
+        type="button"
+      />
+      <dialog
+        aria-modal="true"
         className={cn(
-          'absolute inset-y-0 right-0 flex w-full min-w-0 flex-col bg-white shadow-xl ring-1 ring-stone-200',
+          'absolute inset-y-0 right-0 m-0 flex h-full w-full min-w-0 flex-col border-0 bg-white p-0 shadow-xl ring-1 ring-stone-200',
           sizeClasses[size],
         )}
-        onClick={(e) => e.stopPropagation()}
+        open
       >
         <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-stone-200 px-4 sm:px-6">
           <div>
@@ -45,7 +49,7 @@ export function Drawer({ children, onClose, size = 'lg', subtitle, title }: Read
           </Button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">{children}</div>
-      </div>
+      </dialog>
     </div>
   )
 }

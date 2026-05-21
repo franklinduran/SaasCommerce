@@ -345,10 +345,10 @@ function SalesSettingsTab() {
             control={form.control}
             name="defaultPaymentMethod"
             render={({ field }) => (
-              <Select value={field.value || '_'} onValueChange={(v) => field.onChange(v === '_' ? '' : v)}>
+              <Select value={field.value ?? '_'} onValueChange={(v) => field.onChange(v === '_' ? '' : v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_">— Sin predeterminado —</SelectItem>
+                  <SelectItem value="_">- Sin predeterminado -</SelectItem>
                   <SelectItem value="Efectivo">Efectivo</SelectItem>
                   <SelectItem value="Tarjeta">Tarjeta</SelectItem>
                   <SelectItem value="Transferencia">Transferencia</SelectItem>

@@ -45,14 +45,25 @@ describe('SalesHistoryPage', () => {
 
   it('SalesHistoryPage should filter sales by status', async () => {
     const user = userEvent.setup()
-    const receivedSale = createApiSale({ code: 'RECIBIDA', status: 'Received' })
-    const completedSale = createApiSale({ code: 'COMPLETA', status: 'Completed' })
+    const receivedSale = createApiSale({
+      code: 'RECIBIDA',
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      saleId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      status: 'Received',
+    })
+    const completedSale = createApiSale({
+      code: 'COMPLETA',
+      id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      saleId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      status: 'Completed',
+    })
     const fetchMock = createSalesFetchMock({ sales: [receivedSale, completedSale] })
     vi.stubGlobal('fetch', fetchMock)
     renderSalesPage()
 
     await screen.findByText('RECIBIDA')
-    await user.selectOptions(screen.getByLabelText('Estado'), 'Completed')
+    await user.click(screen.getByRole('combobox', { name: 'Estado' }))
+    await user.click(await screen.findByRole('option', { name: 'Completada' }))
 
     expect(await screen.findByText('COMPLETA')).toBeTruthy()
     await waitFor(() => {

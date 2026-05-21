@@ -18,6 +18,7 @@ import { useSuppliers } from '@/modules/suppliers/hooks/useSuppliers'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -151,8 +152,8 @@ export function PurchasesPage() {
         </CardHeader>
         <CardContent className="pt-4 sm:pt-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_220px_180px_170px_170px] xl:items-end">
-            <label className="block min-w-0 space-y-1.5">
-              <span className="text-sm font-semibold text-stone-800">Busqueda</span>
+            <div className="block min-w-0 space-y-1.5">
+              <Label htmlFor="purchase-query">Busqueda</Label>
               <span className="relative block">
                 <Search
                   aria-hidden="true"
@@ -161,19 +162,20 @@ export function PurchasesPage() {
                 />
                 <Input
                   className="pl-9"
+                  id="purchase-query"
                   onChange={(event) => updateFilters({ query: event.target.value })}
                   placeholder="Factura o proveedor"
                   value={filters.query}
                 />
               </span>
-            </label>
+            </div>
 
-            <FilterField label="Proveedor">
+            <FilterField htmlFor="purchase-supplier" label="Proveedor">
               <Select
                 value={filters.supplierId || '_'}
                 onValueChange={(value) => updateFilters({ supplierId: value === '_' ? '' : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="purchase-supplier">
                   <SelectValue placeholder="Todos los proveedores" />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,12 +189,12 @@ export function PurchasesPage() {
               </Select>
             </FilterField>
 
-            <FilterField label="Estado">
+            <FilterField htmlFor="purchase-status" label="Estado">
               <Select
                 value={filters.status || '_'}
                 onValueChange={(value) => updateFilters({ status: value === '_' ? '' : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="purchase-status">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -204,16 +206,18 @@ export function PurchasesPage() {
               </Select>
             </FilterField>
 
-            <FilterField label="Desde">
+            <FilterField htmlFor="purchase-date-from" label="Desde">
               <Input
+                id="purchase-date-from"
                 onChange={(event) => updateFilters({ dateFrom: event.target.value })}
                 type="date"
                 value={filters.dateFrom}
               />
             </FilterField>
 
-            <FilterField label="Hasta">
+            <FilterField htmlFor="purchase-date-to" label="Hasta">
               <Input
+                id="purchase-date-to"
                 onChange={(event) => updateFilters({ dateTo: event.target.value })}
                 type="date"
                 value={filters.dateTo}
@@ -371,14 +375,20 @@ export function PurchasesPage() {
 
 function FilterField({
   children,
+  htmlFor,
   label,
 }: Readonly<{
   children: React.ReactNode
+  htmlFor?: string
   label: string
 }>) {
   return (
     <div className="block min-w-0 space-y-1.5">
-      <span className="text-sm font-semibold text-stone-800">{label}</span>
+      {htmlFor ? (
+        <Label htmlFor={htmlFor}>{label}</Label>
+      ) : (
+        <span className="text-sm font-semibold text-stone-800">{label}</span>
+      )}
       {children}
     </div>
   )

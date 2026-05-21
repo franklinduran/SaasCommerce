@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -45,14 +45,18 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: Readonly<Cre
     },
   })
 
-  // Reset form when dialog opens/closes
-  useEffect(() => {
-    if (!open) {
-      reset({ email: '', fullName: '', password: '', role: 'Cashier' })
-      setError(null)
-      setShowPassword(false)
+  function resetDialogState() {
+    reset({ email: '', fullName: '', password: '', role: 'Cashier' })
+    setError(null)
+    setShowPassword(false)
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      resetDialogState()
     }
-  }, [open, reset])
+    onOpenChange(nextOpen)
+  }
 
   const role = useWatch({ control, name: 'role' })
 
@@ -61,6 +65,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: Readonly<Cre
     setError(null)
     try {
       const response = await usersApi.createUser(data)
+      resetDialogState()
       onSuccess(response.userId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear usuario')
@@ -70,7 +75,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: Readonly<Cre
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-start gap-3">
@@ -167,7 +172,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: Readonly<Cre
         <DialogFooter>
           <Button
             disabled={isLoading}
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             type="button"
             variant="secondary"
           >

@@ -1,16 +1,24 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/shared/utils/cn'
-import { buttonVariants } from './button'
+import { buttonVariants } from './button-variants'
 
-export const AlertDialog        = AlertDialogPrimitive.Root
-export const AlertDialogTrigger = AlertDialogPrimitive.Trigger
-export const AlertDialogPortal  = AlertDialogPrimitive.Portal
+export function AlertDialog(props: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Root>>) {
+  return <AlertDialogPrimitive.Root {...props} />
+}
+
+export function AlertDialogTrigger(props: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Trigger>>) {
+  return <AlertDialogPrimitive.Trigger {...props} />
+}
+
+function AlertDialogPortal(props: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Portal>>) {
+  return <AlertDialogPrimitive.Portal {...props} />
+}
 
 export function AlertDialogOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+}: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Overlay>>) {
   return (
     <AlertDialogPrimitive.Overlay
       className={cn(
@@ -27,7 +35,7 @@ export function AlertDialogOverlay({
 export function AlertDialogContent({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+}: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Content>>) {
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -51,14 +59,14 @@ export function AlertDialogContent({
 export function AlertDialogHeader({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: Readonly<React.HTMLAttributes<HTMLDivElement>>) {
   return <div className={cn('mb-4 space-y-1.5', className)} {...props} />
 }
 
 export function AlertDialogFooter({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: Readonly<React.HTMLAttributes<HTMLDivElement>>) {
   return (
     <div
       className={cn('mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
@@ -70,7 +78,7 @@ export function AlertDialogFooter({
 export function AlertDialogTitle({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+}: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Title>>) {
   return (
     <AlertDialogPrimitive.Title
       className={cn('text-lg font-semibold text-stone-950', className)}
@@ -82,7 +90,7 @@ export function AlertDialogTitle({
 export function AlertDialogDescription({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+}: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Description>>) {
   return (
     <AlertDialogPrimitive.Description
       className={cn('text-sm font-medium text-stone-600', className)}
@@ -98,7 +106,7 @@ export function AlertDialogAction({
   className,
   variant,
   ...props
-}: AlertDialogActionProps) {
+}: Readonly<AlertDialogActionProps>) {
   return (
     <AlertDialogPrimitive.Action
       className={cn(buttonVariants({ variant }), className)}
@@ -110,7 +118,7 @@ export function AlertDialogAction({
 export function AlertDialogCancel({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
+}: Readonly<React.ComponentProps<typeof AlertDialogPrimitive.Cancel>>) {
   return (
     <AlertDialogPrimitive.Cancel
       className={cn(buttonVariants({ variant: 'secondary' }), className)}

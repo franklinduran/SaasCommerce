@@ -32,7 +32,7 @@ export function InvoicesPage() {
 
   const [filters, setFilters] = useState<InvoiceFilters>(defaultFilters)
   const invoices = useInvoices(filters)
-  const items = invoices.data?.items ?? []
+  const items = useMemo(() => invoices.data?.items ?? [], [invoices.data?.items])
   useInvoiceRealtimeInvalidation()
 
   const stats = useMemo(() => {
@@ -51,6 +51,28 @@ export function InvoicesPage() {
   }
 
   const hasFilters = Boolean(filters.query || filters.status || filters.dateFrom || filters.dateTo)
+  let listContent: React.ReactNode
+
+  if (invoices.isLoading) {
+    listContent = <ListSkeleton />
+  } else if (invoices.isError) {
+    listContent = <ListError onRetry={() => void invoices.refetch()} />
+  } else if (items.length === 0) {
+    listContent = <ListEmpty hasFilters={hasFilters} />
+  } else {
+    listContent = (
+      <ul className="divide-y divide-stone-100">
+        {items.map((inv) => (
+          <InvoiceListItem
+            invoice={inv}
+            key={inv.invoiceId}
+            onClick={() => selectInvoice(inv.invoiceId)}
+            selected={selectedId === inv.invoiceId}
+          />
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <section className="flex min-h-full flex-col">
@@ -133,26 +155,7 @@ export function InvoicesPage() {
             </Select>
           </div>
 
-          <div className="flex-1">
-            {invoices.isLoading ? (
-              <ListSkeleton />
-            ) : invoices.isError ? (
-              <ListError onRetry={() => void invoices.refetch()} />
-            ) : items.length === 0 ? (
-              <ListEmpty hasFilters={hasFilters} />
-            ) : (
-              <ul className="divide-y divide-stone-100">
-                {items.map((inv) => (
-                  <InvoiceListItem
-                    invoice={inv}
-                    key={inv.invoiceId}
-                    onClick={() => selectInvoice(inv.invoiceId)}
-                    selected={selectedId === inv.invoiceId}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
+          <div className="flex-1">{listContent}</div>
 
           <div className="shrink-0 border-t border-stone-200 px-3 py-2 text-xs font-medium text-stone-500">
             Mostrando {items.length} de {invoices.data?.totalItems ?? 0}

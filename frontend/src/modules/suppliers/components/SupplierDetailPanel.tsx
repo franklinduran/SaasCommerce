@@ -167,14 +167,14 @@ export function SupplierDetailPanel({ supplier, onClose }: Readonly<SupplierDeta
         <Section description="Datos de contacto e identificacion fiscal." title="Informacion del proveedor">
           <dl className="grid gap-4 sm:grid-cols-2">
             <Detail icon={<Building2 size={14} />} label="Razon social" value={supplier.name} />
-            <Detail icon={<Building2 size={14} />} label="RNC / Identificacion" value={supplier.rnc ?? '—'} mono />
-            <Detail icon={<Phone size={14} />} label="Telefono" value={supplier.phone ?? '—'} />
-            <Detail icon={<Mail size={14} />} label="Correo" value={supplier.email ?? '—'} />
+            <Detail icon={<Building2 size={14} />} label="RNC / Identificacion" value={supplier.rnc ?? '-'} mono />
+            <Detail icon={<Phone size={14} />} label="Telefono" value={supplier.phone ?? '-'} />
+            <Detail icon={<Mail size={14} />} label="Correo" value={supplier.email ?? '-'} />
             <Detail
               className="sm:col-span-2"
               icon={<MapPin size={14} />}
               label="Direccion"
-              value={supplier.address ?? '—'}
+              value={supplier.address ?? '-'}
             />
           </dl>
         </Section>
@@ -297,6 +297,10 @@ function ActionRow({
   label: string
   tone?: 'default' | 'danger'
 }>) {
+  const iconClass = tone === 'danger'
+    ? 'bg-red-100 text-red-700 ring-red-200'
+    : 'bg-white text-stone-700 ring-stone-200'
+
   return (
     <div
       className={cn(
@@ -308,9 +312,7 @@ function ActionRow({
         <span
           className={cn(
             'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ring-1',
-            tone === 'danger'
-              ? 'bg-red-100 text-red-700 ring-red-200'
-              : 'bg-white text-stone-700 ring-stone-200',
+            iconClass,
           )}
         >
           {icon}

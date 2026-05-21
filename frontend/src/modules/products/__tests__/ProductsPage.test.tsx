@@ -13,11 +13,13 @@ describe('ProductsPage', () => {
   })
 
   it('renders products and category filters from the API', async () => {
+    const user = userEvent.setup()
     vi.stubGlobal('fetch', createProductsFetchMock())
     renderProductsPage()
 
     expect(await screen.findByText('Cafe molido')).toBeTruthy()
-    expect(screen.getByRole('option', { name: 'Bebidas' })).toBeTruthy()
+    await user.click(screen.getAllByRole('combobox')[2])
+    expect(await screen.findByRole('option', { name: 'Bebidas' })).toBeTruthy()
     expect(screen.getByText('Pagina 1 de 2')).toBeTruthy()
   })
 
@@ -40,6 +42,7 @@ describe('ProductsPage', () => {
     renderProductsPage()
 
     await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
+    await user.click((await screen.findAllByRole('button', { name: 'Desactivar' })).at(-1)!)
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

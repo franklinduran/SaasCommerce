@@ -48,6 +48,20 @@ type CustomerDetailPanelProps = {
   onClose: () => void
 }
 
+type CustomerProfileForm = {
+  customerId: string
+  email: string
+  fullName: string
+  phone: string
+}
+
+type CustomerProfileSource = {
+  email?: string | null
+  fullName: string
+  id: string
+  phone?: string | null
+}
+
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).slice(0, 2)
   return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
@@ -55,6 +69,43 @@ function initials(name: string) {
 
 function formatMoney(value: number) {
   return `RD$ ${value.toLocaleString('es-DO', { minimumFractionDigits: 2 })}`
+}
+
+function getCreditLimitLabel(summary: { creditLimit: number } | null | undefined) {
+  if (!summary) {
+    return '-'
+  }
+
+  if (summary.creditLimit === 0) {
+    return 'Sin limite'
+  }
+
+  return formatMoney(summary.creditLimit)
+}
+
+function toProfileForm(data: CustomerProfileSource): CustomerProfileForm {
+  return {
+    customerId: data.id,
+    email: data.email ?? '',
+    fullName: data.fullName,
+    phone: data.phone ?? '',
+  }
+}
+
+function getCurrentProfile(profileForm: CustomerProfileForm, data: CustomerProfileSource) {
+  if (profileForm.customerId === data.id) {
+    return profileForm
+  }
+
+  return toProfileForm(data)
+}
+
+function hasProfileChanges(profile: CustomerProfileForm, data: CustomerProfileSource) {
+  return (
+    profile.fullName !== data.fullName ||
+    profile.phone !== (data.phone ?? '') ||
+    profile.email !== (data.email ?? '')
+  )
 }
 
 const creditStatusLabels: Record<CustomerCreditStatus, string> = {
@@ -84,17 +135,12 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
   const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-
-  useEffect(() => {
-    if (customer.data) {
-      setFullName(customer.data.fullName)
-      setPhone(customer.data.phone ?? '')
-      setEmail(customer.data.email ?? '')
-    }
-  }, [customer.data])
+  const [profileForm, setProfileForm] = useState<CustomerProfileForm>({
+    customerId: '',
+    email: '',
+    fullName: '',
+    phone: '',
+  })
 
   useEffect(() => {
     if (!notice) return
@@ -108,18 +154,23 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
 
   const data = customer.data
   const summary = credit.data
+  const currentProfile = getCurrentProfile(profileForm, data)
   const isBlocked = summary?.status === 'Blocked'
-  const isDirty =
-    fullName !== data.fullName ||
-    (phone || '') !== (data.phone ?? '') ||
-    (email || '') !== (data.email ?? '')
+  const isDirty = hasProfileChanges(currentProfile, data)
+
+  function updateProfileForm(values: Partial<typeof currentProfile>) {
+    setProfileForm((current) => ({
+      ...(current.customerId === data.id ? current : currentProfile),
+      ...values,
+    }))
+  }
 
   function handleSaveProfile() {
     const payload = {
-      email: email.trim() || null,
-      fullName: fullName.trim(),
+      email: currentProfile.email.trim() || null,
+      fullName: currentProfile.fullName.trim(),
       isActive: data.isActive,
-      phone: phone.trim() || null,
+      phone: currentProfile.phone.trim() || null,
     }
     const validation = customerSchema.safeParse(payload)
     if (!validation.success) {
@@ -164,7 +215,6 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Sticky header */}
       <div className="sticky top-0 z-10 border-b border-stone-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -234,20 +284,18 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
         )}
       </div>
 
-      {/* Body */}
       <div className="min-h-0 flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
-        {/* Credit metrics */}
         <div className="grid gap-2 sm:grid-cols-3">
           <Metric
             icon={<Wallet size={15} />}
             label="Balance pendiente"
-            value={summary ? formatMoney(summary.currentBalance) : '—'}
+            value={summary ? formatMoney(summary.currentBalance) : '-'}
             tone={summary && summary.currentBalance > 0 ? 'amber' : 'stone'}
           />
           <Metric
             icon={<CreditCard size={15} />}
             label="Limite de credito"
-            value={summary ? (summary.creditLimit === 0 ? 'Sin limite' : formatMoney(summary.creditLimit)) : '—'}
+            value={getCreditLimitLabel(summary)}
             tone="stone"
           />
           <Metric
@@ -258,7 +306,6 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
           />
         </div>
 
-        {/* Profile */}
         <Section description="Nombre y datos de contacto del cliente." title="Datos del cliente">
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -266,17 +313,17 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
                 <Label htmlFor="fullName">Nombre completo</Label>
                 <Input
                   id="fullName"
-                  onChange={(e) => setFullName(e.target.value)}
-                  value={fullName}
+                  onChange={(e) => updateProfileForm({ fullName: e.target.value })}
+                  value={currentProfile.fullName}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Telefono</Label>
                 <Input
                   id="phone"
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => updateProfileForm({ phone: e.target.value })}
                   placeholder="8090000000"
-                  value={phone}
+                  value={currentProfile.phone}
                 />
               </div>
             </div>
@@ -284,10 +331,10 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
               <Label htmlFor="email">Correo electronico</Label>
               <Input
                 id="email"
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => updateProfileForm({ email: e.target.value })}
                 placeholder="cliente@correo.com"
                 type="email"
-                value={email}
+                value={currentProfile.email}
               />
             </div>
             {formError && (
@@ -297,9 +344,7 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
               <Button
                 disabled={updateCustomer.isPending || !isDirty}
                 onClick={() => {
-                  setFullName(data.fullName)
-                  setPhone(data.phone ?? '')
-                  setEmail(data.email ?? '')
+                  setProfileForm(toProfileForm(data))
                   setFormError(null)
                 }}
                 size="sm"
@@ -320,7 +365,6 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
           </div>
         </Section>
 
-        {/* Credit history */}
         <Section
           description={`${movements.data?.totalItems ?? 0} movimientos registrados.`}
           title="Historial de credito"
@@ -334,7 +378,6 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
           </div>
         </Section>
 
-        {/* Danger zone */}
         <Section
           description="Acciones que afectan la operacion del cliente."
           icon={<AlertTriangle className="text-amber-600" size={16} />}
@@ -439,8 +482,6 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
   )
 }
 
-// ── Section wrapper ──────────────────────────────────────────────────────────
-
 function Section({
   children,
   description,
@@ -468,8 +509,6 @@ function Section({
   )
 }
 
-// ── Metric chip ──────────────────────────────────────────────────────────────
-
 const metricTones = {
   amber: 'bg-amber-50 ring-amber-200 text-amber-800',
   emerald: 'bg-emerald-50 ring-emerald-200 text-emerald-800',
@@ -496,8 +535,6 @@ function Metric({
   )
 }
 
-// ── Action row ───────────────────────────────────────────────────────────────
-
 type ActionRowProps = {
   children: React.ReactNode
   description: string
@@ -507,19 +544,16 @@ type ActionRowProps = {
 }
 
 function ActionRow({ children, description, icon, label, tone = 'default' }: Readonly<ActionRowProps>) {
-  const toneClass =
-    tone === 'danger'
-      ? 'border-red-200 bg-red-50/40'
-      : tone === 'warning'
-      ? 'border-amber-200 bg-amber-50/40'
-      : 'border-stone-200 bg-stone-50/60'
+  let toneClass = 'border-stone-200 bg-stone-50/60'
+  let iconClass = 'bg-white text-stone-700 ring-stone-200'
 
-  const iconClass =
-    tone === 'danger'
-      ? 'bg-red-100 text-red-700 ring-red-200'
-      : tone === 'warning'
-      ? 'bg-amber-100 text-amber-700 ring-amber-200'
-      : 'bg-white text-stone-700 ring-stone-200'
+  if (tone === 'danger') {
+    toneClass = 'border-red-200 bg-red-50/40'
+    iconClass = 'bg-red-100 text-red-700 ring-red-200'
+  } else if (tone === 'warning') {
+    toneClass = 'border-amber-200 bg-amber-50/40'
+    iconClass = 'bg-amber-100 text-amber-700 ring-amber-200'
+  }
 
   return (
     <div className={cn('flex flex-col gap-3 rounded-md border p-3', toneClass)}>
@@ -536,8 +570,6 @@ function ActionRow({ children, description, icon, label, tone = 'default' }: Rea
     </div>
   )
 }
-
-// ── Skeleton ─────────────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
   return (

@@ -110,6 +110,13 @@ export function SupplierFormDialog({
   }
 
   const isSubmitting = createSupplier.isPending || updateSupplier.isPending
+  let submitLabel = 'Crear proveedor'
+
+  if (isSubmitting) {
+    submitLabel = 'Guardando...'
+  } else if (isEditing) {
+    submitLabel = 'Guardar cambios'
+  }
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -184,11 +191,7 @@ export function SupplierFormDialog({
             Cancelar
           </Button>
           <Button disabled={isSubmitting} form="supplier-form" type="submit">
-            {isSubmitting
-              ? 'Guardando...'
-              : isEditing
-                ? 'Guardar cambios'
-                : 'Crear proveedor'}
+            {submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

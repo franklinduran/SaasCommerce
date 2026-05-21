@@ -37,10 +37,13 @@ describe('InventoryPage', () => {
     vi.stubGlobal('fetch', createInventoryFetchMock())
     renderInventoryRoutes()
 
-    await user.click(await screen.findByRole('button', { name: 'Ajustar inventario' }))
-    await user.click(screen.getByRole('button', { name: 'Ajustar' }))
+    await user.click(await screen.findByRole('button', { name: 'Ajustar' }))
+    const quantityInput = await screen.findByDisplayValue('1')
+    await user.clear(quantityInput)
+    await user.type(quantityInput, '0')
+    await user.click(screen.getByRole('button', { name: 'Aplicar ajuste' }))
 
-    expect(await screen.findByText('Producto invalido')).toBeTruthy()
+    expect(await screen.findByText('La cantidad no puede ser cero')).toBeTruthy()
   })
 
   it('InventoryPage should refresh when SignalR stock event arrives', async () => {

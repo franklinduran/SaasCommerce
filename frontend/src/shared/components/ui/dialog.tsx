@@ -2,15 +2,26 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 
-export const Dialog        = DialogPrimitive.Root
-export const DialogTrigger = DialogPrimitive.Trigger
-export const DialogPortal  = DialogPrimitive.Portal
-export const DialogClose   = DialogPrimitive.Close
+export function Dialog(props: Readonly<React.ComponentProps<typeof DialogPrimitive.Root>>) {
+  return <DialogPrimitive.Root {...props} />
+}
+
+export function DialogTrigger(props: Readonly<React.ComponentProps<typeof DialogPrimitive.Trigger>>) {
+  return <DialogPrimitive.Trigger {...props} />
+}
+
+function DialogPortal(props: Readonly<React.ComponentProps<typeof DialogPrimitive.Portal>>) {
+  return <DialogPrimitive.Portal {...props} />
+}
+
+export function DialogClose(props: Readonly<React.ComponentProps<typeof DialogPrimitive.Close>>) {
+  return <DialogPrimitive.Close {...props} />
+}
 
 export function DialogOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+}: Readonly<React.ComponentProps<typeof DialogPrimitive.Overlay>>) {
   return (
     <DialogPrimitive.Overlay
       className={cn(
@@ -28,7 +39,7 @@ export function DialogContent({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: Readonly<React.ComponentProps<typeof DialogPrimitive.Content>>) {
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -58,14 +69,14 @@ export function DialogContent({
 export function DialogHeader({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: Readonly<React.HTMLAttributes<HTMLDivElement>>) {
   return <div className={cn('mb-4 space-y-1.5', className)} {...props} />
 }
 
 export function DialogFooter({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: Readonly<React.HTMLAttributes<HTMLDivElement>>) {
   return (
     <div
       className={cn('mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
@@ -77,7 +88,7 @@ export function DialogFooter({
 export function DialogTitle({
   className,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+}: Readonly<React.ComponentProps<typeof DialogPrimitive.Title>>) {
   return (
     <DialogPrimitive.Title
       className={cn('text-lg font-semibold text-stone-950', className)}
@@ -89,7 +100,7 @@ export function DialogTitle({
 export function DialogDescription({
   className,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+}: Readonly<React.ComponentProps<typeof DialogPrimitive.Description>>) {
   return (
     <DialogPrimitive.Description
       className={cn('text-sm font-medium text-stone-600', className)}

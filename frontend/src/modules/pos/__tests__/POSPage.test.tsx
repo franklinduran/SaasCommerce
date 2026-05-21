@@ -74,9 +74,11 @@ describe('POSPage', () => {
   afterAll(() => server.close())
 
   it('loads products and customers from API', async () => {
+    const user = userEvent.setup()
     renderPOSPage()
 
     expect(await screen.findByText('Cafe molido')).toBeTruthy()
+    await user.click(await screen.findByRole('combobox', { name: 'Seleccionar cliente' }))
     expect(await screen.findByRole('option', { name: 'Maria Perez' })).toBeTruthy()
   })
 

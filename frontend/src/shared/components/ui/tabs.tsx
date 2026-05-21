@@ -1,12 +1,14 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { cn } from '@/shared/utils/cn'
 
-export const Tabs = TabsPrimitive.Root
+export function Tabs(props: Readonly<React.ComponentProps<typeof TabsPrimitive.Root>>) {
+  return <TabsPrimitive.Root {...props} />
+}
 
 export function TabsList({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) {
+}: Readonly<React.ComponentProps<typeof TabsPrimitive.List>>) {
   return (
     <TabsPrimitive.List
       className={cn(
@@ -21,7 +23,7 @@ export function TabsList({
 export function TabsTrigger({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: Readonly<React.ComponentProps<typeof TabsPrimitive.Trigger>>) {
   return (
     <TabsPrimitive.Trigger
       className={cn(
@@ -41,7 +43,7 @@ export function TabsTrigger({
 export function TabsContent({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+}: Readonly<React.ComponentProps<typeof TabsPrimitive.Content>>) {
   return (
     <TabsPrimitive.Content
       className={cn(

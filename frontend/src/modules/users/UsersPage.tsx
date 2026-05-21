@@ -31,22 +31,49 @@ export default function UsersPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
 
+  const applyUsers = useCallback((items: UserSummary[]) => {
+    setUsers(items)
+    setError(null)
+  }, [])
+
   const loadUsers = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await usersApi.getUsers()
-      setUsers(response.items)
-      setError(null)
+      applyUsers(response.items)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar usuarios')
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [applyUsers])
 
   useEffect(() => {
-    void loadUsers()
-  }, [loadUsers])
+    let cancelled = false
+
+    async function fetchInitialUsers() {
+      try {
+        const response = await usersApi.getUsers()
+        if (!cancelled) {
+          applyUsers(response.items)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error al cargar usuarios')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void fetchInitialUsers()
+
+    return () => {
+      cancelled = true
+    }
+  }, [applyUsers])
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -70,6 +97,28 @@ export default function UsersPage() {
   )
 
   const hasFilters = Boolean(search || roleFilter || statusFilter)
+  let listContent: React.ReactNode
+
+  if (isLoading) {
+    listContent = <ListSkeleton />
+  } else if (error) {
+    listContent = <ListError message={error} onRetry={() => void loadUsers()} />
+  } else if (filteredUsers.length === 0) {
+    listContent = <ListEmpty hasFilters={hasFilters} onCreate={() => setCreateOpen(true)} />
+  } else {
+    listContent = (
+      <ul className="divide-y divide-stone-100">
+        {filteredUsers.map((u) => (
+          <UserListItem
+            key={u.userId}
+            onClick={() => setSelectedUserId(u.userId)}
+            selected={selectedUserId === u.userId}
+            user={u}
+          />
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <section className="flex min-h-full flex-col">
@@ -164,26 +213,7 @@ export default function UsersPage() {
             </div>
           </div>
 
-          <div className="flex-1">
-            {isLoading ? (
-              <ListSkeleton />
-            ) : error ? (
-              <ListError message={error} onRetry={() => void loadUsers()} />
-            ) : filteredUsers.length === 0 ? (
-              <ListEmpty hasFilters={hasFilters} onCreate={() => setCreateOpen(true)} />
-            ) : (
-              <ul className="divide-y divide-stone-100">
-                {filteredUsers.map((u) => (
-                  <UserListItem
-                    key={u.userId}
-                    onClick={() => setSelectedUserId(u.userId)}
-                    selected={selectedUserId === u.userId}
-                    user={u}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
+          <div className="flex-1">{listContent}</div>
 
           <div className="shrink-0 border-t border-stone-200 px-3 py-2 text-xs font-medium text-stone-500">
             Mostrando {filteredUsers.length} de {users.length} usuarios

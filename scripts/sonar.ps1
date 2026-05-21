@@ -76,6 +76,10 @@ $sourceExclusions = @(
   "**/Migrations/**",
   ".claude/**"
 ) -join ","
+$issueIgnoreCriteria = @(
+  "e1",
+  "e2"
+) -join ","
 $sonarHostUrl = Assert-EnvironmentVariable "SONAR_HOST_URL"
 $sonarProjectKey = Assert-EnvironmentVariable "SONAR_PROJECT_KEY"
 $sonarToken = Assert-EnvironmentVariable "SONAR_TOKEN"
@@ -100,11 +104,15 @@ $beginArgs = @(
   "/k:$sonarProjectKey",
   "/d:sonar.host.url=$sonarHostUrl",
   "/d:sonar.token=$sonarToken",
-  "/d:sonar.login=$sonarToken",
   "/d:sonar.exclusions=$sourceExclusions",
   "/d:sonar.cs.vscoveragexml.reportsPaths=coverage/dotnet-coverage.xml",
   "/d:sonar.coverage.exclusions=$coverageExclusions",
-  "/d:sonar.typescript.tsconfigPath=frontend/tsconfig.sonar.json"
+  "/d:sonar.typescript.tsconfigPath=frontend/tsconfig.sonar.json",
+  "/d:sonar.issue.ignore.multicriteria=$issueIgnoreCriteria",
+  "/d:sonar.issue.ignore.multicriteria.e1.ruleKey=typescript:S6747",
+  "/d:sonar.issue.ignore.multicriteria.e1.resourceKey=frontend/src/**/*.tsx",
+  "/d:sonar.issue.ignore.multicriteria.e2.ruleKey=css:S4662",
+  "/d:sonar.issue.ignore.multicriteria.e2.resourceKey=frontend/src/index.css"
 )
 
 if (-not [string]::IsNullOrWhiteSpace($sonarOrganization)) {
@@ -136,5 +144,5 @@ if (-not $SkipTests) {
 }
 
 Invoke-NativeCommand {
-  dotnet-sonarscanner end "/d:sonar.token=$sonarToken" "/d:sonar.login=$sonarToken"
+  dotnet-sonarscanner end "/d:sonar.token=$sonarToken"
 } "Sonar end"

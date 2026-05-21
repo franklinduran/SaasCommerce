@@ -30,7 +30,7 @@ export function SuppliersPage() {
   const [createOpen, setCreateOpen] = useState(false)
 
   const suppliers = useSuppliers(filters)
-  const items = suppliers.data?.items ?? []
+  const items = useMemo(() => suppliers.data?.items ?? [], [suppliers.data?.items])
 
   const stats = useMemo(() => {
     const active = items.filter((s) => s.isActive).length
@@ -43,6 +43,28 @@ export function SuppliersPage() {
   }
 
   const hasFilters = Boolean(filters.query || filters.isActive)
+  let listContent: React.ReactNode
+
+  if (suppliers.isLoading) {
+    listContent = <ListSkeleton />
+  } else if (suppliers.isError) {
+    listContent = <ListError onRetry={() => void suppliers.refetch()} />
+  } else if (items.length === 0) {
+    listContent = <ListEmpty hasFilters={hasFilters} onCreate={() => setCreateOpen(true)} />
+  } else {
+    listContent = (
+      <ul className="divide-y divide-stone-100">
+        {items.map((s) => (
+          <SupplierListItem
+            key={s.id}
+            onClick={() => setSelectedId(s.id)}
+            selected={selectedId === s.id}
+            supplier={s}
+          />
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <section className="flex min-h-full flex-col">
@@ -115,26 +137,7 @@ export function SuppliersPage() {
             </Select>
           </div>
 
-          <div className="flex-1">
-            {suppliers.isLoading ? (
-              <ListSkeleton />
-            ) : suppliers.isError ? (
-              <ListError onRetry={() => void suppliers.refetch()} />
-            ) : items.length === 0 ? (
-              <ListEmpty hasFilters={hasFilters} onCreate={() => setCreateOpen(true)} />
-            ) : (
-              <ul className="divide-y divide-stone-100">
-                {items.map((s) => (
-                  <SupplierListItem
-                    key={s.id}
-                    onClick={() => setSelectedId(s.id)}
-                    selected={selectedId === s.id}
-                    supplier={s}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
+          <div className="flex-1">{listContent}</div>
 
           <div className="shrink-0 border-t border-stone-200 px-3 py-2 text-xs font-medium text-stone-500">
             Mostrando {items.length} de {suppliers.data?.totalItems ?? 0}

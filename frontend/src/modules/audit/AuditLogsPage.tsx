@@ -57,7 +57,7 @@ export default function AuditLogsPage() {
   const [filters, setFilters] = useState(defaultFilters)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { data, isError, isFetching, isLoading, refetch } = useAuditLogs(filters)
-  const items = data?.items ?? []
+  const items = useMemo(() => data?.items ?? [], [data?.items])
 
   const stats = useMemo(() => {
     const failedLogins = items.filter((i) => i.action === 'auth.login_failed').length
@@ -73,6 +73,28 @@ export default function AuditLogsPage() {
   const hasFilters = Boolean(
     filters.action || filters.entityName || filters.dateFrom || filters.dateTo || filters.userId,
   )
+  let listContent: React.ReactNode
+
+  if (isLoading) {
+    listContent = <ListSkeleton />
+  } else if (isError) {
+    listContent = <ListError onRetry={() => void refetch()} />
+  } else if (items.length === 0) {
+    listContent = <ListEmpty hasFilters={hasFilters} />
+  } else {
+    listContent = (
+      <ul className="divide-y divide-stone-100">
+        {items.map((log) => (
+          <AuditLogListItem
+            key={log.auditLogId}
+            log={log}
+            onClick={() => setSelectedId(log.auditLogId)}
+            selected={selectedId === log.auditLogId}
+          />
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <section className="flex min-h-full flex-col">
@@ -170,26 +192,7 @@ export default function AuditLogsPage() {
             )}
           </div>
 
-          <div className="flex-1">
-            {isLoading ? (
-              <ListSkeleton />
-            ) : isError ? (
-              <ListError onRetry={() => void refetch()} />
-            ) : items.length === 0 ? (
-              <ListEmpty hasFilters={hasFilters} />
-            ) : (
-              <ul className="divide-y divide-stone-100">
-                {items.map((log) => (
-                  <AuditLogListItem
-                    key={log.auditLogId}
-                    log={log}
-                    onClick={() => setSelectedId(log.auditLogId)}
-                    selected={selectedId === log.auditLogId}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
+          <div className="flex-1">{listContent}</div>
 
           {data && data.totalPages > 1 && (
             <div className="shrink-0 border-t border-stone-200 px-3 py-2">
@@ -292,19 +295,19 @@ function ListError({ onRetry }: Readonly<{ onRetry: () => void }>) {
 }
 
 function ListEmpty({ hasFilters }: Readonly<{ hasFilters: boolean }>) {
+  const Icon = hasFilters ? Search : ClipboardList
+  const title = hasFilters ? 'Sin resultados' : 'Sin registros'
+  const message = hasFilters
+    ? 'Ajusta los filtros para ver mas eventos.'
+    : 'Los eventos del sistema apareceran aqui automaticamente.'
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100">
-        {hasFilters ? <Search className="text-stone-500" size={18} /> : <ClipboardList className="text-stone-500" size={18} />}
+        <Icon className="text-stone-500" size={18} />
       </div>
-      <p className="text-sm font-semibold text-stone-900">
-        {hasFilters ? 'Sin resultados' : 'Sin registros'}
-      </p>
-      <p className="max-w-xs text-xs font-medium text-stone-500">
-        {hasFilters
-          ? 'Ajusta los filtros para ver mas eventos.'
-          : 'Los eventos del sistema apareceran aqui automaticamente.'}
-      </p>
+      <p className="text-sm font-semibold text-stone-900">{title}</p>
+      <p className="max-w-xs text-xs font-medium text-stone-500">{message}</p>
     </div>
   )
 }

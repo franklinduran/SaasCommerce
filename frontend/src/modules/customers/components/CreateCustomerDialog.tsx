@@ -1,5 +1,5 @@
 import { UserPlus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { customerSchema } from '@/modules/customers/schemas/customerSchemas'
 import type { CustomerUpsertRequest } from '@/modules/customers/types'
 import { Button } from '@/shared/components/ui/button'
@@ -32,14 +32,19 @@ export function CreateCustomerDialog({
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) {
-      setFullName('')
-      setPhone('')
-      setEmail('')
-      setError(null)
+  function resetState() {
+    setFullName('')
+    setPhone('')
+    setEmail('')
+    setError(null)
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      resetState()
     }
-  }, [open])
+    onOpenChange(nextOpen)
+  }
 
   function handleSubmit() {
     const payload = {
@@ -58,7 +63,7 @@ export function CreateCustomerDialog({
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent>
         <DialogHeader>
           <div className="flex items-start gap-3">
@@ -126,7 +131,7 @@ export function CreateCustomerDialog({
         <DialogFooter>
           <Button
             disabled={isSubmitting}
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             type="button"
             variant="secondary"
           >

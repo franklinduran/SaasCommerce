@@ -72,24 +72,51 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
     resolver: zodResolver(updateUserSchema),
   })
 
+  const applyUser = useCallback((data: UserDetail) => {
+    setUser(data)
+    setPendingRole(data.role)
+    reset({ fullName: data.fullName, phone: data.phone ?? '' })
+    setError(null)
+  }, [reset])
+
   const loadUser = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await usersApi.getUserById(userId)
-      setUser(data)
-      setPendingRole(data.role)
-      reset({ fullName: data.fullName, phone: data.phone ?? '' })
-      setError(null)
+      applyUser(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar usuario')
     } finally {
       setIsLoading(false)
     }
-  }, [reset, userId])
+  }, [applyUser, userId])
 
   useEffect(() => {
-    void loadUser()
-  }, [loadUser])
+    let cancelled = false
+
+    async function fetchUser() {
+      try {
+        const data = await usersApi.getUserById(userId)
+        if (!cancelled) {
+          applyUser(data)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Error al cargar usuario')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void fetchUser()
+
+    return () => {
+      cancelled = true
+    }
+  }, [applyUser, userId])
 
   // Clear notice after a few seconds
   useEffect(() => {
@@ -191,7 +218,6 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Sticky header */}
       <div className="sticky top-0 z-10 border-b border-stone-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -276,9 +302,7 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
         )}
       </div>
 
-      {/* Body */}
       <div className="min-h-0 flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
-        {/* Profile */}
         <Section
           description="Nombre y telefono de contacto del usuario."
           title="Perfil"
@@ -317,7 +341,6 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
           </form>
         </Section>
 
-        {/* Role */}
         <Section
           description="Permisos y nivel de acceso dentro del negocio."
           title="Rol y permisos"
@@ -351,7 +374,6 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
           </div>
         </Section>
 
-        {/* Security */}
         <Section
           description="Acciones que afectan el acceso de este usuario al sistema."
           icon={<AlertTriangle className="text-amber-600" size={16} />}
@@ -406,7 +428,6 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
           </div>
         </Section>
 
-        {/* Metadata */}
         <Section description="Datos de auditoria de la cuenta." title="Detalles">
           <dl className="grid gap-3 sm:grid-cols-2">
             <div>
@@ -463,8 +484,6 @@ export function UserDetailPanel({ userId, onClose, onUpdated }: Readonly<UserDet
   )
 }
 
-// ── Section wrapper ──────────────────────────────────────────────────────────
-
 type SectionProps = {
   children: React.ReactNode
   description?: string
@@ -474,11 +493,13 @@ type SectionProps = {
 }
 
 function Section({ children, description, icon, title, tone = 'default' }: Readonly<SectionProps>) {
+  const toneClass = tone === 'amber' ? 'ring-amber-200' : 'ring-stone-200'
+
   return (
     <section
       className={cn(
         'rounded-md bg-white p-4 ring-1 sm:p-5',
-        tone === 'amber' ? 'ring-stone-200' : 'ring-stone-200',
+        toneClass,
       )}
     >
       <header className="mb-4 flex items-start gap-2.5">
@@ -495,8 +516,6 @@ function Section({ children, description, icon, title, tone = 'default' }: Reado
   )
 }
 
-// ── Action row ───────────────────────────────────────────────────────────────
-
 type ActionRowProps = {
   children: React.ReactNode
   description: string
@@ -506,6 +525,10 @@ type ActionRowProps = {
 }
 
 function ActionRow({ children, description, icon, label, tone = 'default' }: Readonly<ActionRowProps>) {
+  const iconClass = tone === 'danger'
+    ? 'bg-red-100 text-red-700 ring-red-200'
+    : 'bg-white text-stone-700 ring-stone-200'
+
   return (
     <div
       className={cn(
@@ -517,9 +540,7 @@ function ActionRow({ children, description, icon, label, tone = 'default' }: Rea
         <span
           className={cn(
             'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ring-1',
-            tone === 'danger'
-              ? 'bg-red-100 text-red-700 ring-red-200'
-              : 'bg-white text-stone-700 ring-stone-200',
+            iconClass,
           )}
         >
           {icon}
@@ -533,8 +554,6 @@ function ActionRow({ children, description, icon, label, tone = 'default' }: Rea
     </div>
   )
 }
-
-// ── Skeleton ─────────────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
   return (

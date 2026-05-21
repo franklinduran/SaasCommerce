@@ -16,7 +16,13 @@ export function InventoryFilters({
   filters: StockFilters
   onChange: (values: Partial<StockFilters>) => void
 }>) {
-  const statusValue = filters.outOfStockOnly ? 'out' : filters.lowStockOnly ? 'low' : '_'
+  let statusValue = '_'
+
+  if (filters.outOfStockOnly) {
+    statusValue = 'out'
+  } else if (filters.lowStockOnly) {
+    statusValue = 'low'
+  }
 
   return (
     <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_160px_160px_130px]">

@@ -17,9 +17,9 @@ describe('SettingsPage', () => {
     renderSettingsPage()
 
     expect(await screen.findByRole('heading', { name: 'Mi perfil' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Negocio' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Sucursal' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Seguridad' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Negocio' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Sucursal' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Seguridad' })).toBeTruthy()
   })
 
   it('shows validation errors for business identification and primary phone', async () => {
@@ -27,28 +27,28 @@ describe('SettingsPage', () => {
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
-    const businessCard = await screen.findByRole('heading', { name: 'Negocio' })
-    const card = businessCard.closest('div.rounded-md') as HTMLElement
-    const identificationInput = within(card).getByLabelText('Identificacion *')
-    const primaryPhoneInput = within(card).getByLabelText('Telefono principal *')
+    await user.click(await screen.findByRole('button', { name: 'Negocio' }))
+    await screen.findByRole('heading', { name: 'Negocio' })
+    const identificationInput = screen.getByLabelText('Identificacion *')
+    const primaryPhoneInput = screen.getByLabelText('Telefono principal *')
 
     await user.clear(identificationInput)
     await user.type(identificationInput, '123')
     await user.clear(primaryPhoneInput)
-    await user.click(within(card).getByRole('button', { name: 'Guardar cambios' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
-    expect(await within(card).findByText('El RNC debe tener 9 digitos.')).toBeTruthy()
-    expect(await within(card).findByText('El telefono principal es requerido.')).toBeTruthy()
+    expect(await screen.findByText('El RNC debe tener 9 digitos.')).toBeTruthy()
+    expect(await screen.findByText('El telefono principal es requerido.')).toBeTruthy()
   })
 
   it('renders operational settings panel with tab navigation', async () => {
+    const user = userEvent.setup()
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
-    // The panel heading appears regardless of tab query state
-    expect(await screen.findByText('Configuracion del sistema')).toBeTruthy()
+    await openOperationalSettings(user)
 
-    // All 4 tab buttons are present
+    expect(await screen.findByText('Configuracion del sistema')).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Negocio' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Ventas' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Inventario' })).toBeTruthy()
@@ -56,10 +56,12 @@ describe('SettingsPage', () => {
   })
 
   it('shows business settings form on default tab', async () => {
+    const user = userEvent.setup()
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
     // Wait for operational settings to load (default tab is Negocio → business settings)
+    await openOperationalSettings(user)
     expect(await screen.findByRole('heading', { name: 'Informacion del negocio' })).toBeTruthy()
   })
 
@@ -68,7 +70,7 @@ describe('SettingsPage', () => {
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
-    // Wait for panel to be ready
+    await openOperationalSettings(user)
     await screen.findByRole('tab', { name: 'Ventas' })
     await user.click(screen.getByRole('tab', { name: 'Ventas' }))
 
@@ -80,6 +82,7 @@ describe('SettingsPage', () => {
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
+    await openOperationalSettings(user)
     await screen.findByRole('tab', { name: 'Inventario' })
     await user.click(screen.getByRole('tab', { name: 'Inventario' }))
 
@@ -91,6 +94,7 @@ describe('SettingsPage', () => {
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
+    await openOperationalSettings(user)
     await screen.findByRole('tab', { name: 'Facturacion' })
     await user.click(screen.getByRole('tab', { name: 'Facturacion' }))
 
@@ -100,10 +104,11 @@ describe('SettingsPage', () => {
   })
 
   it('loads operational business settings from API', async () => {
+    const user = userEvent.setup()
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
-    // The business settings form should be pre-filled with data from the API
+    await openOperationalSettings(user)
     const commercialNameInput = await screen.findByDisplayValue('Demo Comercial')
     expect(commercialNameInput).toBeTruthy()
   })
@@ -113,6 +118,7 @@ describe('SettingsPage', () => {
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
+    await openOperationalSettings(user)
     await screen.findByRole('tab', { name: 'Facturacion' })
     await user.click(screen.getByRole('tab', { name: 'Facturacion' }))
 
@@ -129,6 +135,7 @@ describe('SettingsPage', () => {
     vi.stubGlobal('fetch', createSettingsFetchMock())
     renderSettingsPage()
 
+    await openOperationalSettings(user)
     await screen.findByRole('tab', { name: 'Inventario' })
     await user.click(screen.getByRole('tab', { name: 'Inventario' }))
 
@@ -142,6 +149,10 @@ describe('SettingsPage', () => {
     expect(await within(tabPanel).findByText('El umbral debe ser >= 0.')).toBeTruthy()
   })
 })
+
+async function openOperationalSettings(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Operativo' }))
+}
 
 function renderSettingsPage() {
   useAuthStore.getState().setSession({
