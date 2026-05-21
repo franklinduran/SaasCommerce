@@ -1,8 +1,17 @@
-import { useState, type SyntheticEvent } from 'react'
-import { X } from 'lucide-react'
+import { WalletCards } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { registerCustomerPaymentSchema } from '@/modules/customers/schemas/customerSchemas'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardHeader } from '@/shared/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/components/ui/dialog'
+import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
 
 type RegisterCustomerPaymentDialogProps = {
   isOpen: boolean
@@ -21,69 +30,94 @@ export function RegisterCustomerPaymentDialog({
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  if (!isOpen) {
-    return null
-  }
+  useEffect(() => {
+    if (!isOpen) {
+      setAmount('')
+      setNote('')
+      setError(null)
+    }
+  }, [isOpen])
 
-  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function handleSubmit() {
     const parsedAmount = Number(amount)
     const validation = registerCustomerPaymentSchema.safeParse({
       amount: parsedAmount,
       note,
     })
-
     if (!validation.success) {
       setError(validation.error.issues[0]?.message ?? 'Revisa el monto.')
       return
     }
-
     setError(null)
     onSubmit(parsedAmount, note.trim() || null)
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-stone-950/35 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-stone-200">
-          <div>
-            <h3 className="text-lg font-semibold text-stone-950">Registrar abono</h3>
-            <p className="mt-1 text-sm font-medium text-stone-600">Aplica al balance pendiente.</p>
+    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white">
+              <WalletCards size={18} />
+            </span>
+            <div>
+              <DialogTitle>Registrar abono</DialogTitle>
+              <DialogDescription>
+                Aplica un pago al balance pendiente del cliente.
+              </DialogDescription>
+            </div>
           </div>
-          <Button aria-label="Cerrar" onClick={onClose} size="icon" type="button" variant="ghost">
-            <X size={18} />
-          </Button>
-        </CardHeader>
-        <form className="space-y-4 p-5" onSubmit={handleSubmit}>
-          <label className="grid gap-1 text-sm font-semibold text-stone-700">
-            <span>Monto</span>
-            <input
-              className={inputClass}
+        </DialogHeader>
+
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            handleSubmit()
+          }}
+        >
+          {error && (
+            <div className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="amount">Monto del abono</Label>
+            <Input
+              disabled={isSubmitting}
+              id="amount"
               min="0"
-              onChange={(event) => setAmount(event.target.value)}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
               step="0.01"
               type="number"
               value={amount}
             />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-stone-700">
-            <span>Nota</span>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="note">Nota (opcional)</Label>
             <textarea
-              className="min-h-24 rounded-md bg-white px-3 py-2 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-              onChange={(event) => setNote(event.target.value)}
+              className="min-h-24 w-full rounded-md bg-white px-3 py-2 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+              disabled={isSubmitting}
+              id="note"
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Detalles del abono"
               value={note}
             />
-          </label>
-          {error && <p className="text-sm font-semibold text-red-700">{error}</p>}
-          <div className="flex justify-end gap-2">
-            <Button onClick={onClose} type="button" variant="secondary">Cancelar</Button>
-            <Button disabled={isSubmitting} type="submit">Registrar</Button>
           </div>
         </form>
-      </Card>
-    </div>
+
+        <DialogFooter>
+          <Button disabled={isSubmitting} onClick={onClose} type="button" variant="secondary">
+            Cancelar
+          </Button>
+          <Button disabled={isSubmitting} onClick={handleSubmit} type="button">
+            {isSubmitting ? 'Registrando...' : 'Registrar abono'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
-
-const inputClass =
-  'h-10 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15'

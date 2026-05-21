@@ -29,7 +29,7 @@ export function DashboardPage() {
   } else {
     recentSalesContent = (
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-sm">
+        <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
               <th className="px-4 py-2.5 text-left">Nro. Venta</th>
@@ -68,7 +68,7 @@ export function DashboardPage() {
   } else {
     recentInvoicesContent = (
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-sm">
+        <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
               <th className="px-4 py-2.5 text-left">Nro. Factura</th>
@@ -136,15 +136,12 @@ export function DashboardPage() {
               Resumen operativo de hoy — ventas, facturas, cobros e inventario.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Link
-              className="flex items-center gap-1.5 rounded-md bg-stone-100 px-3 py-2 font-semibold text-stone-700 ring-1 ring-stone-200 transition-colors hover:bg-stone-200"
-              to="/reports"
-            >
+          <Button asChild variant="secondary">
+            <Link to="/reports">
               Ver reportes
               <ArrowRight size={14} />
             </Link>
-          </div>
+          </Button>
         </header>
 
         {/* Error state */}
@@ -198,7 +195,7 @@ export function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Ventas recientes</h2>
               <Link
-                className="flex items-center gap-1 text-sm font-semibold text-stone-600 hover:text-stone-900"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
                 to="/reports"
               >
                 Ver todas
@@ -215,7 +212,7 @@ export function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Facturas recientes</h2>
               <Link
-                className="flex items-center gap-1 text-sm font-semibold text-stone-600 hover:text-stone-900"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
                 to="/invoices"
               >
                 Ver todas
@@ -234,7 +231,7 @@ export function DashboardPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Compras recientes</h2>
               <Link
-                className="flex items-center gap-1 text-sm font-semibold text-stone-600 hover:text-stone-900"
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
                 to="/purchases"
               >
                 Ver todas
@@ -279,7 +276,7 @@ export function DashboardPage() {
 
         {/* Accounts receivable alert */}
         {(data?.receivables.customerCount ?? 0) > 0 && (
-          <div className="flex flex-col gap-3 rounded-lg bg-amber-50 p-4 ring-1 ring-amber-200 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-md bg-amber-50 p-4 ring-1 ring-amber-200 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <Users className="shrink-0 text-amber-600" size={20} />
               <div>
@@ -291,11 +288,11 @@ export function DashboardPage() {
                 </p>
               </div>
             </div>
-            <Link to="/reports">
-              <Button size="sm" variant="outline">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/reports">
                 Ver cuentas por cobrar
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
       </div>

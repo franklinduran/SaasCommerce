@@ -16,7 +16,7 @@ export function POSCartItem({
   onRemove,
 }: Readonly<POSCartItemProps>) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-stone-200 py-3 last:border-b-0">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-stone-200 py-3 last:border-b-0">
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-stone-950">{item.name}</p>
         <p className="mt-1 font-mono text-xs font-semibold text-stone-500">{item.sku}</p>

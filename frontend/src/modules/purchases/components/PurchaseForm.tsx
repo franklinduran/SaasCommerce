@@ -11,9 +11,16 @@ import { useSuppliers } from '@/modules/suppliers/hooks/useSuppliers'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 import { HttpClientError } from '@/shared/services/httpClient'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const inputClass =
-  'h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15'
+  'h-11 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15'
 
 export function PurchaseForm() {
   const navigate = useNavigate()
@@ -105,7 +112,7 @@ export function PurchaseForm() {
   }
 
   return (
-    <section className="space-y-5 p-6 lg:p-8">
+    <section className="space-y-5 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase text-stone-500">Compras</p>
@@ -129,15 +136,21 @@ export function PurchaseForm() {
             <h3 className="text-base font-semibold text-stone-950">Datos de compra</h3>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-1.5">
+            <div className="space-y-1.5">
               <span className="text-sm font-semibold text-stone-700">Proveedor</span>
-              <select className={inputClass} onChange={(event) => setSupplierId(event.target.value)} value={supplierId}>
-                <option value="">Seleccionar proveedor</option>
-                {suppliers.data?.items.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
-                ))}
-              </select>
-            </label>
+              <Select
+                value={supplierId || '_'}
+                onValueChange={(v) => setSupplierId(v === '_' ? '' : v)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_">Seleccionar proveedor</SelectItem>
+                  {suppliers.data?.items.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <label className="space-y-1.5">
               <span className="text-sm font-semibold text-stone-700">Factura proveedor</span>
               <input className={inputClass} onChange={(event) => setInvoiceNumber(event.target.value)} value={invoiceNumber} />

@@ -194,10 +194,10 @@ export function POSPage() {
   const customersForPOS = customers.data?.items ?? []
 
   return (
-    <section className="min-h-full bg-stone-50 p-4 lg:p-6">
-      <div className="mx-auto grid max-w-[1680px] gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+    <section className="min-h-full bg-surface-subtle p-4 sm:p-5 lg:p-6">
+      <div className="mx-auto grid w-full max-w-[1680px] min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:gap-5">
         <div className="space-y-5">
-          <div className="flex flex-col justify-between gap-3 rounded-md bg-white p-5 shadow-sm ring-1 ring-stone-200 lg:flex-row lg:items-end">
+          <div className="flex min-w-0 flex-col justify-between gap-3 rounded-md bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-5 lg:flex-row lg:items-end">
             <div>
               <p className="text-sm font-semibold uppercase text-stone-500">Caja</p>
               <h1 className="mt-1 text-2xl font-semibold text-stone-950">POS</h1>

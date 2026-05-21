@@ -2,6 +2,13 @@ import { Trash2 } from 'lucide-react'
 import type { Product } from '@/modules/products/types'
 import { formatMoney } from '@/modules/purchases/utils/formatMoney'
 import { Button } from '@/shared/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 export type DraftPurchaseItem = {
   productId: string
@@ -17,7 +24,7 @@ type PurchaseItemsTableProps = {
 }
 
 const inputClass =
-  'h-10 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15'
+  'h-10 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15'
 
 export function PurchaseItemsTable({
   items,
@@ -45,25 +52,28 @@ export function PurchaseItemsTable({
             return (
               <tr key={`${index}-${item.productId || 'empty'}`}>
                 <td className="px-4 py-3">
-                  <select
-                    className={inputClass}
-                    onChange={(event) => {
-                      const nextProduct = products.find((candidate) => candidate.id === event.target.value)
+                  <Select
+                    value={item.productId || '_'}
+                    onValueChange={(v) => {
+                      const productId = v === '_' ? '' : v
+                      const nextProduct = products.find((candidate) => candidate.id === productId)
                       onChange(index, {
                         ...item,
-                        productId: event.target.value,
+                        productId,
                         unitCost: nextProduct?.costPrice ?? item.unitCost,
                       })
                     }}
-                    value={item.productId}
                   >
-                    <option value="">Seleccionar producto</option>
-                    {products.map((candidate) => (
-                      <option key={candidate.id} value={candidate.id}>
-                        {candidate.name} / {candidate.sku}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_">Seleccionar producto</SelectItem>
+                      {products.map((candidate) => (
+                        <SelectItem key={candidate.id} value={candidate.id}>
+                          {candidate.name} / {candidate.sku}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {product && <p className="mt-1 text-xs font-medium text-stone-500">{product.sku}</p>}
                 </td>
                 <td className="px-4 py-3">

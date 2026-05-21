@@ -24,7 +24,7 @@ export function ProductSearch({
         />
         <input
           aria-label="Buscar productos"
-          className="h-11 w-full rounded-md bg-white pl-10 pr-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+          className="h-11 w-full min-w-0 rounded-md bg-white pl-10 pr-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Buscar por nombre o SKU"
           value={query}

@@ -52,7 +52,7 @@ export function SalesPage() {
   }
 
   return (
-    <section className="space-y-6 p-6 lg:p-8">
+    <section className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">Ventas</p>
@@ -61,13 +61,12 @@ export function SalesPage() {
             Consulta ventas, revisa estados y abre recibos simples.
           </p>
         </div>
-        <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-stone-900 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-stone-800"
-          to="/pos"
-        >
-          <ShoppingCart size={16} />
-          Abrir POS
-        </Link>
+        <Button asChild>
+          <Link to="/pos">
+            <ShoppingCart size={16} />
+            Abrir POS
+          </Link>
+        </Button>
       </div>
 
       <Card className="rounded-md">

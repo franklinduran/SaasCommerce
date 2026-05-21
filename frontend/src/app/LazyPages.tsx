@@ -44,11 +44,6 @@ const CustomersPage = lazy(() =>
     default: module.CustomersPage,
   })),
 )
-const CustomerDetailPage = lazy(() =>
-  import('@/modules/customers/pages/CustomerDetailPage').then((module) => ({
-    default: module.CustomerDetailPage,
-  })),
-)
 const PurchasesPage = lazy(() =>
   import('@/modules/purchases/PurchasesPage').then((module) => ({
     default: module.PurchasesPage,
@@ -74,11 +69,6 @@ const InvoicesPage = lazy(() =>
     default: module.InvoicesPage,
   })),
 )
-const InvoiceDetailPage = lazy(() =>
-  import('@/modules/invoices/pages/InvoiceDetailPage').then((module) => ({
-    default: module.InvoiceDetailPage,
-  })),
-)
 const ReportsPage = lazy(() =>
   import('@/modules/reports/ReportsPage').then((module) => ({
     default: module.ReportsPage,
@@ -90,16 +80,6 @@ const SettingsPage = lazy(() =>
   })),
 )
 const UsersPage = lazy(() => import('@/modules/users/UsersPage'))
-const CreateUserPage = lazy(() =>
-  import('@/modules/users/pages/CreateUserPage').then((module) => ({
-    default: module.CreateUserPage,
-  })),
-)
-const UserDetailPage = lazy(() =>
-  import('@/modules/users/pages/UserDetailPage').then((module) => ({
-    default: module.UserDetailPage,
-  })),
-)
 const AuditLogsPage = lazy(() => import('@/modules/audit/AuditLogsPage'))
 const ForbiddenPage = lazy(() =>
   import('@/shared/components/ForbiddenPage').then((module) => ({
@@ -147,10 +127,6 @@ export function CustomersRoute() {
   return <CustomersPage />
 }
 
-export function CustomerDetailRoute() {
-  return <CustomerDetailPage />
-}
-
 export function PurchasesRoute() {
   return <PurchasesPage />
 }
@@ -171,10 +147,6 @@ export function InvoicesRoute() {
   return <InvoicesPage />
 }
 
-export function InvoiceDetailRoute() {
-  return <InvoiceDetailPage />
-}
-
 export function ReportsRoute() {
   return <ReportsPage />
 }
@@ -184,16 +156,6 @@ export function SettingsRoute() {
 }
 
 export function UsersRoute() {
-  const { pathname } = window.location
-
-  if (pathname === '/users/new') {
-    return <CreateUserPage />
-  }
-
-  if (/^\/users\/[a-f0-9-]+$/.exec(pathname)) {
-    return <UserDetailPage />
-  }
-
   return <UsersPage />
 }
 

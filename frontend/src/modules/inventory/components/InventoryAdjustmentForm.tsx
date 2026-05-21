@@ -1,10 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { SlidersHorizontal } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { useCreateInventoryAdjustmentMutation } from '@/modules/inventory/hooks/useInventory'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const adjustmentSchema = z.object({
   productId: z.uuid('Producto invalido'),
@@ -18,6 +25,7 @@ type AdjustmentFormInput = z.input<typeof adjustmentSchema>
 export function InventoryAdjustmentForm() {
   const adjustment = useCreateInventoryAdjustmentMutation()
   const {
+    control,
     formState: { errors },
     handleSubmit,
     register,
@@ -46,7 +54,7 @@ export function InventoryAdjustmentForm() {
       <label className="block">
         <span className="mb-2 block text-sm font-semibold text-stone-900">Producto ID</span>
         <input
-          className="h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+          className="h-11 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
           placeholder="guid del producto"
           {...register('productId')}
         />
@@ -55,27 +63,33 @@ export function InventoryAdjustmentForm() {
       <label className="block">
         <span className="mb-2 block text-sm font-semibold text-stone-900">Cantidad</span>
         <input
-          className="h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+          className="h-11 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
           step="0.001"
           type="number"
           {...register('quantity')}
         />
         {errors.quantity && <span className="mt-2 block text-sm font-medium text-red-700">{errors.quantity.message}</span>}
       </label>
-      <label className="block">
+      <div>
         <span className="mb-2 block text-sm font-semibold text-stone-900">Razon</span>
-        <select
-          className="h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
-          {...register('reason')}
-        >
-          <option value="InitialLoad">Carga inicial</option>
-          <option value="Adjustment">Ajuste</option>
-          <option value="ManualCorrection">Correccion manual</option>
-          <option value="Return">Devolucion</option>
-          <option value="Purchase">Compra</option>
-        </select>
+        <Controller
+          control={control}
+          name="reason"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="InitialLoad">Carga inicial</SelectItem>
+                <SelectItem value="Adjustment">Ajuste</SelectItem>
+                <SelectItem value="ManualCorrection">Correccion manual</SelectItem>
+                <SelectItem value="Return">Devolucion</SelectItem>
+                <SelectItem value="Purchase">Compra</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
         {errors.reason && <span className="mt-2 block text-sm font-medium text-red-700">{errors.reason.message}</span>}
-      </label>
+      </div>
       <div className="flex items-end">
         <Button className="w-full sm:w-auto" disabled={adjustment.isPending} type="submit">
           <SlidersHorizontal size={16} />

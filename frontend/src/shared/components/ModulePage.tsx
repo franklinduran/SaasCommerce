@@ -17,7 +17,7 @@ export function ModulePage({ title, eyebrow, icon: Icon, rows }: Readonly<Module
             <p className="text-sm font-semibold text-stone-600">{eyebrow}</p>
             <h1 className="mt-1 text-2xl font-semibold text-foreground">{title}</h1>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 text-white shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-stone-900 text-white shadow-sm">
             <Icon aria-hidden="true" size={24} />
           </div>
         </header>

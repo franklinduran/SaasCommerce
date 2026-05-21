@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Building2, DollarSign, Package, Receipt, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import {
   useBillingSettingsQuery,
@@ -23,6 +23,13 @@ import type {
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 import { HttpClientError } from '@/shared/services/httpClient'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -105,7 +112,7 @@ export function OperationalSettingsPanel() {
 
       <div
         aria-label="Secciones de configuracion"
-        className="flex gap-1 rounded-lg bg-stone-100 p-1"
+        className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-stone-100 p-1"
         role="tablist"
       >
         {TAB_IDS.map((id) => (
@@ -113,10 +120,10 @@ export function OperationalSettingsPanel() {
             aria-controls={`ops-tab-panel-${id}`}
             aria-selected={activeTab === id}
             className={[
-              'flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
+              'flex flex-1 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
               activeTab === id
-                ? 'bg-white text-stone-900 shadow-sm ring-1 ring-stone-200'
-                : 'text-stone-600 hover:text-stone-900',
+                ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 active:bg-stone-950'
+                : 'text-stone-700 hover:bg-stone-200 hover:text-stone-950 active:bg-stone-300',
             ].join(' ')}
             id={`ops-tab-${id}`}
             key={id}
@@ -215,11 +222,20 @@ function BusinessSettingsTab() {
         </OpsField>
         <div className="grid gap-4 lg:grid-cols-2">
           <OpsField error={form.formState.errors.currency?.message} label="Moneda *">
-            <select className={inputCls} {...form.register('currency')}>
-              <option value="DOP">DOP — Peso dominicano</option>
-              <option value="USD">USD — Dolar estadounidense</option>
-              <option value="EUR">EUR — Euro</option>
-            </select>
+            <Controller
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DOP">DOP — Peso dominicano</SelectItem>
+                    <SelectItem value="USD">USD — Dolar estadounidense</SelectItem>
+                    <SelectItem value="EUR">EUR — Euro</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </OpsField>
           <OpsField error={form.formState.errors.timezone?.message} label="Zona horaria *">
             <input
@@ -325,12 +341,21 @@ function SalesSettingsTab() {
           error={form.formState.errors.defaultPaymentMethod?.message}
           label="Metodo de pago predeterminado"
         >
-          <select className={inputCls} {...form.register('defaultPaymentMethod')}>
-            <option value="">— Sin predeterminado —</option>
-            <option value="Efectivo">Efectivo</option>
-            <option value="Tarjeta">Tarjeta</option>
-            <option value="Transferencia">Transferencia</option>
-          </select>
+          <Controller
+            control={form.control}
+            name="defaultPaymentMethod"
+            render={({ field }) => (
+              <Select value={field.value || '_'} onValueChange={(v) => field.onChange(v === '_' ? '' : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_">— Sin predeterminado —</SelectItem>
+                  <SelectItem value="Efectivo">Efectivo</SelectItem>
+                  <SelectItem value="Tarjeta">Tarjeta</SelectItem>
+                  <SelectItem value="Transferencia">Transferencia</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </OpsField>
         <OpsFormFooter mutation={mutation} />
       </form>
@@ -579,7 +604,7 @@ function OpsCheckboxRow({
   label: string
 }>) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 hover:bg-stone-100">
+    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-stone-200 bg-stone-50 px-4 py-3 hover:bg-stone-100">
       {children}
       <div>
         <p className="text-sm font-semibold text-stone-900">{label}</p>

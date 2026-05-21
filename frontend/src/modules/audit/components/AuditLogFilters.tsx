@@ -1,41 +1,49 @@
+import { RotateCcw } from 'lucide-react'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 import type { AuditLogFilters } from '../auditLogTypes'
 
 const ACTION_OPTIONS = [
-  { value: '', label: 'Todas las acciones' },
-  { value: 'auth.login_succeeded', label: 'Login exitoso' },
-  { value: 'auth.login_failed', label: 'Login fallido' },
-  { value: 'sale.created', label: 'Venta creada' },
-  { value: 'sale.completed', label: 'Venta completada' },
-  { value: 'sale.cancelled', label: 'Venta cancelada' },
-  { value: 'sale.failed', label: 'Venta fallida' },
-  { value: 'payment.registered', label: 'Pago registrado' },
-  { value: 'invoice.generated', label: 'Factura generada' },
-  { value: 'inventory.adjusted', label: 'Inventario ajustado' },
-  { value: 'purchase.received', label: 'Compra recibida' },
-  { value: 'purchase.cancelled', label: 'Compra cancelada' },
-  { value: 'user.created', label: 'Usuario creado' },
-  { value: 'user.updated', label: 'Usuario actualizado' },
-  { value: 'user.activated', label: 'Usuario activado' },
-  { value: 'user.deactivated', label: 'Usuario desactivado' },
-  { value: 'user.role_changed', label: 'Rol cambiado' },
-  { value: 'user.password_reset', label: 'Contraseña reseteada' },
+  { value: '_',                      label: 'Todas las acciones' },
+  { value: 'auth.login_succeeded',   label: 'Login exitoso' },
+  { value: 'auth.login_failed',      label: 'Login fallido' },
+  { value: 'sale.created',           label: 'Venta creada' },
+  { value: 'sale.completed',         label: 'Venta completada' },
+  { value: 'sale.cancelled',         label: 'Venta cancelada' },
+  { value: 'sale.failed',            label: 'Venta fallida' },
+  { value: 'payment.registered',     label: 'Pago registrado' },
+  { value: 'invoice.generated',      label: 'Factura generada' },
+  { value: 'inventory.adjusted',     label: 'Inventario ajustado' },
+  { value: 'purchase.received',      label: 'Compra recibida' },
+  { value: 'purchase.cancelled',     label: 'Compra cancelada' },
+  { value: 'user.created',           label: 'Usuario creado' },
+  { value: 'user.updated',           label: 'Usuario actualizado' },
+  { value: 'user.activated',         label: 'Usuario activado' },
+  { value: 'user.deactivated',       label: 'Usuario desactivado' },
+  { value: 'user.role_changed',      label: 'Rol cambiado' },
+  { value: 'user.password_reset',    label: 'Contraseña reseteada' },
 ]
 
 const ENTITY_OPTIONS = [
-  { value: '', label: 'Todas las entidades' },
-  { value: 'Auth', label: 'Autenticación' },
-  { value: 'User', label: 'Usuarios' },
-  { value: 'Sale', label: 'Ventas' },
-  { value: 'Payment', label: 'Pagos' },
-  { value: 'Invoice', label: 'Facturas' },
+  { value: '_',         label: 'Todas las entidades' },
+  { value: 'Auth',      label: 'Autenticación' },
+  { value: 'User',      label: 'Usuarios' },
+  { value: 'Sale',      label: 'Ventas' },
+  { value: 'Payment',   label: 'Pagos' },
+  { value: 'Invoice',   label: 'Facturas' },
   { value: 'Inventory', label: 'Inventario' },
-  { value: 'Purchase', label: 'Compras' },
-  { value: 'Customer', label: 'Clientes' },
-  { value: 'Supplier', label: 'Proveedores' },
+  { value: 'Purchase',  label: 'Compras' },
+  { value: 'Customer',  label: 'Clientes' },
+  { value: 'Supplier',  label: 'Proveedores' },
 ]
-
-const inputCn =
-  'h-10 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15'
 
 interface AuditLogFiltersProps {
   filters: AuditLogFilters
@@ -48,52 +56,75 @@ export function AuditLogFiltersBar({ filters, onChange }: Readonly<AuditLogFilte
   }
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr]">
-      <input
-        aria-label="Fecha desde"
-        className={inputCn}
-        onChange={(e) => set({ dateFrom: e.target.value })}
-        type="date"
-        value={filters.dateFrom}
-      />
-      <input
-        aria-label="Fecha hasta"
-        className={inputCn}
-        onChange={(e) => set({ dateTo: e.target.value })}
-        type="date"
-        value={filters.dateTo}
-      />
-      <select
-        aria-label="Acción"
-        className={inputCn}
-        onChange={(e) => set({ action: e.target.value })}
-        value={filters.action}
-      >
-        {ACTION_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <select
-        aria-label="Entidad"
-        className={inputCn}
-        onChange={(e) => set({ entityName: e.target.value })}
-        value={filters.entityName}
-      >
-        {ENTITY_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <button
-        className="h-10 rounded-md bg-stone-200 px-4 text-sm font-medium text-stone-700 hover:bg-stone-300"
-        onClick={() => onChange({ dateFrom: '', dateTo: '', userId: '', action: '', entityName: '', page: 1, pageSize: filters.pageSize })}
-        type="button"
-      >
-        Limpiar filtros
-      </button>
+    <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
+      <div className="space-y-1.5">
+        <Label className="text-xs uppercase text-stone-500">Desde</Label>
+        <Input
+          onChange={(e) => set({ dateFrom: e.target.value })}
+          type="date"
+          value={filters.dateFrom}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs uppercase text-stone-500">Hasta</Label>
+        <Input
+          onChange={(e) => set({ dateTo: e.target.value })}
+          type="date"
+          value={filters.dateTo}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs uppercase text-stone-500">Accion</Label>
+        <Select
+          value={filters.action || '_'}
+          onValueChange={(v) => set({ action: v === '_' ? '' : v })}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {ACTION_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs uppercase text-stone-500">Entidad</Label>
+        <Select
+          value={filters.entityName || '_'}
+          onValueChange={(v) => set({ entityName: v === '_' ? '' : v })}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {ENTITY_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-end">
+        <Button
+          onClick={() =>
+            onChange({
+              action: '',
+              dateFrom: '',
+              dateTo: '',
+              entityName: '',
+              page: 1,
+              pageSize: filters.pageSize,
+              userId: '',
+            })
+          }
+          type="button"
+          variant="ghost"
+        >
+          <RotateCcw size={15} />
+          Limpiar
+        </Button>
+      </div>
     </div>
   )
 }

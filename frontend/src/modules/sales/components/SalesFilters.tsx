@@ -1,14 +1,22 @@
 import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
 import type { SalesFilters, SaleStatus } from '@/modules/sales/types/salesTypes'
 import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
-const statusOptions: Array<{ label: string; value: '' | SaleStatus }> = [
-  { label: 'Todos los estados', value: '' },
-  { label: 'Recibida', value: 'Received' },
-  { label: 'Procesando', value: 'Processing' },
-  { label: 'Completada', value: 'Completed' },
-  { label: 'Fallida', value: 'Failed' },
-  { label: 'Cancelada', value: 'Cancelled' },
+const statusOptions: Array<{ label: string; value: string }> = [
+  { label: 'Todos los estados', value: '_' },
+  { label: 'Recibida',          value: 'Received' },
+  { label: 'Procesando',        value: 'Processing' },
+  { label: 'Completada',        value: 'Completed' },
+  { label: 'Fallida',           value: 'Failed' },
+  { label: 'Cancelada',         value: 'Cancelled' },
 ]
 
 type SalesFiltersProps = {
@@ -27,59 +35,64 @@ export function SalesFilters({
   onRetry,
 }: Readonly<SalesFiltersProps>) {
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_160px_160px_180px_auto_auto]">
-      <label className="flex h-11 items-center gap-2 rounded-md bg-white px-3 shadow-sm ring-1 ring-stone-200">
-        <Search aria-hidden="true" className="text-stone-500" size={18} />
-        <span className="sr-only">Busqueda</span>
-        <input
-          className="w-full bg-transparent text-sm font-medium text-stone-900 outline-none placeholder:text-stone-400"
+    <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(220px,1fr)_160px_160px_180px_auto_auto] lg:items-end">
+      <label className="block min-w-0 space-y-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Busqueda</span>
+        <span className="flex h-10 min-w-0 items-center gap-2 rounded-md bg-white px-3 shadow-[0_0_0_1px_rgb(214_211_209)]">
+          <Search aria-hidden="true" className="text-stone-500" size={16} />
+          <input
+            className="w-full bg-transparent text-sm font-medium text-stone-900 outline-none placeholder:text-stone-400"
+            disabled={disabled}
+            onChange={(event) => onChange({ query: event.target.value })}
+            placeholder="Cliente, codigo o venta"
+            value={filters.query}
+          />
+        </span>
+      </label>
+
+      <label className="block min-w-0 space-y-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Fecha desde</span>
+        <Input
+          aria-label="Fecha desde"
           disabled={disabled}
-          onChange={(event) => onChange({ query: event.target.value })}
-          placeholder="Cliente, codigo o venta"
-          value={filters.query}
+          onChange={(event) => onChange({ dateFrom: event.target.value })}
+          type="date"
+          value={filters.dateFrom}
         />
       </label>
 
-      <label className="sr-only" htmlFor="sales-date-from">
-        Fecha desde
+      <label className="block min-w-0 space-y-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Fecha hasta</span>
+        <Input
+          aria-label="Fecha hasta"
+          disabled={disabled}
+          onChange={(event) => onChange({ dateTo: event.target.value })}
+          type="date"
+          value={filters.dateTo}
+        />
       </label>
-      <input
-        className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-        disabled={disabled}
-        id="sales-date-from"
-        onChange={(event) => onChange({ dateFrom: event.target.value })}
-        type="date"
-        value={filters.dateFrom}
-      />
 
-      <label className="sr-only" htmlFor="sales-date-to">
-        Fecha hasta
-      </label>
-      <input
-        className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-        disabled={disabled}
-        id="sales-date-to"
-        onChange={(event) => onChange({ dateTo: event.target.value })}
-        type="date"
-        value={filters.dateTo}
-      />
-
-      <label className="sr-only" htmlFor="sales-status">
-        Estado
-      </label>
-      <select
-        className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-        disabled={disabled}
-        id="sales-status"
-        onChange={(event) => onChange({ status: event.target.value as '' | SaleStatus })}
-        value={filters.status}
-      >
-        {statusOptions.map((option) => (
-          <option key={option.value || 'all'} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="block min-w-0 space-y-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Estado</span>
+        <Select
+          disabled={disabled}
+          value={filters.status || '_'}
+          onValueChange={(v) =>
+            onChange({ status: (v === '_' ? '' : v) as '' | SaleStatus })
+          }
+        >
+          <SelectTrigger aria-label="Estado">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <Button disabled={disabled} onClick={onRetry} type="button" variant="secondary">
         <SlidersHorizontal size={16} />

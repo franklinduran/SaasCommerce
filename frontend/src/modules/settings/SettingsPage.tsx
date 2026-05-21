@@ -1,8 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Building2, KeyRound, RefreshCw, ShieldCheck, Store, UserRound } from 'lucide-react'
+import {
+  Building2,
+  KeyRound,
+  RefreshCw,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  SlidersHorizontal,
+  Store,
+  type LucideIcon,
+  UserRound,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { OperationalSettingsPanel } from '@/modules/settings/components/OperationalSettingsPanel'
 import {
@@ -18,6 +28,14 @@ import type { CurrentBranch, CurrentBusiness, CurrentUser } from '@/modules/sett
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 import { HttpClientError } from '@/shared/services/httpClient'
+import { cn } from '@/shared/utils/cn'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'El nombre es requerido.'),
@@ -78,10 +96,26 @@ type BusinessFormValues = z.infer<typeof businessSchema>
 type BranchFormValues = z.infer<typeof branchSchema>
 type PasswordFormValues = z.infer<typeof passwordSchema>
 
+type SettingsSection = 'profile' | 'security' | 'business' | 'branch' | 'operational'
+
+const SETTINGS_SECTIONS: Array<{
+  description: string
+  icon: LucideIcon
+  id: SettingsSection
+  label: string
+}> = [
+  { description: 'Tu informacion personal', icon: UserRound, id: 'profile', label: 'Mi perfil' },
+  { description: 'Contrasena y acceso', icon: KeyRound, id: 'security', label: 'Seguridad' },
+  { description: 'Datos del comercio', icon: Store, id: 'business', label: 'Negocio' },
+  { description: 'Sucursal activa', icon: Building2, id: 'branch', label: 'Sucursal' },
+  { description: 'Parametros del sistema', icon: SlidersHorizontal, id: 'operational', label: 'Operativo' },
+]
+
 export function SettingsPage() {
   const me = useMeQuery()
   const business = useCurrentBusinessQuery()
   const branch = useCurrentBranchQuery()
+  const [activeSection, setActiveSection] = useState<SettingsSection>('profile')
   const isLoading = me.isLoading || business.isLoading || branch.isLoading
   const isError = me.isError || business.isError || branch.isError
 
@@ -92,48 +126,83 @@ export function SettingsPage() {
   }
 
   return (
-    <section className="space-y-6 p-6 lg:p-8">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-            Configuracion
-          </p>
-          <h2 className="mt-1 text-2xl font-semibold text-stone-950">Ajustes</h2>
-          <p className="mt-2 max-w-2xl text-sm font-medium text-stone-600">
-            Administra tu perfil, el comercio actual, la sucursal activa y la seguridad de acceso.
-          </p>
+    <section className="flex min-h-full flex-col">
+      <div className="shrink-0 border-b border-stone-200 bg-white px-4 py-5 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              <SettingsIcon size={13} />
+              Configuracion
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold text-stone-950">Ajustes</h2>
+            <p className="mt-1.5 max-w-2xl text-sm font-medium text-stone-600">
+              Administra tu perfil, el comercio, la sucursal activa, la seguridad y los parametros operativos.
+            </p>
+          </div>
+          <Button disabled={isLoading} onClick={refetchAll} size="sm" type="button" variant="secondary">
+            <RefreshCw className={isLoading ? 'animate-spin' : undefined} size={14} />
+            Refrescar
+          </Button>
         </div>
-        <Button disabled={isLoading} onClick={refetchAll} type="button" variant="secondary">
-          <RefreshCw size={16} />
-          Reintentar
-        </Button>
       </div>
 
-      {isLoading && <SettingsSkeleton />}
+      <div className="grid flex-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {/* Sidebar nav */}
+        <aside className="shrink-0 border-stone-200 bg-white lg:border-r">
+          <nav className="flex gap-1 overflow-x-auto p-2 lg:flex-col lg:gap-0.5 lg:p-3">
+            {SETTINGS_SECTIONS.map((section) => {
+              const isActive = activeSection === section.id
+              const Icon = section.icon
+              return (
+                <button
+                  aria-current={isActive ? 'true' : undefined}
+                  className={cn(
+                    'group flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+                    isActive
+                      ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-900 active:bg-stone-950'
+                      : 'text-stone-700 hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200',
+                  )}
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  type="button"
+                >
+                  <Icon
+                    aria-hidden="true"
+                    className={cn(isActive ? 'text-white' : 'text-stone-500 group-hover:text-stone-950')}
+                    size={15}
+                    strokeWidth={isActive ? 2.25 : 2}
+                  />
+                  <span className="flex-1 truncate">{section.label}</span>
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
 
-      {isError && !isLoading && (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm font-semibold text-red-700">
-              No se pudieron cargar los ajustes.
-            </p>
-            <p className="mt-1 text-sm font-medium text-stone-600">
-              Verifica la sesion o intenta nuevamente.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLoading && !isError && (
-        <div className="grid gap-6 xl:grid-cols-2">
-          <ProfileSettingsCard initialValues={me.data} />
-          <SecuritySettingsCard />
-          <BusinessSettingsCard initialValues={business.data} />
-          <BranchSettingsCard initialValues={branch.data} />
+        {/* Section content */}
+        <div className="bg-stone-50 p-4 sm:p-6 lg:p-8">
+          {isLoading ? (
+            <SettingsSkeleton />
+          ) : isError ? (
+            <Card>
+              <CardContent className="p-5">
+                <p className="text-sm font-semibold text-red-700">No se pudieron cargar los ajustes.</p>
+                <p className="mt-1 text-sm font-medium text-stone-600">
+                  Verifica la sesion o intenta nuevamente.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="mx-auto max-w-3xl">
+              {activeSection === 'profile' && <ProfileSettingsCard initialValues={me.data} />}
+              {activeSection === 'security' && <SecuritySettingsCard />}
+              {activeSection === 'business' && <BusinessSettingsCard initialValues={business.data} />}
+              {activeSection === 'branch' && <BranchSettingsCard initialValues={branch.data} />}
+              {activeSection === 'operational' && <OperationalSettingsPanel />}
+            </div>
+          )}
         </div>
-      )}
-
-      <OperationalSettingsPanel />
+      </div>
     </section>
   )
 }
@@ -220,11 +289,20 @@ function BusinessSettingsCard({
         </Field>
         <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
           <Field error={form.formState.errors.identificationType?.message} label="Tipo *">
-            <select className={inputClassName} {...form.register('identificationType')}>
-              <option value="Cedula">Cedula</option>
-              <option value="Rnc">RNC</option>
-              <option value="Passport">Pasaporte</option>
-            </select>
+            <Controller
+              control={form.control}
+              name="identificationType"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cedula">Cedula</SelectItem>
+                    <SelectItem value="Rnc">RNC</SelectItem>
+                    <SelectItem value="Passport">Pasaporte</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </Field>
           <Field error={form.formState.errors.identificationNumber?.message} label="Identificacion *">
             <input className={inputClassName} {...form.register('identificationNumber')} />
@@ -403,7 +481,7 @@ function SettingsSkeleton() {
     <div className="grid gap-6 xl:grid-cols-2">
       {skeletonIds.map((id) => (
         <Card key={id}>
-          <CardContent className="space-y-4 p-6">
+          <CardContent className="space-y-4 p-4 sm:p-6">
             <div className="h-5 w-48 rounded bg-stone-100" />
             <div className="h-10 rounded bg-stone-100" />
             <div className="h-10 rounded bg-stone-100" />
@@ -428,4 +506,4 @@ function toErrorMessage(error: Error): string {
 }
 
 const inputClassName =
-  'h-10 w-full rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/20'
+  'h-10 w-full min-w-0 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/20'

@@ -1,7 +1,16 @@
+import { AlertTriangle, Check, Copy, KeyRound } from 'lucide-react'
 import { useState } from 'react'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/shared/components/ui/alert-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog'
 import { Button } from '@/shared/components/ui/button'
-import { Copy, Check } from 'lucide-react'
 
 interface ResetPasswordDialogProps {
   open: boolean
@@ -20,55 +29,69 @@ export function ResetPasswordDialog({
 }: Readonly<ResetPasswordDialogProps>) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(temporaryPassword)
+  function handleCopy() {
+    void navigator.clipboard.writeText(temporaryPassword)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    window.setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle>Contraseña temporal generada</AlertDialogTitle>
-          <AlertDialogDescription>
-            Se ha generado una contraseña temporal. El usuario deberá cambiarla en el próximo login.
-          </AlertDialogDescription>
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white">
+              <KeyRound size={18} />
+            </span>
+            <div>
+              <AlertDialogTitle>Contrasena temporal generada</AlertDialogTitle>
+              <AlertDialogDescription>
+                El usuario debera cambiarla en el proximo inicio de sesion.
+              </AlertDialogDescription>
+            </div>
+          </div>
         </AlertDialogHeader>
 
-        <div className="space-y-4">
-          <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-            <p className="text-sm text-stone-600 mb-2">Contraseña temporal:</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 font-mono font-bold text-stone-900 break-all">{temporaryPassword}</code>
+        <div className="space-y-3">
+          <div className="rounded-md border border-stone-200 bg-stone-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Contrasena temporal
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <code className="flex-1 select-all break-all rounded-sm bg-white px-2.5 py-1.5 font-mono text-sm font-bold text-stone-900 ring-1 ring-stone-200">
+                {temporaryPassword}
+              </code>
               <Button
-                variant="ghost"
-                size="sm"
+                aria-label={copied ? 'Copiado' : 'Copiar contrasena'}
+                className="shrink-0"
                 onClick={handleCopy}
-                className="flex-shrink-0"
+                size="icon"
+                type="button"
+                variant="secondary"
               >
                 {copied ? (
-                  <Check className="h-4 w-4 text-emerald-600" />
+                  <Check className="text-emerald-600" size={16} />
                 ) : (
-                  <Copy className="h-4 w-4" />
+                  <Copy size={16} />
                 )}
               </Button>
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-sm text-amber-800">
-              ⚠️ Esta contraseña se muestra solo una vez. Cópiala antes de cerrar este diálogo.
+          <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+            <AlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={15} />
+            <p className="text-sm font-medium text-amber-900">
+              Esta contrasena se muestra solo una vez. Copiala antes de cerrar este dialogo.
             </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isLoading}>
-            {isLoading ? 'Guardando...' : 'Confirmar'}
+          <AlertDialogAction disabled={isLoading} onClick={onConfirm}>
+            {isLoading ? 'Guardando...' : 'Listo'}
           </AlertDialogAction>
-        </div>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )

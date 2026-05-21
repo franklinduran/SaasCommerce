@@ -79,13 +79,12 @@ export function SalesTable({
                 {formatCurrency(sale.total)}
               </td>
               <td className="px-5 py-4 text-right">
-                <Link
-                  className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-white px-3 text-xs font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 transition-colors hover:bg-stone-50"
-                  to={`/sales/${sale.id}`}
-                >
-                  <Eye size={14} />
-                  Ver detalle
-                </Link>
+                <Button asChild size="sm" variant="secondary">
+                  <Link to={`/sales/${sale.id}`}>
+                    <Eye size={14} />
+                    Ver detalle
+                  </Link>
+                </Button>
               </td>
             </tr>
           ))}

@@ -21,12 +21,12 @@ export function PurchaseDetailPage() {
   usePurchaseRealtimeInvalidation(purchaseId)
 
   if (purchase.isLoading) {
-    return <section className="p-6 text-sm font-semibold text-stone-600 lg:p-8">Cargando compra...</section>
+    return <section className="p-4 text-sm font-semibold text-stone-600 sm:p-6 lg:p-8">Cargando compra...</section>
   }
 
   if (purchase.isError || !item) {
     return (
-      <section className="space-y-4 p-6 lg:p-8">
+      <section className="space-y-4 p-4 sm:p-6 lg:p-8">
         <p className="text-sm font-semibold text-red-700">No se pudo cargar la compra.</p>
         <Button onClick={() => purchase.refetch()} type="button" variant="secondary">
           <RefreshCw size={16} />
@@ -37,13 +37,15 @@ export function PurchaseDetailPage() {
   }
 
   return (
-    <section className="space-y-5 p-6 lg:p-8">
+    <section className="space-y-5 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-stone-600 hover:text-stone-950" to="/purchases">
-            <ArrowLeft size={16} />
-            Compras
-          </Link>
+          <Button asChild variant="ghost">
+            <Link to="/purchases">
+              <ArrowLeft size={16} />
+              Compras
+            </Link>
+          </Button>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <h2 className="text-2xl font-semibold text-stone-950">Compra {item.code}</h2>
             <PurchaseStatusBadge status={item.status} />

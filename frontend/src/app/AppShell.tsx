@@ -101,103 +101,126 @@ export function AppShell() {
 
   return (
     <div className="h-dvh overflow-hidden bg-background text-foreground">
-      <div className="grid h-full w-full overflow-hidden bg-background lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[64px_minmax(0,1fr)]">
+      <div className="grid h-full w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[64px_minmax(0,1fr)]">
         <aside
           className={cn(
-            'flex max-h-dvh min-h-0 bg-stone-100 text-stone-900 shadow-[1px_0_0_rgb(231_229_228)] lg:row-span-2 lg:flex-col',
-            sidebarCollapsed ? 'lg:w-[88px]' : 'lg:w-[260px]',
+            'flex w-full min-w-0 max-w-full shrink-0 flex-col border-b border-stone-200 bg-stone-50 text-stone-900 lg:row-span-2 lg:max-h-dvh lg:min-h-0 lg:border-b-0 lg:border-r',
+            sidebarCollapsed ? 'lg:w-[76px]' : 'lg:w-[260px]',
           )}
         >
           <div
             className={cn(
-              'flex shrink-0 items-center px-4',
-              sidebarCollapsed
-                ? 'h-[104px] flex-col justify-center gap-3 lg:px-0'
-                : 'h-16 justify-between',
+              'flex h-16 shrink-0 items-center justify-between gap-2 border-b border-stone-200/60 px-4',
+              sidebarCollapsed && 'lg:h-16 lg:px-3',
             )}
           >
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white">
-                <CircleDollarSign aria-hidden="true" size={19} />
+            <div className={cn('flex min-w-0 items-center gap-2.5', sidebarCollapsed && 'lg:justify-center')}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white shadow-sm">
+                <CircleDollarSign aria-hidden="true" size={18} />
               </span>
-              {!sidebarCollapsed && (
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-stone-900">{businessName}</p>
-                  <p className="truncate text-xs font-medium text-stone-600">
-                    {session?.user.fullName ?? 'Sucursal principal'}
-                  </p>
-                </div>
-              )}
+              <div className={cn('min-w-0', sidebarCollapsed && 'lg:hidden')}>
+                <p className="truncate text-sm font-semibold text-stone-900">{businessName}</p>
+                <p className="truncate text-xs font-medium text-stone-500">
+                  {session?.user.fullName ?? 'Sucursal principal'}
+                </p>
+              </div>
             </div>
             <Button
               className={cn(
-                'h-9 w-9 shrink-0 rounded-md p-0 text-stone-700 hover:bg-stone-200 hover:text-stone-950',
-                sidebarCollapsed && 'bg-white shadow-sm ring-1 ring-stone-200',
+                'h-8 w-8 shrink-0 rounded-md p-0 text-stone-500 hover:bg-stone-200/70 hover:text-stone-900 max-lg:hidden lg:inline-flex',
+                sidebarCollapsed && 'lg:hidden',
               )}
-              aria-label={sidebarCollapsed ? 'Expandir menu' : 'Contraer menu'}
+              aria-label="Contraer menu"
               onClick={toggleSidebar}
               size="icon"
-              title={sidebarCollapsed ? 'Expandir menu' : 'Contraer menu'}
+              title="Contraer menu"
               variant="ghost"
             >
-              <ToggleSidebarIcon aria-hidden="true" size={17} strokeWidth={2} />
+              <ToggleSidebarIcon aria-hidden="true" size={16} strokeWidth={2} />
             </Button>
           </div>
 
           {!sidebarCollapsed && (
-            <div className="hidden px-4 py-3 lg:block">
-              <div className="flex h-10 items-center gap-2 rounded-md bg-white px-3 text-sm text-stone-600 shadow-sm ring-1 ring-stone-200">
-                <Search aria-hidden="true" size={16} />
-                <span>Buscar...</span>
-                <span className="ml-auto rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">
+            <div className="hidden px-3 py-3 lg:block">
+              <button
+                aria-label="Buscar"
+                className="flex h-9 w-full items-center gap-2 rounded-md bg-white px-3 text-sm text-stone-700 ring-1 ring-stone-200 transition-colors hover:bg-stone-100 hover:text-stone-950 hover:ring-stone-300 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2"
+                type="button"
+              >
+                <Search aria-hidden="true" size={15} />
+                <span className="font-medium">Buscar...</span>
+                <kbd className="ml-auto rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-stone-500 ring-1 ring-stone-200">
                   Ctrl K
-                </span>
-              </div>
+                </kbd>
+              </button>
             </div>
           )}
 
-          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto px-3 py-3 lg:min-h-0 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
+          {sidebarCollapsed && (
+            <div className="hidden px-2 py-2 lg:block">
+              <Button
+                aria-label="Expandir menu"
+                className="h-9 w-full rounded-md p-0 text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"
+                onClick={toggleSidebar}
+                size="icon"
+                title="Expandir menu"
+                variant="ghost"
+              >
+                <ToggleSidebarIcon aria-hidden="true" size={16} strokeWidth={2} />
+              </Button>
+            </div>
+          )}
+
+          <nav
+            className={cn(
+              'flex min-w-0 shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto lg:overflow-x-hidden lg:py-2',
+              sidebarCollapsed && 'lg:px-2',
+            )}
+          >
             <NavigationSection
               collapsed={sidebarCollapsed}
               items={mainNavigation}
-              label="NAVEGACION"
+              label="Navegacion"
               userPermissions={userPermissions}
             />
             <NavigationSection
               collapsed={sidebarCollapsed}
               items={growthTools}
-              label="OPERACION"
+              label="Operacion"
               userPermissions={userPermissions}
             />
           </nav>
 
-          <div className="hidden shrink-0 p-3 lg:block">
+          <div className={cn('hidden shrink-0 border-t border-stone-200/60 p-3 lg:block', sidebarCollapsed && 'lg:px-2')}>
             {!sidebarCollapsed && (
-              <div className="mb-3 flex items-center gap-3 rounded-md bg-white p-2 shadow-sm ring-1 ring-stone-200">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-stone-900 text-white shadow-control">
+              <div className="mb-2 flex items-center gap-2.5 rounded-md px-2 py-1.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
                   {session?.user.fullName.slice(0, 1).toUpperCase() ?? 'A'}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-stone-900">
                     {session?.user.fullName ?? 'Admin'}
                   </p>
-                  <p className="truncate text-xs font-medium text-stone-600">Administrador</p>
+                  <p className="truncate text-xs font-medium text-stone-500">Administrador</p>
                 </div>
-                <ChevronDown aria-hidden="true" className="text-stone-500" size={16} />
+                <ChevronDown aria-hidden="true" className="text-stone-400" size={14} />
               </div>
             )}
             <Button
-              className="w-full bg-white text-stone-900 shadow-sm ring-1 ring-stone-200 hover:bg-stone-50"
+              className={cn(
+                'w-full justify-start text-stone-600 hover:bg-stone-200/60 hover:text-stone-900',
+                sidebarCollapsed && 'justify-center',
+              )}
               onClick={handleLogout}
               variant="ghost"
             >
               <LogOut size={16} />
-              {!sidebarCollapsed && <span>Salir</span>}
+              {!sidebarCollapsed && <span>Cerrar sesion</span>}
             </Button>
           </div>
         </aside>
 
-        <header className="sticky top-0 z-20 hidden h-16 shrink-0 items-center justify-between bg-white px-6 shadow-sm ring-1 ring-stone-200 lg:flex">
+        <header className="sticky top-0 z-20 hidden h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-6 lg:flex">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
               SaasCommerce
@@ -212,7 +235,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
+        <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-surface-subtle">
           <Outlet />
         </main>
       </div>
@@ -263,9 +286,9 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
   if (visibleItems.length === 0) return null
 
   return (
-    <div className="flex gap-1 lg:flex-col lg:gap-1.5">
+    <div className="flex gap-1 lg:flex-col lg:gap-0.5">
       {!collapsed && (
-        <p className="hidden px-3 pb-1 pt-2 text-[11px] font-semibold uppercase text-stone-600 lg:block">
+        <p className="hidden px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 lg:block">
           {label}
         </p>
       )}
@@ -273,9 +296,10 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
         <NavLink
           className={({ isActive }) =>
             cn(
-              'flex h-10 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-200 hover:text-stone-950',
-              isActive && 'bg-stone-900 text-white shadow-sm hover:bg-stone-900 hover:text-white',
-              collapsed && 'lg:justify-center lg:px-0',
+              'group relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900',
+              'active:bg-stone-300 active:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+              isActive && 'bg-stone-900 text-white font-semibold shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white',
+              collapsed && 'lg:h-10 lg:w-10 lg:justify-center lg:px-0',
             )
           }
           end={item.path === '/'}
@@ -283,8 +307,22 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
           title={item.label}
           to={item.path}
         >
-          <item.icon aria-hidden="true" size={18} />
-          {!collapsed && <span>{item.label}</span>}
+          {({ isActive }) => (
+            <>
+              <item.icon
+                aria-hidden="true"
+                className={cn(
+                  'shrink-0 transition-colors',
+                  isActive ? 'text-white' : 'text-stone-500 group-hover:text-stone-900',
+                )}
+                size={17}
+                strokeWidth={isActive ? 2.25 : 2}
+              />
+              <span className={cn('truncate', isActive && 'text-white', collapsed && 'lg:hidden')}>
+                {item.label}
+              </span>
+            </>
+          )}
         </NavLink>
       ))}
     </div>

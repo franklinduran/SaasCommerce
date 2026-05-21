@@ -1,6 +1,13 @@
 import { Search, UserRound } from 'lucide-react'
 import type { Customer } from '@/modules/pos/types/posTypes'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 type CustomerSelectorProps = {
   customers: Customer[]
@@ -43,26 +50,27 @@ export function CustomerSelector({
           />
           <input
             aria-label="Buscar clientes"
-            className="h-10 w-full rounded-md bg-white pl-9 pr-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+            className="h-10 w-full min-w-0 rounded-md bg-white pl-9 pr-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Nombre o telefono"
             value={query}
           />
         </label>
-        <select
-          aria-label="Seleccionar cliente"
-          className="h-10 w-full rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+        <Select
           disabled={isLoading || isError}
-          onChange={(event) => onCustomerChange(event.target.value || null)}
-          value={selectedCustomerId ?? ''}
+          value={selectedCustomerId ?? '_'}
+          onValueChange={(v) => onCustomerChange(v === '_' ? null : v)}
         >
-          <option value="">Sin cliente</option>
-          {customers.map((customer) => (
-            <option key={customer.id} value={customer.id}>
-              {customer.fullName}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger aria-label="Seleccionar cliente"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_">Sin cliente</SelectItem>
+            {customers.map((customer) => (
+              <SelectItem key={customer.id} value={customer.id}>
+                {customer.fullName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {selectedCustomerId && (
           <SelectedCustomerCredit
             customer={customers.find((customer) => customer.id === selectedCustomerId)}

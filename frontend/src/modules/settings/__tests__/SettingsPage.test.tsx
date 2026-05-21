@@ -28,7 +28,7 @@ describe('SettingsPage', () => {
     renderSettingsPage()
 
     const businessCard = await screen.findByRole('heading', { name: 'Negocio' })
-    const card = businessCard.closest('div.rounded-xl') as HTMLElement
+    const card = businessCard.closest('div.rounded-md') as HTMLElement
     const identificationInput = within(card).getByLabelText('Identificacion *')
     const primaryPhoneInput = within(card).getByLabelText('Telefono principal *')
 

@@ -30,7 +30,7 @@ export function PaymentMethodSelector({
           <p className="text-sm font-medium text-stone-600">Metodo</p>
         </div>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-2">
+      <CardContent className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {methods.map((method) => {
           const Icon = method.icon
 

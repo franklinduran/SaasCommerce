@@ -1,12 +1,18 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const ROLES = [
-  { value: 'Admin', label: 'Administrador' },
-  { value: 'Supervisor', label: 'Supervisor' },
-  { value: 'Cashier', label: 'Cajero' },
-  { value: 'InventoryManager', label: 'Gerente de Inventario' },
+  { value: 'Admin',             label: 'Administrador' },
+  { value: 'Supervisor',        label: 'Supervisor' },
+  { value: 'Cashier',           label: 'Cajero' },
+  { value: 'InventoryManager',  label: 'Gerente de Inventario' },
   { value: 'PurchasingManager', label: 'Gerente de Compras' },
-  { value: 'ReadOnly', label: 'Solo Lectura' },
+  { value: 'ReadOnly',          label: 'Solo Lectura' },
 ]
 
 interface RoleSelectProps {
@@ -17,7 +23,7 @@ interface RoleSelectProps {
 
 export function RoleSelect({ value, onValueChange, disabled }: Readonly<RoleSelectProps>) {
   return (
-    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+    <Select disabled={disabled} onValueChange={onValueChange} value={value ?? ''}>
       <SelectTrigger>
         <SelectValue placeholder="Selecciona un rol" />
       </SelectTrigger>

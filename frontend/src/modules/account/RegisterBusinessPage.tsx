@@ -1,12 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Building2, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { useRegisterBusinessMutation } from '@/modules/account/hooks/useRegisterBusinessMutation'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const registerBusinessSchema = z.object({
   branchName: z.string().min(2, 'Nombre de sucursal requerido'),
@@ -54,13 +61,14 @@ const registerBusinessSchema = z.object({
 type RegisterBusinessFormValues = z.infer<typeof registerBusinessSchema>
 
 const inputClass =
-  'h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15'
+  'h-11 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15'
 
 export function RegisterBusinessPage() {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const registerBusiness = useRegisterBusinessMutation()
   const {
+    control,
     formState: { errors, isValid },
     handleSubmit,
     register,
@@ -108,7 +116,7 @@ export function RegisterBusinessPage() {
     <main className="min-h-dvh bg-stone-50 px-4 py-8 text-stone-950">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="text-center">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 text-white">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-stone-900 text-white">
             <Building2 size={24} />
           </span>
           <h1 className="mt-5 text-3xl font-semibold">Registrar comercio</h1>
@@ -118,7 +126,7 @@ export function RegisterBusinessPage() {
         </div>
 
         <form
-          className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-stone-200"
+          className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6"
           onSubmit={handleSubmit(onSubmit)}
         >
           <div className="grid gap-5 md:grid-cols-2">
@@ -143,7 +151,7 @@ export function RegisterBusinessPage() {
                 />
                 <button
                   aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
-                  className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+                  className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-stone-700 transition hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/25"
                   onClick={() => setShowPassword((value) => !value)}
                   type="button"
                 >
@@ -152,11 +160,20 @@ export function RegisterBusinessPage() {
               </span>
             </Field>
             <Field error={errors.identificationType?.message} label="Tipo de identificacion *">
-              <select className={inputClass} {...register('identificationType')}>
-                <option value="Cedula">Cedula</option>
-                <option value="Rnc">RNC</option>
-                <option value="Passport">Pasaporte</option>
-              </select>
+              <Controller
+                control={control}
+                name="identificationType"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cedula">Cedula</SelectItem>
+                      <SelectItem value="Rnc">RNC</SelectItem>
+                      <SelectItem value="Passport">Pasaporte</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </Field>
             <Field error={errors.identificationNumber?.message} label="Numero de identificacion *">
               <input className={inputClass} placeholder="Cedula, RNC o pasaporte" {...register('identificationNumber')} />

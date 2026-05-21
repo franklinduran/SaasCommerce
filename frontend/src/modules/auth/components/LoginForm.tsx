@@ -44,11 +44,11 @@ export function LoginForm() {
 
   return (
     <form
-      className="w-full max-w-[400px] rounded-xl bg-white p-6 shadow-sm ring-1 ring-stone-200"
+      className="w-full max-w-[400px] rounded-xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6"
       onSubmit={handleSubmit(onSubmit)}
     >
       <div className="mb-8 text-center">
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-stone-900 text-white">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-stone-900 text-white">
           <CircleDollarSign aria-hidden="true" size={25} strokeWidth={2.4} />
         </span>
         <h1 className="mt-6 text-[28px] font-semibold leading-tight text-foreground">
@@ -89,7 +89,7 @@ export function LoginForm() {
             />
             <button
               aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
-              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-stone-700 transition hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/25"
               onClick={() => setShowPassword((value) => !value)}
               type="button"
             >
@@ -119,7 +119,7 @@ export function LoginForm() {
       </Button>
 
       <button
-        className="mx-auto mt-4 block rounded-md px-3 py-2 text-sm font-medium text-stone-600 transition hover:text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+        className="mx-auto mt-4 block rounded-md px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/25"
         type="button"
       >
         Olvidaste tu contrasena?

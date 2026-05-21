@@ -10,7 +10,7 @@ export function InvoiceReceipt({
   invoice: Invoice
 }>) {
   return (
-    <article className="rounded-md bg-white p-6 shadow-sm ring-1 ring-stone-200 print:shadow-none print:ring-0">
+    <article className="rounded-md bg-white p-4 shadow-sm ring-1 ring-stone-200 print:shadow-none print:ring-0 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase text-stone-500">Recibo interno no fiscal</p>

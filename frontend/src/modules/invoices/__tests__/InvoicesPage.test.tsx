@@ -1,11 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { InvoicesPage } from '@/modules/invoices/InvoicesPage'
-import { InvoiceDetailPage } from '@/modules/invoices/pages/InvoiceDetailPage'
 
 describe('Invoices module', () => {
   afterEach(() => {
@@ -16,41 +14,29 @@ describe('Invoices module', () => {
 
   it('renders invoice list data', async () => {
     vi.stubGlobal('fetch', createInvoicesFetchMock())
-    renderWithProviders(<InvoicesPage />)
+    renderInvoicesAt('/invoices')
 
     expect(await screen.findByText('RI-00000001')).toBeTruthy()
     expect(screen.getByText('Emitido')).toBeTruthy()
-    expect(screen.getByText('RD$300.00')).toBeTruthy()
   })
 
-  it('renders invoice detail totals and print button', async () => {
+  it('renders invoice detail panel from URL', async () => {
     vi.stubGlobal('fetch', createInvoicesFetchMock())
-    renderWithProviders(
-      <Routes>
-        <Route element={<InvoiceDetailPage />} path="/invoices/:invoiceId" />
-      </Routes>,
-      '/invoices/invoice-1',
-    )
+    renderInvoicesAt('/invoices/invoice-1')
 
     expect(await screen.findByRole('heading', { name: 'RI-00000001' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Imprimir recibo' })).toBeTruthy()
     expect(screen.getAllByText('RD$300.00').length).toBeGreaterThan(0)
   })
 
   it('shows cancelled status in invoice detail', async () => {
     vi.stubGlobal('fetch', createInvoicesFetchMock({ status: 'Cancelled' }))
-    renderWithProviders(
-      <Routes>
-        <Route element={<InvoiceDetailPage />} path="/invoices/:invoiceId" />
-      </Routes>,
-      '/invoices/invoice-1',
-    )
+    renderInvoicesAt('/invoices/invoice-1')
 
     expect((await screen.findAllByText('Cancelado')).length).toBeGreaterThan(0)
   })
 })
 
-function renderWithProviders(element: ReactNode, initialPath = '/invoices') {
+function renderInvoicesAt(path: string) {
   useAuthStore.getState().setSession({
     accessToken: 'jwt',
     expiresAt: '2026-05-18T23:59:00Z',
@@ -74,7 +60,12 @@ function renderWithProviders(element: ReactNode, initialPath = '/invoices') {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialPath]}>{element}</MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route element={<InvoicesPage />} path="/invoices" />
+          <Route element={<InvoicesPage />} path="/invoices/:invoiceId" />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }

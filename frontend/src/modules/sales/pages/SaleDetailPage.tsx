@@ -20,9 +20,9 @@ export function SaleDetailPage() {
 
   if (sale.isLoading) {
     return (
-      <section className="space-y-6 p-6 lg:p-8">
+      <section className="space-y-6 p-4 sm:p-6 lg:p-8">
         <PageBackLink />
-        <div className="rounded-md bg-white p-8 shadow-sm ring-1 ring-stone-200">
+        <div className="rounded-md bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-8">
           <div className="h-5 w-64 rounded bg-stone-100" />
           <div className="mt-6 grid gap-3 md:grid-cols-4">
             <div className="h-20 rounded bg-stone-100" />
@@ -37,9 +37,9 @@ export function SaleDetailPage() {
 
   if (sale.isError || !sale.data) {
     return (
-      <section className="space-y-6 p-6 lg:p-8">
+      <section className="space-y-6 p-4 sm:p-6 lg:p-8">
         <PageBackLink />
-        <div className="rounded-md bg-white p-8 text-center shadow-sm ring-1 ring-stone-200">
+        <div className="rounded-md bg-white p-5 text-center shadow-sm ring-1 ring-stone-200 sm:p-8">
           <p className="text-sm font-semibold text-red-700">No se pudo cargar la venta.</p>
           <Button className="mt-4" onClick={() => sale.refetch()} variant="secondary">
             <RefreshCw size={16} />
@@ -53,18 +53,17 @@ export function SaleDetailPage() {
   const businessName = business.data?.name ?? 'Negocio'
 
   return (
-    <section className="space-y-6 p-6 lg:p-8">
+    <section className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col justify-between gap-4 print:hidden lg:flex-row lg:items-center">
         <PageBackLink />
         <div className="flex flex-wrap gap-2">
           {invoice.data && (
-            <Link
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 transition-colors hover:bg-stone-50"
-              to={`/invoices/${invoice.data.invoiceId}`}
-            >
-              <ReceiptText size={16} />
-              Ver recibo
-            </Link>
+            <Button asChild variant="secondary">
+              <Link to={`/invoices/${invoice.data.invoiceId}`}>
+                <ReceiptText size={16} />
+                Ver recibo
+              </Link>
+            </Button>
           )}
           <PrintReceiptButton />
         </div>
@@ -93,12 +92,11 @@ export function SaleDetailPage() {
 
 function PageBackLink() {
   return (
-    <Link
-      className="inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950"
-      to="/sales"
-    >
-      <ArrowLeft size={16} />
-      Volver a ventas
-    </Link>
+    <Button asChild variant="ghost">
+      <Link to="/sales">
+        <ArrowLeft size={16} />
+        Volver a ventas
+      </Link>
+    </Button>
   )
 }

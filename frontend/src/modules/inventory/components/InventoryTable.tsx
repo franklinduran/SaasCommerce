@@ -1,3 +1,4 @@
+import { SlidersHorizontal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StockStatusBadge } from '@/modules/inventory/components/StockStatusBadge'
 import type { StockItem } from '@/modules/inventory/types'
@@ -7,11 +8,13 @@ export function InventoryTable({
   error,
   isLoading,
   items,
+  onAdjust,
   onRetry,
 }: Readonly<{
   error: boolean
   isLoading: boolean
   items: StockItem[]
+  onAdjust?: (productId: string, productName: string) => void
   onRetry: () => void
 }>) {
   return (
@@ -25,7 +28,7 @@ export function InventoryTable({
             <th className="px-5 py-3 text-right">Stock minimo</th>
             <th className="px-5 py-3">Estado</th>
             <th className="px-5 py-3">Ultima actualizacion</th>
-            <th className="px-5 py-3" />
+            <th className="px-5 py-3 text-right">Acciones</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-stone-200">
@@ -57,9 +60,22 @@ export function InventoryTable({
               </td>
               <td className="px-5 py-4 font-medium text-stone-600">{formatDate(item.lastUpdatedAt)}</td>
               <td className="px-5 py-4 text-right">
-                <Link className="text-sm font-semibold text-stone-950 underline-offset-4 hover:underline" to={`/inventory/products/${item.productId}`}>
-                  Ver detalle
-                </Link>
+                <div className="flex items-center justify-end gap-2">
+                  {onAdjust && (
+                    <Button
+                      onClick={() => onAdjust(item.productId, item.productName)}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      <SlidersHorizontal size={14} />
+                      Ajustar
+                    </Button>
+                  )}
+                  <Button asChild size="sm" variant="secondary">
+                    <Link to={`/inventory/products/${item.productId}`}>Ver detalle</Link>
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}

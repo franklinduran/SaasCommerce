@@ -1,17 +1,14 @@
-import type { LabelHTMLAttributes, ReactNode } from 'react'
+import * as LabelPrimitive from '@radix-ui/react-label'
 import { cn } from '@/shared/utils/cn'
 
 export function Label({
-  children,
   className,
   ...props
-}: Readonly<LabelHTMLAttributes<HTMLLabelElement>> & Readonly<{ children?: ReactNode }>) {
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
-    <label
+    <LabelPrimitive.Root
       className={cn('text-sm font-semibold text-stone-800', className)}
       {...props}
-    >
-      {children}
-    </label>
+    />
   )
 }

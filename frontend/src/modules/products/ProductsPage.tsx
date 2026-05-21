@@ -8,9 +8,7 @@ import {
   SlidersHorizontal,
   ToggleLeft,
   ToggleRight,
-  X,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { useMemo, useState } from 'react'
 import { ProductForm } from '@/modules/products/components/ProductForm'
 import {
@@ -21,8 +19,26 @@ import {
   useProductsQuery,
 } from '@/modules/products/hooks/useProducts'
 import type { Product, ProductFilters } from '@/modules/products/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardHeader } from '@/shared/components/ui/card'
+import { Drawer } from '@/shared/components/ui/drawer'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const productTypes = [
   { label: 'Todos', value: '' },
@@ -49,6 +65,7 @@ export function ProductsPage() {
   })
   const [drawerMode, setDrawerMode] = useState<'create' | 'edit' | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [pendingDeactivate, setPendingDeactivate] = useState<Product | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const products = useProductsQuery(filters)
   const categories = useCategoriesQuery()
@@ -96,27 +113,26 @@ export function ProductsPage() {
     setSavedMessage('Producto guardado correctamente.')
   }
 
-  async function handleToggleStatus(product: Product) {
+  function handleToggleStatus(product: Product) {
     if (product.isActive) {
-      const confirmed = window.confirm(
-        `Desactivar ${product.name}? El producto no se eliminara, pero no debe venderse mientras este inactivo.`,
-      )
-
-      if (!confirmed) {
-        return
-      }
-
-      await deactivateProduct.mutateAsync(product.id)
-      setSavedMessage('Producto desactivado correctamente.')
+      setPendingDeactivate(product)
       return
     }
 
-    await activateProduct.mutateAsync(product.id)
-    setSavedMessage('Producto activado correctamente.')
+    activateProduct.mutate(product.id, {
+      onSuccess: () => setSavedMessage('Producto activado correctamente.'),
+    })
+  }
+
+  async function confirmDeactivate() {
+    if (!pendingDeactivate) return
+    await deactivateProduct.mutateAsync(pendingDeactivate.id)
+    setSavedMessage('Producto desactivado correctamente.')
+    setPendingDeactivate(null)
   }
 
   return (
-    <section className="space-y-6 p-6 lg:p-8">
+    <section className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">Catalogo</p>
@@ -149,38 +165,44 @@ export function ProductsPage() {
                 value={filters.query}
               />
             </div>
-            <select
-              className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-              onChange={(event) => updateFilters({ productType: event.target.value })}
-              value={filters.productType}
+            <Select
+              value={filters.productType || '_'}
+              onValueChange={(v) => updateFilters({ productType: v === '_' ? '' : v })}
             >
-              {productTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-              onChange={(event) => updateFilters({ isActive: event.target.value })}
-              value={filters.isActive}
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {productTypes.map((type) => (
+                  <SelectItem key={type.value || '_'} value={type.value || '_'}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.isActive || '_'}
+              onValueChange={(v) => updateFilters({ isActive: v === '_' ? '' : v })}
             >
-              <option value="">Todos</option>
-              <option value="true">Activos</option>
-              <option value="false">Inactivos</option>
-            </select>
-            <select
-              className="h-11 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none focus:ring-2 focus:ring-stone-900/15"
-              onChange={(event) => updateFilters({ categoryId: event.target.value })}
-              value={filters.categoryId}
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_">Todos</SelectItem>
+                <SelectItem value="true">Activos</SelectItem>
+                <SelectItem value="false">Inactivos</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.categoryId || '_'}
+              onValueChange={(v) => updateFilters({ categoryId: v === '_' ? '' : v })}
             >
-              <option value="">Todas las categorias</option>
-              {categories.data?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_">Todas las categorias</SelectItem>
+                {categories.data?.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button onClick={() => products.refetch()} type="button" variant="secondary">
               <SlidersHorizontal size={16} />
               Filtrar
@@ -296,17 +318,19 @@ export function ProductsPage() {
             <span>{totalItems} registros</span>
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <select
-              className="h-9 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none"
-              onChange={(event) => updateFilters({ pageSize: Number(event.target.value) })}
-              value={filters.pageSize}
+            <Select
+              value={String(filters.pageSize)}
+              onValueChange={(v) => updateFilters({ pageSize: Number(v) })}
             >
-              {pageSizes.map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize} por pagina
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {pageSizes.map((pageSize) => (
+                  <SelectItem key={pageSize} value={String(pageSize)}>
+                    {pageSize} por pagina
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               disabled={!canGoPrevious}
               onClick={() => updateFilters({ page: filters.page - 1 })}
@@ -330,13 +354,36 @@ export function ProductsPage() {
       </Card>
 
       {drawerMode && (
-        <ProductDrawer onClose={closeDrawer} title={drawerTitle}>
+        <Drawer onClose={closeDrawer} size="xl" subtitle="Catalogo" title={drawerTitle}>
           <ProductForm
             onSaved={handleSaved}
             product={drawerMode === 'edit' ? selectedProduct : null}
           />
-        </ProductDrawer>
+        </Drawer>
       )}
+
+      <AlertDialog open={Boolean(pendingDeactivate)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desactivar producto</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{pendingDeactivate?.name}</strong> no se eliminara, pero no podra venderse ni usarse en el POS mientras este inactivo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeactivate(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deactivateProduct.isPending}
+              onClick={confirmDeactivate}
+              variant="destructive"
+            >
+              Desactivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }
@@ -369,34 +416,5 @@ function StatusBadge({ isActive }: Readonly<{ isActive: boolean }>) {
     <span className={className}>
       {isActive ? 'Activo' : 'Inactivo'}
     </span>
-  )
-}
-
-function ProductDrawer({
-  children,
-  onClose,
-  title,
-}: Readonly<{
-  children: ReactNode
-  onClose: () => void
-  title: string
-}>) {
-  return (
-    <div className="fixed inset-0 z-50 bg-stone-950/20">
-      <div className="absolute inset-y-0 right-0 flex w-full max-w-5xl flex-col bg-white shadow-xl ring-1 ring-stone-200">
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Catalogo</p>
-            <h3 className="text-lg font-semibold text-stone-950">{title}</h3>
-          </div>
-          <Button aria-label="Cerrar drawer" onClick={onClose} size="icon" type="button" variant="ghost">
-            <X size={18} />
-          </Button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          {children}
-        </div>
-      </div>
-    </div>
   )
 }

@@ -3,9 +3,9 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/modules/auth/authStore'
-import { SupplierForm } from '@/modules/suppliers/components/SupplierForm'
+import { SupplierFormDialog } from '@/modules/suppliers/components/SupplierFormDialog'
 
-describe('SupplierForm', () => {
+describe('SupplierFormDialog', () => {
   afterEach(() => {
     cleanup()
     useAuthStore.getState().clearSession()
@@ -15,15 +15,15 @@ describe('SupplierForm', () => {
   it('should show validation errors', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn())
-    renderSupplierForm()
+    renderDialog()
 
-    await user.click(screen.getByRole('button', { name: 'Guardar proveedor' }))
+    await user.click(screen.getByRole('button', { name: /crear proveedor/i }))
 
     expect(await screen.findByText('Nombre requerido')).toBeTruthy()
   })
 })
 
-function renderSupplierForm() {
+function renderDialog() {
   useAuthStore.getState().setSession({
     accessToken: 'jwt',
     expiresAt: '2026-05-17T23:59:00Z',
@@ -47,7 +47,11 @@ function renderSupplierForm() {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <SupplierForm />
+      <SupplierFormDialog
+        onOpenChange={() => undefined}
+        open
+        supplier={null}
+      />
     </QueryClientProvider>,
   )
 }

@@ -1,106 +1,54 @@
-import type { ReactNode } from 'react'
-import { createContext, useContext, useMemo, useState } from 'react'
+import * as TabsPrimitive from '@radix-ui/react-tabs'
+import { cn } from '@/shared/utils/cn'
 
-// ── Context ──────────────────────────────────────────────────────────────────
-
-type TabsCtx = {
-  activeTab: string
-  setActiveTab: (tab: string) => void
-}
-
-const TabsContext = createContext<TabsCtx>({ activeTab: '', setActiveTab: () => undefined })
-
-// ── Tabs root ─────────────────────────────────────────────────────────────────
-
-export function Tabs({
-  children,
-  className = '',
-  defaultValue = '',
-  onValueChange,
-  value,
-}: Readonly<{
-  children: ReactNode
-  className?: string
-  defaultValue?: string
-  onValueChange?: (value: string) => void
-  value?: string
-}>) {
-  const [internalTab, setInternalTab] = useState(defaultValue)
-  const activeTab = value ?? internalTab
-
-  function setActiveTab(tab: string) {
-    setInternalTab(tab)
-    onValueChange?.(tab)
-  }
-
-  const ctxValue = useMemo<TabsCtx>(() => ({ activeTab, setActiveTab }), [activeTab])
-
-  return (
-    <TabsContext.Provider value={ctxValue}>
-      <div className={className}>{children}</div>
-    </TabsContext.Provider>
-  )
-}
-
-// ── TabsList ──────────────────────────────────────────────────────────────────
+export const Tabs = TabsPrimitive.Root
 
 export function TabsList({
-  children,
-  className = '',
-}: Readonly<{ children: ReactNode; className?: string }>) {
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
-    <div
-      className={`flex gap-1 rounded-lg bg-stone-100 p-1 ${className}`}
-      role="tablist"
-    >
-      {children}
-    </div>
+    <TabsPrimitive.List
+      className={cn(
+        'flex max-w-full gap-1 overflow-x-auto rounded-md bg-stone-100 p-1',
+        className,
+      )}
+      {...props}
+    />
   )
 }
-
-// ── TabsTrigger ───────────────────────────────────────────────────────────────
 
 export function TabsTrigger({
-  children,
-  className = '',
-  value,
-}: Readonly<{ children: ReactNode; className?: string; value: string }>) {
-  const { activeTab, setActiveTab } = useContext(TabsContext)
-  const isActive = activeTab === value
-
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
   return (
-    <button
-      aria-selected={isActive}
-      className={[
-        'flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold transition-colors',
-        isActive
-          ? 'bg-white text-stone-900 shadow-sm ring-1 ring-stone-200'
-          : 'text-stone-600 hover:text-stone-900',
+    <TabsPrimitive.Trigger
+      className={cn(
+        'flex flex-1 shrink-0 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold transition-colors',
+        'text-stone-700 hover:bg-stone-200 hover:text-stone-950 active:bg-stone-300 active:text-stone-950',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+        'disabled:pointer-events-none disabled:text-stone-400',
+        'data-[state=active]:bg-stone-900 data-[state=active]:text-white data-[state=active]:hover:bg-stone-900 data-[state=active]:active:bg-stone-950',
+        'data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-stone-900',
         className,
-      ].join(' ')}
-      onClick={() => setActiveTab(value)}
-      role="tab"
-      type="button"
-    >
-      {children}
-    </button>
+      )}
+      {...props}
+    />
   )
 }
 
-// ── TabsContent ───────────────────────────────────────────────────────────────
-
 export function TabsContent({
-  children,
-  className = '',
-  value,
-}: Readonly<{ children: ReactNode; className?: string; value: string }>) {
-  const { activeTab } = useContext(TabsContext)
-
-  if (activeTab !== value) return null
-
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Content>) {
   return (
-    <div className={className} role="tabpanel">
-      {children}
-    </div>
+    <TabsPrimitive.Content
+      className={cn(
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+        className,
+      )}
+      {...props}
+    />
   )
 }

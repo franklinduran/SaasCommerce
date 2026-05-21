@@ -2,12 +2,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, Plus } from 'lucide-react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { useEffect } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { useCreateProductMutation, useUpdateProductMutation } from '@/modules/products/hooks/useProducts'
 import type { Product, CreateProductRequest } from '@/modules/products/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
 
 const productSchema = z.object({
   allowsDiscount: z.boolean(),
@@ -40,7 +47,7 @@ type ProductFormValues = z.infer<typeof productSchema>
 type ProductFormInput = z.input<typeof productSchema>
 
 const inputClass =
-  'h-11 w-full rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15'
+  'h-11 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15'
 
 const emptyProductFormDefaults: ProductFormInput = {
   allowsDiscount: true,
@@ -153,14 +160,23 @@ export function ProductForm({ product, onSaved }: Readonly<ProductFormProps>) {
           <input className={inputClass} placeholder="Cafe molido" {...register('name')} />
         </Field>
         <Field error={errors.productType?.message} label="Tipo">
-          <select className={inputClass} {...register('productType')}>
-            <option value="Simple">Simple</option>
-            <option value="Service">Servicio</option>
-            <option value="Weighed">Pesado</option>
-            <option value="Composite">Combo</option>
-            <option value="VariantParent">Producto padre</option>
-            <option value="VariantChild">Variante</option>
-          </select>
+          <Controller
+            control={control}
+            name="productType"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Simple">Simple</SelectItem>
+                  <SelectItem value="Service">Servicio</SelectItem>
+                  <SelectItem value="Weighed">Pesado</SelectItem>
+                  <SelectItem value="Composite">Combo</SelectItem>
+                  <SelectItem value="VariantParent">Producto padre</SelectItem>
+                  <SelectItem value="VariantChild">Variante</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </Field>
         <Field label="Descripcion">
           <input className={inputClass} placeholder="Descripcion corta" {...register('description')} />
@@ -184,19 +200,28 @@ export function ProductForm({ product, onSaved }: Readonly<ProductFormProps>) {
 
       <FormSection title="Inventario">
         <Field error={errors.unitOfMeasure?.message} label="Unidad">
-          <select className={inputClass} {...register('unitOfMeasure')}>
-            <option value="Unit">Unidad</option>
-            <option value="Pound">Libra</option>
-            <option value="Kilogram">Kilogramo</option>
-            <option value="Gram">Gramo</option>
-            <option value="Liter">Litro</option>
-            <option value="Milliliter">Mililitro</option>
-            <option value="Box">Caja</option>
-            <option value="Pack">Paquete</option>
-            <option value="Dozen">Docena</option>
-            <option value="Meter">Metro</option>
-            <option value="Service">Servicio</option>
-          </select>
+          <Controller
+            control={control}
+            name="unitOfMeasure"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Unit">Unidad</SelectItem>
+                  <SelectItem value="Pound">Libra</SelectItem>
+                  <SelectItem value="Kilogram">Kilogramo</SelectItem>
+                  <SelectItem value="Gram">Gramo</SelectItem>
+                  <SelectItem value="Liter">Litro</SelectItem>
+                  <SelectItem value="Milliliter">Mililitro</SelectItem>
+                  <SelectItem value="Box">Caja</SelectItem>
+                  <SelectItem value="Pack">Paquete</SelectItem>
+                  <SelectItem value="Dozen">Docena</SelectItem>
+                  <SelectItem value="Meter">Metro</SelectItem>
+                  <SelectItem value="Service">Servicio</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </Field>
         <Toggle disabled={productType === 'Service'} label="Controla inventario" {...register('trackInventory')} />
         <Field label="Stock minimo">
@@ -228,12 +253,21 @@ export function ProductForm({ product, onSaved }: Readonly<ProductFormProps>) {
 
       <FormSection title="Impuestos y opciones">
         <Field error={errors.taxCategory?.message} label="Categoria fiscal">
-          <select className={inputClass} {...register('taxCategory')}>
-            <option value="Itbis18">ITBIS 18%</option>
-            <option value="Exempt">Exento</option>
-            <option value="Reduced">Reducido</option>
-            <option value="Other">Otro</option>
-          </select>
+          <Controller
+            control={control}
+            name="taxCategory"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Itbis18">ITBIS 18%</SelectItem>
+                  <SelectItem value="Exempt">Exento</SelectItem>
+                  <SelectItem value="Reduced">Reducido</SelectItem>
+                  <SelectItem value="Other">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </Field>
         <Field error={errors.taxRate?.message} label="Tasa impuesto">
           <input className={inputClass} min="0" step="0.01" type="number" {...register('taxRate')} />
@@ -288,7 +322,7 @@ function Field({ children, error, label }: Readonly<FieldProps>) {
 
 function FormSection({ children, title }: Readonly<{ children: ReactNode; title: string }>) {
   return (
-    <section className="rounded-lg bg-stone-50 p-4 ring-1 ring-stone-200">
+    <section className="rounded-md bg-stone-50 p-4 ring-1 ring-stone-200">
       <h4 className="mb-4 text-sm font-semibold text-stone-950">{title}</h4>
       <div className="grid gap-4 lg:grid-cols-3">{children}</div>
     </section>
@@ -306,7 +340,7 @@ function Toggle({
   return (
     <label className="flex h-11 items-center gap-3 self-end rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)]">
       <input
-        className="h-4 w-4 accent-stone-900 disabled:opacity-50"
+        className="h-4 w-4 accent-stone-900 disabled:cursor-not-allowed disabled:accent-stone-400"
         disabled={disabled}
         type="checkbox"
         {...props}

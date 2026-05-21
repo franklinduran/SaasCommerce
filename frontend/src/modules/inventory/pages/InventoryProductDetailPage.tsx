@@ -14,16 +14,18 @@ export function InventoryProductDetailPage() {
   useInventoryRealtimeInvalidation(productId)
 
   if (detail.isLoading) {
-    return <section className="p-6 text-sm font-medium text-stone-600 lg:p-8">Cargando detalle de inventario...</section>
+    return <section className="p-4 text-sm font-medium text-stone-600 sm:p-6 lg:p-8">Cargando detalle de inventario...</section>
   }
 
   if (detail.isError || !detail.data) {
     return (
-      <section className="space-y-4 p-6 lg:p-8">
-        <Link className="inline-flex items-center gap-2 text-sm font-semibold text-stone-700" to="/inventory">
-          <ArrowLeft size={16} />
-          Volver
-        </Link>
+      <section className="space-y-4 p-4 sm:p-6 lg:p-8">
+        <Button asChild variant="ghost">
+          <Link to="/inventory">
+            <ArrowLeft size={16} />
+            Volver
+          </Link>
+        </Button>
         <p className="rounded-md bg-red-50 p-4 text-sm font-medium text-red-700 ring-1 ring-red-200">
           No se pudo cargar el detalle del producto.
         </p>
@@ -34,13 +36,15 @@ export function InventoryProductDetailPage() {
   const product = detail.data
 
   return (
-    <section className="space-y-6 p-6 lg:p-8">
+    <section className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <Link className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-stone-700" to="/inventory">
-            <ArrowLeft size={16} />
-            Volver
-          </Link>
+          <Button asChild className="mb-4" variant="ghost">
+            <Link to="/inventory">
+              <ArrowLeft size={16} />
+              Volver
+            </Link>
+          </Button>
           <h2 className="text-2xl font-semibold text-stone-950">{product.productName}</h2>
           <p className="mt-1 text-sm font-medium text-stone-600">{product.sku} · {product.unitOfMeasure}</p>
         </div>
@@ -76,7 +80,13 @@ export function InventoryProductDetailPage() {
         <InventoryMovementList movements={product.recentMovements} />
       </div>
 
-      {isAdjustOpen && <AdjustInventoryDialog onClose={() => setIsAdjustOpen(false)} productId={product.productId} />}
+      {isAdjustOpen && (
+        <AdjustInventoryDialog
+          onClose={() => setIsAdjustOpen(false)}
+          productId={product.productId}
+          productName={product.productName}
+        />
+      )}
     </section>
   )
 }
