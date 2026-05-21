@@ -27,6 +27,8 @@ import {
 import type { CurrentBranch, CurrentBusiness, CurrentUser } from '@/modules/settings/types'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { cn } from '@/shared/utils/cn'
 import {
@@ -141,7 +143,7 @@ export function SettingsPage() {
     )
   } else {
     sectionContent = (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto w-full max-w-6xl">
         {activeSection === 'profile' && <ProfileSettingsCard initialValues={me.data} />}
         {activeSection === 'security' && <SecuritySettingsCard />}
         {activeSection === 'business' && <BusinessSettingsCard initialValues={business.data} />}
@@ -172,18 +174,18 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <div className="grid flex-1 lg:grid-cols-[260px_minmax(0,1fr)]">
-        {/* Sidebar nav */}
-        <aside className="shrink-0 border-stone-200 bg-white lg:border-r">
-          <nav className="flex gap-1 overflow-x-auto p-2 lg:flex-col lg:gap-0.5 lg:p-3">
+      <div className="grid flex-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="shrink-0 border-b border-stone-200 bg-white lg:border-b-0 lg:border-r">
+          <nav className="flex gap-2 overflow-x-auto p-3 lg:flex-col">
             {SETTINGS_SECTIONS.map((section) => {
               const isActive = activeSection === section.id
               const Icon = section.icon
               return (
                 <button
-                  aria-current={isActive ? 'true' : undefined}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-label={section.label}
                   className={cn(
-                    'group flex h-9 shrink-0 items-center gap-2.5 rounded-md px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+                    'group flex min-h-12 shrink-0 items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2 lg:w-full',
                     isActive
                       ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white'
                       : 'text-stone-700 hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200',
@@ -198,15 +200,22 @@ export function SettingsPage() {
                     size={15}
                     strokeWidth={isActive ? 2.25 : 2}
                   />
-                  <span className="flex-1 truncate">{section.label}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{section.label}</span>
+                    <span aria-hidden="true" className={cn(
+                      'hidden truncate text-xs font-medium lg:block',
+                      isActive ? 'text-stone-200' : 'text-stone-500 group-hover:text-stone-700',
+                    )}>
+                      {section.description}
+                    </span>
+                  </span>
                 </button>
               )
             })}
           </nav>
         </aside>
 
-        {/* Section content */}
-        <div className="bg-stone-50 p-4 sm:p-6 lg:p-8">{sectionContent}</div>
+        <div className="bg-stone-50 p-3 sm:p-4 lg:p-5">{sectionContent}</div>
       </div>
     </section>
   )
@@ -236,11 +245,11 @@ function ProfileSettingsCard({
           updateProfile.mutate({ fullName: values.fullName, phone: emptyToNull(values.phone) }),
         )}
       >
-        <Field error={form.formState.errors.fullName?.message} label="Nombre completo *">
-          <input className={inputClassName} {...form.register('fullName')} />
+        <Field error={form.formState.errors.fullName?.message} htmlFor="profile-full-name" label="Nombre completo *">
+          <Input id="profile-full-name" {...form.register('fullName')} />
         </Field>
-        <Field error={form.formState.errors.phone?.message} label="Telefono">
-          <input className={inputClassName} {...form.register('phone')} />
+        <Field error={form.formState.errors.phone?.message} htmlFor="profile-phone" label="Telefono">
+          <Input id="profile-phone" {...form.register('phone')} />
         </Field>
         <FormFooter mutation={updateProfile} />
       </form>
@@ -289,17 +298,17 @@ function BusinessSettingsCard({
           }),
         )}
       >
-        <Field error={form.formState.errors.businessName?.message} label="Nombre del negocio *">
-          <input className={inputClassName} {...form.register('businessName')} />
+        <Field error={form.formState.errors.businessName?.message} htmlFor="business-name" label="Nombre del negocio *">
+          <Input id="business-name" {...form.register('businessName')} />
         </Field>
         <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
-          <Field error={form.formState.errors.identificationType?.message} label="Tipo *">
+          <Field error={form.formState.errors.identificationType?.message} htmlFor="business-id-type" label="Tipo *">
             <Controller
               control={form.control}
               name="identificationType"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="business-id-type"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cedula">Cedula</SelectItem>
                     <SelectItem value="Rnc">RNC</SelectItem>
@@ -309,16 +318,16 @@ function BusinessSettingsCard({
               )}
             />
           </Field>
-          <Field error={form.formState.errors.identificationNumber?.message} label="Identificacion *">
-            <input className={inputClassName} {...form.register('identificationNumber')} />
+          <Field error={form.formState.errors.identificationNumber?.message} htmlFor="business-id-number" label="Identificacion *">
+            <Input id="business-id-number" {...form.register('identificationNumber')} />
           </Field>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <Field error={form.formState.errors.primaryPhone?.message} label="Telefono principal *">
-            <input className={inputClassName} {...form.register('primaryPhone')} />
+          <Field error={form.formState.errors.primaryPhone?.message} htmlFor="business-primary-phone" label="Telefono principal *">
+            <Input id="business-primary-phone" {...form.register('primaryPhone')} />
           </Field>
-          <Field error={form.formState.errors.secondaryPhone?.message} label="Telefono secundario">
-            <input className={inputClassName} {...form.register('secondaryPhone')} />
+          <Field error={form.formState.errors.secondaryPhone?.message} htmlFor="business-secondary-phone" label="Telefono secundario">
+            <Input id="business-secondary-phone" {...form.register('secondaryPhone')} />
           </Field>
         </div>
         <FormFooter mutation={updateBusiness} />
@@ -358,14 +367,14 @@ function BranchSettingsCard({
           }),
         )}
       >
-        <Field error={form.formState.errors.name?.message} label="Nombre *">
-          <input className={inputClassName} {...form.register('name')} />
+        <Field error={form.formState.errors.name?.message} htmlFor="branch-name" label="Nombre *">
+          <Input id="branch-name" {...form.register('name')} />
         </Field>
-        <Field error={form.formState.errors.address?.message} label="Direccion">
-          <input className={inputClassName} {...form.register('address')} />
+        <Field error={form.formState.errors.address?.message} htmlFor="branch-address" label="Direccion">
+          <Input id="branch-address" {...form.register('address')} />
         </Field>
-        <Field error={form.formState.errors.phone?.message} label="Telefono">
-          <input className={inputClassName} {...form.register('phone')} />
+        <Field error={form.formState.errors.phone?.message} htmlFor="branch-phone" label="Telefono">
+          <Input id="branch-phone" {...form.register('phone')} />
         </Field>
         <FormFooter mutation={updateBranch} />
       </form>
@@ -399,11 +408,11 @@ function SecuritySettingsCard() {
         className="space-y-4"
         onSubmit={form.handleSubmit((values) => changePassword.mutate(values))}
       >
-        <Field error={form.formState.errors.currentPassword?.message} label="Contrasena actual *">
-          <input className={inputClassName} type="password" {...form.register('currentPassword')} />
+        <Field error={form.formState.errors.currentPassword?.message} htmlFor="security-current-password" label="Contrasena actual *">
+          <Input id="security-current-password" type="password" {...form.register('currentPassword')} />
         </Field>
-        <Field error={form.formState.errors.newPassword?.message} label="Nueva contrasena *">
-          <input className={inputClassName} type="password" {...form.register('newPassword')} />
+        <Field error={form.formState.errors.newPassword?.message} htmlFor="security-new-password" label="Nueva contrasena *">
+          <Input id="security-new-password" type="password" {...form.register('newPassword')} />
         </Field>
         <FormFooter mutation={changePassword} />
       </form>
@@ -423,9 +432,9 @@ function SettingsCard({
   title: string
 }>) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-100 text-stone-800 ring-1 ring-stone-200">
+    <Card className="rounded-md">
+      <CardHeader className="flex flex-row items-start gap-3 border-b border-stone-200">
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white ring-1 ring-stone-900">
           {icon}
         </span>
         <div>
@@ -433,7 +442,7 @@ function SettingsCard({
           <p className="mt-1 text-sm font-medium text-stone-600">{description}</p>
         </div>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="pt-4 sm:pt-5">{children}</CardContent>
     </Card>
   )
 }
@@ -441,18 +450,20 @@ function SettingsCard({
 function Field({
   children,
   error,
+  htmlFor,
   label,
 }: Readonly<{
   children: ReactNode
   error?: string
+  htmlFor: string
   label: string
 }>) {
   return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-semibold text-stone-800">{label}</span>
+    <div className="block space-y-1.5">
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error && <span className="block text-sm font-semibold text-red-700">{error}</span>}
-    </label>
+    </div>
   )
 }
 
@@ -472,7 +483,7 @@ function FormFooter({
           </p>
         )}
       </div>
-      <Button disabled={mutation.isPending} type="submit">
+      <Button className="w-full sm:w-auto" disabled={mutation.isPending} type="submit">
         {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
       </Button>
     </div>
@@ -485,7 +496,7 @@ function SettingsSkeleton() {
   return (
     <div className="grid gap-6 xl:grid-cols-2">
       {skeletonIds.map((id) => (
-        <Card key={id}>
+        <Card className="rounded-md" key={id}>
           <CardContent className="space-y-4 p-4 sm:p-6">
             <div className="h-5 w-48 rounded bg-stone-100" />
             <div className="h-10 rounded bg-stone-100" />
@@ -509,6 +520,3 @@ function toErrorMessage(error: Error): string {
 
   return error.message
 }
-
-const inputClassName =
-  'h-10 w-full min-w-0 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/20'

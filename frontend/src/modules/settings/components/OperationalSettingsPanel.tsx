@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Building2, DollarSign, Package, Receipt, ShieldCheck } from 'lucide-react'
+import { Building2, DollarSign, Package, Receipt, ShieldCheck, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -22,7 +22,10 @@ import type {
 } from '@/modules/settings/types'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
 import { HttpClientError } from '@/shared/services/httpClient'
+import { cn } from '@/shared/utils/cn'
 import {
   Select,
   SelectContent,
@@ -31,7 +34,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 
-// ── Zod schemas ──────────────────────────────────────────────────────────────
+// Zod schemas
 
 const businessSettingsSchema = z.object({
   address: z.string().optional(),
@@ -80,27 +83,27 @@ type SalesSettingsForm = z.infer<typeof salesSettingsSchema>
 type InventorySettingsForm = z.infer<typeof inventorySettingsSchema>
 type BillingSettingsForm = z.infer<typeof billingSettingsSchema>
 
-// ── Tabs definition ──────────────────────────────────────────────────────────
+// Tabs definition
 
 type TabId = 'business' | 'sales' | 'inventory' | 'billing'
 
-const TAB_LABELS: Record<TabId, string> = {
-  billing: 'Facturacion',
-  business: 'Negocio',
-  inventory: 'Inventario',
-  sales: 'Ventas',
+const TAB_CONFIG: Record<TabId, { icon: LucideIcon; label: string }> = {
+  billing: { icon: Receipt, label: 'Facturacion' },
+  business: { icon: Building2, label: 'Negocio' },
+  inventory: { icon: Package, label: 'Inventario' },
+  sales: { icon: DollarSign, label: 'Ventas' },
 }
 
 const TAB_IDS: ReadonlyArray<TabId> = ['business', 'sales', 'inventory', 'billing']
 
-// ── Panel root ────────────────────────────────────────────────────────────────
+// Panel root
 
 export function OperationalSettingsPanel() {
   const [activeTab, setActiveTab] = useState<TabId>('business')
 
   return (
-    <section aria-label="Configuracion operativa" className="space-y-4">
-      <div>
+    <section aria-label="Configuracion operativa" className="space-y-2">
+      <div className="rounded-md bg-white px-4 py-2.5 shadow-sm ring-1 ring-stone-200">
         <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">
           Parametros operativos
         </p>
@@ -112,28 +115,33 @@ export function OperationalSettingsPanel() {
 
       <div
         aria-label="Secciones de configuracion"
-        className="flex max-w-full gap-1 overflow-x-auto rounded-md bg-stone-100 p-1"
+        className="grid max-w-full grid-cols-2 gap-1 rounded-md bg-white p-1 shadow-sm ring-1 ring-stone-200 sm:grid-cols-4"
         role="tablist"
       >
-        {TAB_IDS.map((id) => (
-          <button
-            aria-controls={`ops-tab-panel-${id}`}
-            aria-selected={activeTab === id}
-            className={[
-              'flex h-9 flex-1 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
-              activeTab === id
-                ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white'
-                : 'text-stone-700 hover:bg-stone-200 hover:text-stone-950 active:bg-stone-300',
-            ].join(' ')}
-            id={`ops-tab-${id}`}
-            key={id}
-            onClick={() => setActiveTab(id)}
-            role="tab"
-            type="button"
-          >
-            {TAB_LABELS[id]}
-          </button>
-        ))}
+        {TAB_IDS.map((id) => {
+          const isActive = activeTab === id
+          const Icon = TAB_CONFIG[id].icon
+          return (
+            <button
+              aria-controls={`ops-tab-panel-${id}`}
+              aria-selected={isActive}
+              className={cn(
+                'flex h-9 min-w-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+                isActive
+                  ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white'
+                  : 'text-stone-700 hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200',
+              )}
+              id={`ops-tab-${id}`}
+              key={id}
+              onClick={() => setActiveTab(id)}
+              role="tab"
+              type="button"
+            >
+              <Icon className={cn('size-4 shrink-0', isActive ? 'text-white' : 'text-stone-500')} />
+              <span className="truncate">{TAB_CONFIG[id].label}</span>
+            </button>
+          )
+        })}
       </div>
 
       <div
@@ -150,7 +158,7 @@ export function OperationalSettingsPanel() {
   )
 }
 
-// ── Business settings tab ─────────────────────────────────────────────────────
+// Business settings tab
 
 function BusinessSettingsTab() {
   const query = useBusinessSettingsQuery()
@@ -182,7 +190,7 @@ function BusinessSettingsTab() {
       title="Informacion del negocio"
     >
       <form
-        className="space-y-4"
+        className="space-y-3"
         onSubmit={form.handleSubmit((values) =>
           mutation.mutate({
             address: emptyToNull(values.address),
@@ -198,59 +206,60 @@ function BusinessSettingsTab() {
           }),
         )}
       >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <OpsField error={form.formState.errors.commercialName?.message} label="Nombre comercial">
-            <input className={inputCls} {...form.register('commercialName')} />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <OpsField error={form.formState.errors.commercialName?.message} htmlFor="ops-commercial-name" label="Nombre comercial">
+            <Input id="ops-commercial-name" {...form.register('commercialName')} />
           </OpsField>
-          <OpsField error={form.formState.errors.legalName?.message} label="Razon social">
-            <input className={inputCls} {...form.register('legalName')} />
-          </OpsField>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <OpsField error={form.formState.errors.rnc?.message} label="RNC / Identificacion fiscal">
-            <input className={inputCls} {...form.register('rnc')} />
-          </OpsField>
-          <OpsField error={form.formState.errors.phone?.message} label="Telefono">
-            <input className={inputCls} {...form.register('phone')} />
+          <OpsField error={form.formState.errors.legalName?.message} htmlFor="ops-legal-name" label="Razon social">
+            <Input id="ops-legal-name" {...form.register('legalName')} />
           </OpsField>
         </div>
-        <OpsField error={form.formState.errors.email?.message} label="Correo electronico">
-          <input className={inputCls} type="email" {...form.register('email')} />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <OpsField error={form.formState.errors.rnc?.message} htmlFor="ops-rnc" label="RNC / Identificacion fiscal">
+            <Input id="ops-rnc" {...form.register('rnc')} />
+          </OpsField>
+          <OpsField error={form.formState.errors.phone?.message} htmlFor="ops-phone" label="Telefono">
+            <Input id="ops-phone" {...form.register('phone')} />
+          </OpsField>
+        </div>
+        <OpsField error={form.formState.errors.email?.message} htmlFor="ops-email" label="Correo electronico">
+          <Input id="ops-email" type="email" {...form.register('email')} />
         </OpsField>
-        <OpsField error={form.formState.errors.address?.message} label="Direccion">
-          <input className={inputCls} {...form.register('address')} />
+        <OpsField error={form.formState.errors.address?.message} htmlFor="ops-address" label="Direccion">
+          <Input id="ops-address" {...form.register('address')} />
         </OpsField>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <OpsField error={form.formState.errors.currency?.message} label="Moneda *">
+        <div className="grid gap-3 lg:grid-cols-2">
+          <OpsField error={form.formState.errors.currency?.message} htmlFor="ops-currency" label="Moneda *">
             <Controller
               control={form.control}
               name="currency"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="ops-currency"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DOP">DOP — Peso dominicano</SelectItem>
-                    <SelectItem value="USD">USD — Dolar estadounidense</SelectItem>
-                    <SelectItem value="EUR">EUR — Euro</SelectItem>
+                    <SelectItem value="DOP">DOP - Peso dominicano</SelectItem>
+                    <SelectItem value="USD">USD - Dolar estadounidense</SelectItem>
+                    <SelectItem value="EUR">EUR - Euro</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
           </OpsField>
-          <OpsField error={form.formState.errors.timezone?.message} label="Zona horaria *">
-            <input
-              className={inputCls}
+          <OpsField error={form.formState.errors.timezone?.message} htmlFor="ops-timezone" label="Zona horaria *">
+            <Input
+              id="ops-timezone"
               placeholder="America/Santo_Domingo"
               {...form.register('timezone')}
             />
           </OpsField>
         </div>
-        <OpsField error={form.formState.errors.logoUrl?.message} label="URL del logo">
-          <input className={inputCls} placeholder="https://..." {...form.register('logoUrl')} />
+        <OpsField error={form.formState.errors.logoUrl?.message} htmlFor="ops-logo-url" label="URL del logo">
+          <Input id="ops-logo-url" placeholder="https://..." {...form.register('logoUrl')} />
         </OpsField>
-        <OpsField error={form.formState.errors.receiptFooterText?.message} label="Pie de recibo">
+        <OpsField error={form.formState.errors.receiptFooterText?.message} htmlFor="ops-receipt-footer" label="Pie de recibo">
           <textarea
-            className={`${inputCls} h-20 resize-none py-2`}
+            className={`${textareaCls} h-20`}
+            id="ops-receipt-footer"
             {...form.register('receiptFooterText')}
           />
         </OpsField>
@@ -260,7 +269,7 @@ function BusinessSettingsTab() {
   )
 }
 
-// ── Sales settings tab ────────────────────────────────────────────────────────
+// Sales settings tab
 
 function SalesSettingsTab() {
   const query = useSalesSettingsQuery()
@@ -288,7 +297,7 @@ function SalesSettingsTab() {
       title="Configuracion de ventas"
     >
       <form
-        className="space-y-4"
+        className="space-y-3"
         onSubmit={form.handleSubmit((values) =>
           mutation.mutate({
             allowDiscounts: values.allowDiscounts,
@@ -300,7 +309,7 @@ function SalesSettingsTab() {
           }),
         )}
       >
-        <div className="space-y-3">
+        <div className="space-y-2">
           <OpsCheckboxRow description="Permite realizar ventas aunque no haya existencia suficiente." label="Permitir stock negativo">
             <input
               className={checkboxCls}
@@ -339,6 +348,7 @@ function SalesSettingsTab() {
         </div>
         <OpsField
           error={form.formState.errors.defaultPaymentMethod?.message}
+          htmlFor="ops-default-payment-method"
           label="Metodo de pago predeterminado"
         >
           <Controller
@@ -346,7 +356,7 @@ function SalesSettingsTab() {
             name="defaultPaymentMethod"
             render={({ field }) => (
               <Select value={field.value ?? '_'} onValueChange={(v) => field.onChange(v === '_' ? '' : v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="ops-default-payment-method"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_">- Sin predeterminado -</SelectItem>
                   <SelectItem value="Efectivo">Efectivo</SelectItem>
@@ -363,7 +373,7 @@ function SalesSettingsTab() {
   )
 }
 
-// ── Inventory settings tab ────────────────────────────────────────────────────
+// Inventory settings tab
 
 function InventorySettingsTab() {
   const query = useInventorySettingsQuery()
@@ -389,7 +399,7 @@ function InventorySettingsTab() {
       title="Configuracion de inventario"
     >
       <form
-        className="space-y-4"
+        className="space-y-3"
         onSubmit={form.handleSubmit((values) =>
           mutation.mutate({
             allowInventoryTransferBetweenBranches: values.allowInventoryTransferBetweenBranches,
@@ -399,7 +409,7 @@ function InventorySettingsTab() {
           }),
         )}
       >
-        <div className="space-y-3">
+        <div className="space-y-2">
           <OpsCheckboxRow description="Envia notificaciones cuando el stock baja del umbral configurado." label="Alertas de stock bajo">
             <input
               className={checkboxCls}
@@ -424,10 +434,11 @@ function InventorySettingsTab() {
         </div>
         <OpsField
           error={form.formState.errors.defaultLowStockThreshold?.message}
+          htmlFor="ops-low-stock-threshold"
           label="Umbral de stock bajo predeterminado *"
         >
-          <input
-            className={inputCls}
+          <Input
+            id="ops-low-stock-threshold"
             step={1}
             type="number"
             {...form.register('defaultLowStockThreshold', { valueAsNumber: true })}
@@ -439,7 +450,7 @@ function InventorySettingsTab() {
   )
 }
 
-// ── Billing settings tab ──────────────────────────────────────────────────────
+// Billing settings tab
 
 function BillingSettingsTab() {
   const query = useBillingSettingsQuery()
@@ -468,7 +479,7 @@ function BillingSettingsTab() {
       title="Configuracion de facturacion"
     >
       <form
-        className="space-y-4"
+        className="space-y-3"
         onSubmit={form.handleSubmit((values) =>
           mutation.mutate({
             enableInvoiceAutoGeneration: values.enableInvoiceAutoGeneration,
@@ -481,27 +492,29 @@ function BillingSettingsTab() {
           }),
         )}
       >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <OpsField error={form.formState.errors.invoicePrefix?.message} label="Prefijo de factura *">
-            <input
-              className={`${inputCls} uppercase`}
+        <div className="grid gap-3 lg:grid-cols-2">
+          <OpsField error={form.formState.errors.invoicePrefix?.message} htmlFor="ops-invoice-prefix" label="Prefijo de factura *">
+            <Input
+              className="uppercase"
+              id="ops-invoice-prefix"
               maxLength={10}
               {...form.register('invoicePrefix')}
             />
           </OpsField>
           <OpsField
             error={form.formState.errors.invoiceSequenceStart?.message}
+            htmlFor="ops-invoice-sequence-start"
             label="Inicio de secuencia *"
           >
-            <input
-              className={inputCls}
+            <Input
+              id="ops-invoice-sequence-start"
               step={1}
               type="number"
               {...form.register('invoiceSequenceStart', { valueAsNumber: true })}
             />
           </OpsField>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           <OpsCheckboxRow description="Genera la factura fiscal automaticamente al completar la venta." label="Generacion automatica de facturas">
             <input
               className={checkboxCls}
@@ -526,17 +539,20 @@ function BillingSettingsTab() {
         </div>
         <OpsField
           error={form.formState.errors.receiptHeaderText?.message}
+          htmlFor="ops-receipt-header"
           label="Encabezado del recibo"
         >
           <textarea
-            className={`${inputCls} h-16 resize-none py-2`}
+            className={`${textareaCls} h-16`}
+            id="ops-receipt-header"
             placeholder="Texto que aparecera en la parte superior del recibo..."
             {...form.register('receiptHeaderText')}
           />
         </OpsField>
-        <OpsField error={form.formState.errors.receiptFooterText?.message} label="Pie del recibo">
+        <OpsField error={form.formState.errors.receiptFooterText?.message} htmlFor="ops-billing-receipt-footer" label="Pie del recibo">
           <textarea
-            className={`${inputCls} h-16 resize-none py-2`}
+            className={`${textareaCls} h-16`}
+            id="ops-billing-receipt-footer"
             placeholder="Texto que aparecera en la parte inferior del recibo..."
             {...form.register('receiptFooterText')}
           />
@@ -547,7 +563,7 @@ function BillingSettingsTab() {
   )
 }
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
+// Shared sub-components
 
 function OpsCard({
   children,
@@ -561,9 +577,9 @@ function OpsCard({
   title: string
 }>) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-100 text-stone-800 ring-1 ring-stone-200">
+    <Card className="rounded-md">
+      <CardHeader className="flex flex-row items-start gap-3 border-b border-stone-200 p-4 pb-3 sm:p-4 sm:pb-3">
+        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white ring-1 ring-stone-900">
           {icon}
         </span>
         <div>
@@ -571,7 +587,7 @@ function OpsCard({
           <p className="mt-1 text-sm font-medium text-stone-600">{description}</p>
         </div>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="p-4 pt-3 sm:p-4 sm:pt-3">{children}</CardContent>
     </Card>
   )
 }
@@ -579,18 +595,20 @@ function OpsCard({
 function OpsField({
   children,
   error,
+  htmlFor,
   label,
 }: Readonly<{
   children: ReactNode
   error?: string
+  htmlFor: string
   label: string
 }>) {
   return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-semibold text-stone-800">{label}</span>
+    <div className="block space-y-1">
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {error && <span className="block text-sm font-semibold text-red-700">{error}</span>}
-    </label>
+    </div>
   )
 }
 
@@ -604,7 +622,7 @@ function OpsCheckboxRow({
   label: string
 }>) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-stone-200 bg-stone-50 px-4 py-3 hover:bg-stone-100">
+    <label className="flex cursor-pointer items-start gap-3 rounded-md border border-stone-200 bg-white px-3 py-2.5 transition-colors hover:bg-stone-50">
       {children}
       <div>
         <p className="text-sm font-semibold text-stone-900">{label}</p>
@@ -620,7 +638,7 @@ function OpsFormFooter({
   mutation: { error: Error | null; isPending: boolean; isSuccess: boolean }
 }>) {
   return (
-    <div className="flex flex-col gap-3 border-t border-stone-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-t border-stone-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-h-5">
         {mutation.error && (
           <p className="text-sm font-semibold text-red-700">{toErrorMessage(mutation.error)}</p>
@@ -632,7 +650,7 @@ function OpsFormFooter({
           </p>
         )}
       </div>
-      <Button disabled={mutation.isPending} type="submit">
+      <Button className="w-full sm:w-auto" disabled={mutation.isPending} type="submit">
         {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
       </Button>
     </div>
@@ -642,8 +660,8 @@ function OpsFormFooter({
 function OpsTabSkeleton() {
   const skeletonRows = ['row-1', 'row-2', 'row-3']
   return (
-    <Card>
-      <CardContent className="space-y-4 p-6">
+    <Card className="rounded-md">
+      <CardContent className="space-y-3 p-4">
         {skeletonRows.map((id) => (
           <div className="h-10 rounded bg-stone-100" key={id} />
         ))}
@@ -652,7 +670,7 @@ function OpsTabSkeleton() {
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 function emptyToNull(value: string | undefined): string | null {
   return value?.trim() ? value.trim() : null
@@ -665,7 +683,7 @@ function toErrorMessage(error: Error): string {
   return error.message
 }
 
-const inputCls =
-  'h-10 w-full rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-300 outline-none placeholder:text-stone-400 focus:ring-2 focus:ring-stone-900/20'
+const textareaCls =
+  'w-full min-w-0 resize-none rounded-md bg-white px-3 py-2 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-600'
 
-const checkboxCls = 'mt-0.5 h-4 w-4 cursor-pointer rounded accent-stone-900'
+const checkboxCls = 'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded accent-stone-900'
