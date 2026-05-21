@@ -143,13 +143,13 @@ export function SettingsPage() {
     )
   } else {
     sectionContent = (
-      <div className="mx-auto w-full max-w-6xl">
+      <>
         {activeSection === 'profile' && <ProfileSettingsCard initialValues={me.data} />}
         {activeSection === 'security' && <SecuritySettingsCard />}
         {activeSection === 'business' && <BusinessSettingsCard initialValues={business.data} />}
         {activeSection === 'branch' && <BranchSettingsCard initialValues={branch.data} />}
         {activeSection === 'operational' && <OperationalSettingsPanel />}
-      </div>
+      </>
     )
   }
 
