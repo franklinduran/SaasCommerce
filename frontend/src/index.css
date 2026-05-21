@@ -83,13 +83,6 @@ body {
 }
 
 button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-button,
 select {
   max-width: 100%;
 }

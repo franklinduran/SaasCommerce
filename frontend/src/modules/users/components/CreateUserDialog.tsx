@@ -131,14 +131,16 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: Readonly<Cre
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
               />
-              <button
+              <Button
                 aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
-                className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-stone-700 transition hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/25"
+                className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2"
                 onClick={() => setShowPassword((v) => !v)}
+                size="icon"
                 type="button"
+                variant="ghost"
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
+              </Button>
             </div>
             {errors.password ? (
               <p className="text-sm font-semibold text-red-700">{errors.password.message}</p>

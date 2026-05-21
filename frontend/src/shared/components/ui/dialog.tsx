@@ -46,7 +46,7 @@ export function DialogContent({
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-md text-stone-600 transition hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-stone-900/25 focus:ring-offset-2 disabled:pointer-events-none disabled:text-stone-400">
+        <DialogPrimitive.Close className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 active:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:text-stone-500">
           <X className="size-4" />
           <span className="sr-only">Cerrar</span>
         </DialogPrimitive.Close>

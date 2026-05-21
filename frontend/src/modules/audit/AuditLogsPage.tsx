@@ -159,7 +159,7 @@ export default function AuditLogsPage() {
             </div>
             {hasFilters && (
               <Button
-                className="h-8 w-full text-xs"
+                className="w-full"
                 onClick={() => setFilters(defaultFilters)}
                 size="sm"
                 type="button"

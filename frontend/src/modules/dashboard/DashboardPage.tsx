@@ -84,7 +84,7 @@ export function DashboardPage() {
               >
                 <td className="px-4 py-3 font-medium text-stone-900">
                   <Link
-                    className="hover:underline"
+                    className="font-semibold text-stone-900 underline-offset-4 transition-colors hover:text-stone-950 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
                     to={`/invoices/${invoice.invoiceId}`}
                   >
                     {invoice.invoiceNumber}
@@ -194,13 +194,12 @@ export function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Ventas recientes</h2>
-              <Link
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
-                to="/reports"
-              >
-                Ver todas
-                <ArrowRight size={14} />
-              </Link>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/reports">
+                  Ver todas
+                  <ArrowRight size={14} />
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               {recentSalesContent}
@@ -211,13 +210,12 @@ export function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Facturas recientes</h2>
-              <Link
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
-                to="/invoices"
-              >
-                Ver todas
-                <ArrowRight size={14} />
-              </Link>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/invoices">
+                  Ver todas
+                  <ArrowRight size={14} />
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               {recentInvoicesContent}
@@ -230,13 +228,12 @@ export function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Compras recientes</h2>
-              <Link
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
-                to="/purchases"
-              >
-                Ver todas
-                <ArrowRight size={14} />
-              </Link>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/purchases">
+                  Ver todas
+                  <ArrowRight size={14} />
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">

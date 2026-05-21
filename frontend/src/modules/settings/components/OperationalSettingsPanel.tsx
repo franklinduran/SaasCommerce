@@ -120,9 +120,9 @@ export function OperationalSettingsPanel() {
             aria-controls={`ops-tab-panel-${id}`}
             aria-selected={activeTab === id}
             className={[
-              'flex flex-1 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+              'flex h-9 flex-1 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
               activeTab === id
-                ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 active:bg-stone-950'
+                ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white'
                 : 'text-stone-700 hover:bg-stone-200 hover:text-stone-950 active:bg-stone-300',
             ].join(' ')}
             id={`ops-tab-${id}`}

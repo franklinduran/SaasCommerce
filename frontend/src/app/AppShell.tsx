@@ -127,7 +127,7 @@ export function AppShell() {
             </div>
             <Button
               className={cn(
-                'h-8 w-8 shrink-0 rounded-md p-0 text-stone-500 hover:bg-stone-200/70 hover:text-stone-900 max-lg:hidden lg:inline-flex',
+                'shrink-0 max-lg:hidden lg:inline-flex',
                 sidebarCollapsed && 'lg:hidden',
               )}
               aria-label="Contraer menu"
@@ -142,17 +142,18 @@ export function AppShell() {
 
           {!sidebarCollapsed && (
             <div className="hidden px-3 py-3 lg:block">
-              <button
+              <Button
                 aria-label="Buscar"
-                className="flex h-9 w-full items-center gap-2 rounded-md bg-white px-3 text-sm text-stone-700 ring-1 ring-stone-200 transition-colors hover:bg-stone-100 hover:text-stone-950 hover:ring-stone-300 active:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2"
+                className="w-full justify-start px-3"
                 type="button"
+                variant="secondary"
               >
                 <Search aria-hidden="true" size={15} />
                 <span className="font-medium">Buscar...</span>
                 <kbd className="ml-auto rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-stone-500 ring-1 ring-stone-200">
                   Ctrl K
                 </kbd>
-              </button>
+              </Button>
             </div>
           )}
 
@@ -160,7 +161,7 @@ export function AppShell() {
             <div className="hidden px-2 py-2 lg:block">
               <Button
                 aria-label="Expandir menu"
-                className="h-9 w-full rounded-md p-0 text-stone-500 hover:bg-stone-200/70 hover:text-stone-900"
+                className="w-full"
                 onClick={toggleSidebar}
                 size="icon"
                 title="Expandir menu"
@@ -208,7 +209,7 @@ export function AppShell() {
             )}
             <Button
               className={cn(
-                'w-full justify-start text-stone-600 hover:bg-stone-200/60 hover:text-stone-900',
+                'w-full justify-start',
                 sidebarCollapsed && 'justify-center',
               )}
               onClick={handleLogout}

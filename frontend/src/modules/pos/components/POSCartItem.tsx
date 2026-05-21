@@ -34,7 +34,7 @@ export function POSCartItem({
         >
           <Minus aria-hidden="true" size={15} />
         </Button>
-        <span className="flex h-10 min-w-10 items-center justify-center rounded-md bg-stone-100 px-2 text-sm font-semibold text-stone-900 ring-1 ring-stone-200">
+        <span className="flex h-9 min-w-9 items-center justify-center rounded-md bg-stone-100 px-2 text-sm font-semibold text-stone-900 ring-1 ring-stone-200">
           {item.quantity}
         </span>
         <Button

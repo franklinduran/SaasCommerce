@@ -157,9 +157,9 @@ export function SettingsPage() {
                 <button
                   aria-current={isActive ? 'true' : undefined}
                   className={cn(
-                    'group flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+                    'group flex h-9 shrink-0 items-center gap-2.5 rounded-md px-3 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
                     isActive
-                      ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-900 active:bg-stone-950'
+                      ? 'bg-stone-900 text-white shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white'
                       : 'text-stone-700 hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200',
                   )}
                   key={section.id}
