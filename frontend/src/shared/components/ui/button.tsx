@@ -9,7 +9,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-stone-900 text-white shadow-sm hover:bg-stone-800 active:bg-stone-950 disabled:bg-stone-200 disabled:text-stone-600',
+          'bg-stone-900 text-white shadow-sm hover:bg-stone-800 hover:text-white active:bg-stone-950 active:text-white disabled:bg-stone-200 disabled:text-stone-600',
         secondary:
           'bg-white text-stone-900 shadow-sm ring-1 ring-stone-300 hover:bg-stone-50 hover:text-stone-950 active:bg-stone-100 active:text-stone-950 disabled:bg-stone-100 disabled:text-stone-600 disabled:ring-stone-200',
         ghost:
