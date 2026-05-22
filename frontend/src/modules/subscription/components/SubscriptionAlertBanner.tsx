@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, CreditCard, ShieldAlert, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Clock, CreditCard, ShieldAlert, TrendingUp, X } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { useSubscription } from '@/modules/subscription/hooks/useSubscription'
 import { useSubscriptionUsage } from '@/modules/subscription/hooks/useSubscriptionUsage'
@@ -10,6 +10,7 @@ type SubscriptionAlertBannerProps = {
   className?: string
   onChoosePlan?: () => void
   onContactSupport?: () => void
+  onDismiss?: () => void
   onReactivateClick?: () => void
   subscription?: BusinessSubscription
   usage?: SubscriptionUsage
@@ -19,6 +20,7 @@ export function SubscriptionAlertBanner({
   className,
   onChoosePlan,
   onContactSupport,
+  onDismiss,
   onReactivateClick,
   subscription: providedSubscription,
   usage: providedUsage,
@@ -53,7 +55,7 @@ export function SubscriptionAlertBanner({
           <p className="mt-0.5 font-medium opacity-90">{alert.message}</p>
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {alert.action === 'choose-plan' && onChoosePlan && (
           <Button onClick={onChoosePlan} size="sm" type="button" variant="secondary">
             Ver planes
@@ -67,6 +69,18 @@ export function SubscriptionAlertBanner({
         {alert.action === 'support' && onContactSupport && (
           <Button onClick={onContactSupport} size="sm" type="button" variant="secondary">
             Soporte
+          </Button>
+        )}
+        {onDismiss && (
+          <Button
+            aria-label="Cerrar aviso"
+            className="shrink-0 opacity-70 hover:opacity-100"
+            onClick={onDismiss}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <X size={16} />
           </Button>
         )}
       </div>

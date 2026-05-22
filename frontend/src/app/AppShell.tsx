@@ -23,9 +23,10 @@ import {
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
+import { SubscriptionAlertBanner } from '@/modules/subscription/components/SubscriptionAlertBanner'
 import { Button } from '@/shared/components/ui/button'
 import { useAppStore } from '@/shared/hooks/useAppStore'
 import { useCurrentUserPermissions } from '@/shared/hooks/usePermissions'
@@ -83,6 +84,8 @@ const pageTitles: Record<string, string> = {
   '/forbidden': 'Acceso denegado',
 }
 
+const BANNER_DISMISSED_KEY = 'subscription-banner-dismissed'
+
 export function AppShell() {
   const businessName = useAppStore((state) => state.businessName)
   const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed)
@@ -95,6 +98,18 @@ export function AppShell() {
   const navigate = useNavigate()
   const pageTitle = getPageTitle(location.pathname)
   const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
+
+  // Banner descartable — se resetea al cerrar sesión (sessionStorage)
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(
+    () => sessionStorage.getItem(BANNER_DISMISSED_KEY) === 'true'
+  )
+
+  function dismissBanner() {
+    sessionStorage.setItem(BANNER_DISMISSED_KEY, 'true')
+    setBannerDismissed(true)
+  }
+
+  const isHome = location.pathname === '/'
 
   // Redirigir a /change-password si el usuario debe cambiar contraseña
   useEffect(() => {
@@ -246,6 +261,17 @@ export function AppShell() {
         </header>
 
         <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-surface-subtle">
+          {isHome && !bannerDismissed && (
+            <SubscriptionAlertBanner
+              className="sticky top-0 z-10 rounded-none border-x-0 border-t-0"
+              onChoosePlan={() => navigate('/subscription')}
+              onReactivateClick={() => navigate('/subscription')}
+              onContactSupport={() => {
+                window.location.href = 'mailto:soporte@comercioflowrd.com?subject=Soporte%20suscripcion'
+              }}
+              onDismiss={dismissBanner}
+            />
+          )}
           <Outlet />
         </main>
       </div>
