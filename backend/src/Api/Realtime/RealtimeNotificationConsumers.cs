@@ -8,6 +8,7 @@ using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Application.Transfers;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Application.Purchases;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
@@ -295,6 +296,96 @@ public sealed class InventoryIncreasedRealtimeConsumer(
       context.Message.BranchId,
       PurchaseRealtimeEvents.InventoryUpdated,
       context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class InventoryTransferCompletedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InventoryTransferCompletedRealtimeConsumer> logger)
+  : IdempotentConsumer<InventoryTransferCompletedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<InventoryTransferCompletedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var notification = new InventoryTransferStatusChangedNotificationV1(
+      context.Message.TransferId,
+      context.Message.BusinessId,
+      context.Message.SourceBranchId,
+      context.Message.TargetBranchId,
+      "Completed",
+      null,
+      context.Message.CreatedAt);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryTransferRealtimeEvents.Completed,
+      notification,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.SourceBranchId,
+      InventoryTransferRealtimeEvents.Completed,
+      notification,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.TargetBranchId,
+      InventoryTransferRealtimeEvents.Completed,
+      notification,
+      context.CancellationToken);
+  }
+}
+
+public sealed class InventoryTransferFailedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InventoryTransferFailedRealtimeConsumer> logger)
+  : IdempotentConsumer<InventoryTransferFailedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<InventoryTransferFailedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryTransferRealtimeEvents.Failed,
+      new InventoryTransferStatusChangedNotificationV1(
+        context.Message.TransferId,
+        context.Message.BusinessId,
+        context.Message.SourceBranchId,
+        context.Message.TargetBranchId,
+        "Failed",
+        context.Message.Reason,
+        context.Message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
+public sealed class InventoryTransferCancelledRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<InventoryTransferCancelledRealtimeConsumer> logger)
+  : IdempotentConsumer<InventoryTransferCancelledEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<InventoryTransferCancelledEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      InventoryTransferRealtimeEvents.Cancelled,
+      new InventoryTransferStatusChangedNotificationV1(
+        context.Message.TransferId,
+        context.Message.BusinessId,
+        context.Message.SourceBranchId,
+        context.Message.TargetBranchId,
+        "Cancelled",
+        null,
+        context.Message.CreatedAt),
       context.CancellationToken);
   }
 }

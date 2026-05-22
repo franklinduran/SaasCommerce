@@ -163,7 +163,7 @@ public sealed class AuditLogInfrastructureTests
 
     // Seed a real business with a user
     var business = new Business(businessId, "Test Business", Now);
-    business.AddBranch(branchId, "Main", Now, isMain: true);
+    business.AddBranch(branchId, "Main", "MAIN", Now, isMain: true);
     var user = new User(userId, businessId, branchId, "Juan Perez", "juan@test.com", "hash", Now);
     dbContext.Add(business);
     dbContext.Add(user);

@@ -127,7 +127,7 @@ public sealed class IdentityAuthTests
       passwordHasher.Hash("Admin123!"),
       clock.UtcNow);
 
-    business.AddBranch(branchId, "Main", clock.UtcNow, isMain: true);
+    business.AddBranch(branchId, "Main", "MAIN", clock.UtcNow, isMain: true);
     user.AddRole(role);
     dbContext.Add(business);
     dbContext.Add(role);

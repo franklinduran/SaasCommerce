@@ -74,7 +74,7 @@ public sealed class StockItem
         reason,
         source?.SaleId,
         source?.PurchaseId,
-        source?.Note),
+        Note: source?.Note),
       userId,
       occurredAt);
   }

@@ -116,7 +116,7 @@ public sealed class CsvReportExportServiceTests
     await using var db = CreateDbContext();
     // Customer with embedded quote to exercise the escaping branch
     var business = new Business(businessId, "Biz", Today);
-    business.AddBranch(branchId, "Main", Today, isMain: true);
+    business.AddBranch(branchId, "Main", "MAIN", Today, isMain: true);
     db.Add(business);
     db.Add(new Customer(customerId, businessId, "Cliente \"Especial\"", "8095550199", "c@t.com", Today));
     var sale = Sale.Create(Guid.NewGuid(), businessId, branchId, userId,
@@ -139,7 +139,7 @@ public sealed class CsvReportExportServiceTests
   private async Task SeedAsync(AppDbContext db)
   {
     var business = new Business(businessId, "Test Business", Today);
-    business.AddBranch(branchId, "Main", Today, isMain: true);
+    business.AddBranch(branchId, "Main", "MAIN", Today, isMain: true);
     db.Add(business);
 
     db.Add(new Customer(customerId, businessId, "Cliente Test", "8095550101", "c@test.com", Today));

@@ -1,10 +1,12 @@
 import {
+  ArrowLeftRight,
   BarChart3,
   Boxes,
   Building2,
   ChevronDown,
   CircleDollarSign,
   ClipboardList,
+  GitBranch,
   History,
   LayoutDashboard,
   LogOut,
@@ -44,6 +46,8 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
   { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
   { label: 'Inventario', path: '/inventory', icon: Boxes, requiredPermission: Permission.InventoryView },
+  { label: 'Transferencias', path: '/inventory-transfers', icon: ArrowLeftRight, requiredPermission: Permission.InventoryTransfer },
+  { label: 'Sucursales', path: '/branches', icon: GitBranch, requiredPermission: Permission.BranchesView },
   { label: 'Clientes', path: '/customers', icon: Users, requiredPermission: Permission.CustomersView },
   { label: 'Proveedores', path: '/suppliers', icon: Building2, requiredPermission: Permission.PurchasesView },
   { label: 'Compras', path: '/purchases', icon: Truck, requiredPermission: Permission.PurchasesView },
@@ -54,8 +58,8 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
-const mainNavigation = navigationItems.slice(0, 5)
-const growthTools = navigationItems.slice(5)
+const mainNavigation = navigationItems.slice(0, 7)
+const growthTools = navigationItems.slice(7)
 
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
@@ -63,6 +67,8 @@ const pageTitles: Record<string, string> = {
   '/sales': 'Ventas',
   '/products': 'Productos',
   '/inventory': 'Inventario',
+  '/inventory-transfers': 'Transferencias',
+  '/branches': 'Sucursales',
   '/customers': 'Clientes',
   '/suppliers': 'Proveedores',
   '/purchases': 'Compras',

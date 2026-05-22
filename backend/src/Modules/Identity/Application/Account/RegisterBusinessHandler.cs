@@ -67,7 +67,7 @@ public sealed class RegisterBusinessHandler(
       clock.UtcNow,
       identificationType,
       identificationNumber);
-    business.AddBranch(branchId, command.BranchName, clock.UtcNow, isMain: true);
+    business.AddBranch(branchId, command.BranchName, "PRINCIPAL", clock.UtcNow, isMain: true);
 
     foreach (var phone in phones)
     {

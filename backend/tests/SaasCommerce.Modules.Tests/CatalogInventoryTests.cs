@@ -717,7 +717,7 @@ public sealed class CatalogInventoryTests
     var businessId = new BusinessId(Guid.NewGuid());
     var branchId = new BranchId(Guid.NewGuid());
     var productId = Guid.NewGuid();
-    dbContext.Add(new Branch(branchId, businessId, "Principal", new FixedClock().UtcNow, isMain: true));
+    dbContext.Add(new Branch(branchId, businessId, "Principal", "PRINCIPAL", new FixedClock().UtcNow, isMain: true));
     dbContext.Add(Product(productId, businessId, "Cafe", "SKU-LOW", minimumStock: 10));
     var stockItem = new StockItem(Guid.NewGuid(), businessId, branchId, productId, new FixedClock().UtcNow);
     stockItem.ApplyAdjustment(4, InventoryMovementReason.InitialStock, Guid.NewGuid(), false, new FixedClock().UtcNow);
@@ -743,8 +743,8 @@ public sealed class CatalogInventoryTests
     var productId = Guid.NewGuid();
     var otherProductId = Guid.NewGuid();
     var otherBranchId = new BranchId(Guid.NewGuid());
-    dbContext.Add(new Branch(branchId, businessId, "Principal", new FixedClock().UtcNow, isMain: true));
-    dbContext.Add(new Branch(otherBranchId, otherBusinessId, "Otra", new FixedClock().UtcNow, isMain: true));
+    dbContext.Add(new Branch(branchId, businessId, "Principal", "PRINCIPAL", new FixedClock().UtcNow, isMain: true));
+    dbContext.Add(new Branch(otherBranchId, otherBusinessId, "Otra", "OTRA", new FixedClock().UtcNow, isMain: true));
     dbContext.Add(Product(productId, businessId, "Cafe", "SKU-001", minimumStock: 1));
     dbContext.Add(Product(otherProductId, otherBusinessId, "Otro cafe", "SKU-002", minimumStock: 1));
     dbContext.Add(new StockItem(Guid.NewGuid(), businessId, branchId, productId, new FixedClock().UtcNow));
@@ -797,8 +797,8 @@ public sealed class CatalogInventoryTests
     var secondBranchId = new BranchId(Guid.NewGuid());
     var productId = Guid.NewGuid();
     var userId = Guid.NewGuid();
-    dbContext.Add(new Branch(firstBranchId, businessId, "Principal", new FixedClock().UtcNow, isMain: true));
-    dbContext.Add(new Branch(secondBranchId, businessId, "Secundaria", new FixedClock().UtcNow, isMain: false));
+    dbContext.Add(new Branch(firstBranchId, businessId, "Principal", "PRINCIPAL", new FixedClock().UtcNow, isMain: true));
+    dbContext.Add(new Branch(secondBranchId, businessId, "Secundaria", "SECUNDARIA", new FixedClock().UtcNow, isMain: false));
     dbContext.Add(Product(productId, businessId, "Cafe", "SKU-DETAIL", minimumStock: 5));
     var stockItem = new StockItem(Guid.NewGuid(), businessId, firstBranchId, productId, new FixedClock().UtcNow);
     var movement = stockItem.ApplyAdjustment(3, InventoryMovementReason.InitialStock, userId, false, new FixedClock().UtcNow);
@@ -840,7 +840,7 @@ public sealed class CatalogInventoryTests
     var branchId = new BranchId(Guid.NewGuid());
     var cafeId = Guid.NewGuid();
     var teaId = Guid.NewGuid();
-    dbContext.Add(new Branch(branchId, businessId, "Principal", new FixedClock().UtcNow, isMain: true));
+    dbContext.Add(new Branch(branchId, businessId, "Principal", "PRINCIPAL", new FixedClock().UtcNow, isMain: true));
     dbContext.Add(Product(cafeId, businessId, "Cafe", "SKU-CAFE", minimumStock: 5));
     dbContext.Add(Product(teaId, businessId, "Te", "SKU-TE", minimumStock: 5));
     var cafeStock = new StockItem(Guid.NewGuid(), businessId, branchId, cafeId, new FixedClock().UtcNow);

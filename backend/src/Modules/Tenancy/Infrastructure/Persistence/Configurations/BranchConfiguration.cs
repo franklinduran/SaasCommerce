@@ -27,6 +27,10 @@ public sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
       .HasMaxLength(160)
       .IsRequired();
 
+    builder.Property(branch => branch.Code)
+      .HasMaxLength(20)
+      .IsRequired();
+
     builder.Property(branch => branch.Address)
       .HasMaxLength(240);
 
@@ -47,5 +51,12 @@ public sealed class BranchConfiguration : IEntityTypeConfiguration<Branch>
 
     builder.HasIndex(branch => new { branch.BusinessId, branch.Name })
       .IsUnique();
+
+    builder.HasIndex(branch => new { branch.BusinessId, branch.Code })
+      .IsUnique();
+
+    builder.HasIndex(branch => new { branch.BusinessId, branch.IsActive });
+
+    builder.HasIndex(branch => branch.BusinessId);
   }
 }

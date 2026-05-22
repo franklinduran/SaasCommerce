@@ -7,5 +7,7 @@ public enum InventoryMovementReason
   PurchaseReceived = 6,
   SaleDeduction = 3,
   ManualAdjustment = 4,
-  Return = 5
+  Return = 5,
+  TransferOut = 7,
+  TransferIn = 8
 }

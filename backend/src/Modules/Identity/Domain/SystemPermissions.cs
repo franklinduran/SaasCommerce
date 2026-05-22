@@ -60,6 +60,11 @@ public static class SystemPermissions
   // Audit
   public const string AuditView = "audit.view";
 
+  // Branches
+  public const string BranchesView = "branches.view";
+  public const string BranchesCreate = "branches.create";
+  public const string BranchesUpdate = "branches.update";
+
   // Settings
   public const string SettingsView = "settings.view";
   public const string SettingsUpdate = "settings.update";

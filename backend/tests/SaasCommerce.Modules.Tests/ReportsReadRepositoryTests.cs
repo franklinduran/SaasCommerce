@@ -229,7 +229,7 @@ public sealed class ReportsReadRepositoryTests
   private async Task SeedFullDatasetAsync(AppDbContext db)
   {
     var business = new Business(businessId, "Test Business", Today);
-    business.AddBranch(branchId, "Main", Today, isMain: true);
+    business.AddBranch(branchId, "Main", "MAIN", Today, isMain: true);
     db.Add(business);
 
     var customer = new Customer(customerId, businessId, "Cliente Test", "8095550101", "cliente@test.com", Today);

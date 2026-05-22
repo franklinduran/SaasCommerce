@@ -49,7 +49,7 @@ public sealed class DevelopmentDataSeeder(
       BusinessIdentificationType.Rnc,
       "123456789");
 
-    business.AddBranch(branchId, "Main Branch", now, isMain: true);
+    business.AddBranch(branchId, "Main Branch", "MAIN", now, isMain: true);
     business.AddPhone(Guid.Parse("55555555-5555-5555-5555-555555555555"), "8090000000", "Principal", true, now);
     adminUser.AddRole(adminRole);
 

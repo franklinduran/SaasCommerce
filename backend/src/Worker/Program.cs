@@ -42,6 +42,7 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InventoryAdjustedConsumer>();
     massTransit.AddConsumer<InventoryDeductedConsumer>();
     massTransit.AddConsumer<LowStockDetectedConsumer>();
+    massTransit.AddConsumer<ProcessInventoryTransferConsumer>();
     massTransit.AddConsumer<SaleCompletedAuditConsumer>();
     massTransit.AddConsumer<SaleFailedAuditConsumer>();
     massTransit.AddConsumer<PaymentRegisteredAuditConsumer>();

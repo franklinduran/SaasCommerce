@@ -51,6 +51,11 @@ export const Permission = {
 
   // Audit
   AuditView: 'audit.view',
+
+  // Branches
+  BranchesView: 'branches.view',
+  BranchesCreate: 'branches.create',
+  BranchesUpdate: 'branches.update',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

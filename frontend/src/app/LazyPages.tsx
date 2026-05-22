@@ -86,6 +86,16 @@ const ForbiddenPage = lazy(() =>
     default: module.ForbiddenPage,
   })),
 )
+const BranchesPage = lazy(() =>
+  import('@/modules/branches/pages/BranchesPage').then((module) => ({
+    default: module.BranchesPage,
+  })),
+)
+const InventoryTransfersPage = lazy(() =>
+  import('@/modules/inventory-transfers/pages/InventoryTransfersPage').then((module) => ({
+    default: module.InventoryTransfersPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -165,4 +175,12 @@ export function AuditLogsRoute() {
 
 export function ForbiddenRoute() {
   return <ForbiddenPage />
+}
+
+export function BranchesRoute() {
+  return <BranchesPage />
+}
+
+export function InventoryTransfersRoute() {
+  return <InventoryTransfersPage />
 }

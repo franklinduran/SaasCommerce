@@ -12,14 +12,17 @@ public sealed class Branch
     BranchId id,
     BusinessId businessId,
     string name,
+    string code,
     DateTimeOffset createdAt,
     bool isMain)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(name);
+    ArgumentException.ThrowIfNullOrWhiteSpace(code);
 
     Id = id;
     BusinessId = businessId;
     Name = name.Trim();
+    Code = code.Trim().ToUpperInvariant();
     CreatedAt = createdAt;
     UpdatedAt = createdAt;
     IsMain = isMain;
@@ -31,6 +34,8 @@ public sealed class Branch
   public BusinessId BusinessId { get; private set; }
 
   public string Name { get; private set; } = string.Empty;
+
+  public string Code { get; private set; } = string.Empty;
 
   public string? Address { get; private set; }
 
@@ -51,6 +56,23 @@ public sealed class Branch
     Name = name.Trim();
     Address = NormalizeOptional(address);
     Phone = NormalizeOptional(phone);
+    UpdatedAt = updatedAt;
+  }
+
+  public void Activate(DateTimeOffset updatedAt)
+  {
+    IsActive = true;
+    UpdatedAt = updatedAt;
+  }
+
+  public void Deactivate(bool isOnlyActiveBranch, DateTimeOffset updatedAt)
+  {
+    if (IsMain && isOnlyActiveBranch)
+    {
+      throw new InvalidOperationException("Cannot deactivate the main branch when it is the only active branch.");
+    }
+
+    IsActive = false;
     UpdatedAt = updatedAt;
   }
 

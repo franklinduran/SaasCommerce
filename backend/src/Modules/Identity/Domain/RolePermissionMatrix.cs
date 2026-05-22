@@ -53,6 +53,10 @@ public static class RolePermissionMatrix
 
     SystemPermissions.AuditView,
 
+    SystemPermissions.BranchesView,
+    SystemPermissions.BranchesCreate,
+    SystemPermissions.BranchesUpdate,
+
     SystemPermissions.SettingsView,
     SystemPermissions.SettingsUpdate
   };
@@ -88,7 +92,9 @@ public static class RolePermissionMatrix
     SystemPermissions.ReportsView,
     SystemPermissions.ReportsExport,
 
-    SystemPermissions.UsersView
+    SystemPermissions.UsersView,
+
+    SystemPermissions.BranchesView
   };
 
   private static readonly IReadOnlySet<string> CashierAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -120,6 +126,8 @@ public static class RolePermissionMatrix
     SystemPermissions.InventoryView,
     SystemPermissions.InventoryAdjust,
     SystemPermissions.InventoryTransfer,
+
+    SystemPermissions.BranchesView,
 
     SystemPermissions.PurchasesView,
 

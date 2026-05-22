@@ -31,6 +31,7 @@ using SaasCommerce.Modules.Identity.Infrastructure.Development;
 using SaasCommerce.Modules.Identity.Infrastructure.Persistence;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Application.Transfers;
 using SaasCommerce.Modules.Inventory.Contracts.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
@@ -48,6 +49,8 @@ using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Settings.Application;
 using SaasCommerce.Modules.Settings.Infrastructure;
+using SaasCommerce.Modules.Tenancy.Application.Branches;
+using SaasCommerce.Modules.Tenancy.Infrastructure.Persistence;
 
 namespace SaasCommerce.Modules;
 
@@ -85,6 +88,12 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetInventoryProductDetailHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();
+    services.AddScoped<IInventoryTransferRepository, EfInventoryTransferRepository>();
+    services.AddScoped<IProcessInventoryTransferUseCase, ProcessInventoryTransferUseCase>();
+    services.AddScoped<CreateInventoryTransferHandler>();
+    services.AddScoped<CancelInventoryTransferHandler>();
+    services.AddScoped<GetInventoryTransfersHandler>();
+    services.AddScoped<GetInventoryTransferByIdHandler>();
 
     // Purchasing
     services.AddScoped<ISupplierRepository, EfSupplierRepository>();
@@ -199,6 +208,15 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateInventorySettingsHandler>();
     services.AddScoped<GetBillingSettingsHandler>();
     services.AddScoped<UpdateBillingSettingsHandler>();
+
+    // Branches
+    services.AddScoped<IBranchRepository, EfBranchRepository>();
+    services.AddScoped<CreateBranchHandler>();
+    services.AddScoped<UpdateBranchHandler>();
+    services.AddScoped<ActivateBranchHandler>();
+    services.AddScoped<DeactivateBranchHandler>();
+    services.AddScoped<GetBranchesHandler>();
+    services.AddScoped<GetBranchByIdHandler>();
 
     // Reporting
     services.AddScoped<IReportsReadRepository, EfReportsReadRepository>();

@@ -47,9 +47,9 @@ public sealed class Business
 
   public IReadOnlyCollection<BusinessPhone> Phones => phones.AsReadOnly();
 
-  public Branch AddBranch(BranchId branchId, string name, DateTimeOffset createdAt, bool isMain = false)
+  public Branch AddBranch(BranchId branchId, string name, string code, DateTimeOffset createdAt, bool isMain = false)
   {
-    var branch = new Branch(branchId, Id, name, createdAt, isMain);
+    var branch = new Branch(branchId, Id, name, code, createdAt, isMain);
 
     branches.Add(branch);
 

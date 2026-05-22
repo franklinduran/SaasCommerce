@@ -26,7 +26,10 @@ using SaasCommerce.Modules.Identity.Application.Settings;
 using SaasCommerce.Modules.Identity.Contracts;
 using SaasCommerce.Modules.Identity.Contracts.Requests;
 using SaasCommerce.Modules.Inventory.Application.Stock;
+using SaasCommerce.Modules.Inventory.Application.Transfers;
 using SaasCommerce.Modules.Inventory.Contracts.Requests;
+using SaasCommerce.Modules.Tenancy.Application.Branches;
+using SaasCommerce.Modules.Tenancy.Contracts.Requests;
 using SaasCommerce.Modules.Purchasing.Application.Purchases;
 using SaasCommerce.Modules.Purchasing.Application.Suppliers;
 using SaasCommerce.Modules.Purchasing.Contracts.Requests;
@@ -67,6 +70,9 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InventoryAdjustedRealtimeConsumer>();
     massTransit.AddConsumer<InventoryDeductedRealtimeConsumer>();
     massTransit.AddConsumer<LowStockDetectedRealtimeConsumer>();
+    massTransit.AddConsumer<InventoryTransferCompletedRealtimeConsumer>();
+    massTransit.AddConsumer<InventoryTransferFailedRealtimeConsumer>();
+    massTransit.AddConsumer<InventoryTransferCancelledRealtimeConsumer>();
     massTransit.AddConsumer<PurchaseReceivedRealtimeConsumer>();
     massTransit.AddConsumer<InventoryIncreasedRealtimeConsumer>();
     massTransit.AddConsumer<ProductCostUpdatedRealtimeConsumer>();
@@ -1218,6 +1224,11 @@ app.MapPost(
 // ── Dashboard & Reports ────────────────────────────────────────────────────
 
 app.MapReportsEndpoints();
+
+// ── Branches & Inventory Transfers ────────────────────────────────────────
+
+app.MapBranchEndpoints();
+app.MapInventoryTransferEndpoints();
 
 // ── Users & Audit ─────────────────────────────────────────────────────────
 
