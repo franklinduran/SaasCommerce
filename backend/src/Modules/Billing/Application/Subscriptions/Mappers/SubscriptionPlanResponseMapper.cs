@@ -17,6 +17,7 @@ public static class SubscriptionPlanResponseMapper
     return new SubscriptionPlanResponse(
       plan.Id,
       plan.Name,
+      plan.Code,
       plan.Description,
       plan.MonthlyPrice,
       plan.MaxBranches,
@@ -29,7 +30,7 @@ public static class SubscriptionPlanResponseMapper
       plan.UpdatedAt);
   }
 
-  private static IReadOnlyList<string> GetEnabledFeatures(SubscriptionFeature features)
+  private static List<string> GetEnabledFeatures(SubscriptionFeature features)
   {
     var enabledFeatures = new List<string>();
 
@@ -54,7 +55,7 @@ public static class SubscriptionPlanResponseMapper
     if ((features & SubscriptionFeature.AuditLogs) != 0)
       enabledFeatures.Add("AuditLogs");
 
-    return enabledFeatures.AsReadOnly();
+    return enabledFeatures;
   }
 }
 
@@ -79,8 +80,11 @@ public static class BusinessSubscriptionResponseMapper
       subscription.Status.ToString(),
       subscription.StartedAt,
       subscription.TrialEndsAt,
+      subscription.CurrentPeriodStart,
       subscription.CurrentPeriodEnd,
       subscription.CancelledAt,
+      subscription.SuspendedAt,
+      subscription.CancellationReason,
       subscription.CreatedAt,
       subscription.UpdatedAt);
   }

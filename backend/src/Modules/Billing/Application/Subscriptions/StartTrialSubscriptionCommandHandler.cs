@@ -7,7 +7,6 @@ using SaasCommerce.Modules.Billing.Application.Subscriptions.Mappers;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.Modules.Billing.Contracts.Responses;
 using SaasCommerce.Modules.Billing.Domain;
-using SaasCommerce.Modules.Billing.Infrastructure.Development;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -52,7 +51,7 @@ public sealed class StartTrialSubscriptionCommandHandler(
     }
 
     // Get the Basic plan for the trial
-    var basicPlan = await planRepository.GetByIdAsync(BillingDataSeeder.GetBasicPlanId(), cancellationToken);
+    var basicPlan = await planRepository.GetByCodeAsync(SubscriptionPlanCodes.Basic, cancellationToken);
     if (basicPlan is null)
     {
       return Result.Failure<BusinessSubscriptionResponse>(SubscriptionErrors.PlanNotFound);

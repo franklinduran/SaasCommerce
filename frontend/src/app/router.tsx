@@ -28,6 +28,7 @@ import {
   UsersRoute,
 } from '@/app/LazyPages'
 import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute'
+import { SubscriptionGate } from '@/modules/subscription/components/SubscriptionGate'
 import { PageLoadingState } from '@/shared/components/PageLoadingState'
 
 function withPageLoading(element: ReactNode) {
@@ -41,7 +42,9 @@ export const router = createBrowserRouter([
   {
     element: (
       <ProtectedRoute>
-        <AppShell />
+        <SubscriptionGate>
+          <AppShell />
+        </SubscriptionGate>
       </ProtectedRoute>
     ),
     children: [

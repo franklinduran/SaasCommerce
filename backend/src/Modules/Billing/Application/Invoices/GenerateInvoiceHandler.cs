@@ -17,7 +17,8 @@ public sealed class GenerateInvoiceHandler(
   IOutboxWriter outbox,
   ICurrentUserService currentUser,
   IClock clock,
-  IUnitOfWork unitOfWork) : IGenerateInvoiceUseCase
+  IUnitOfWork unitOfWork,
+  ISubscriptionAccessPolicy subscriptionAccess) : IGenerateInvoiceUseCase
 {
   private const string CompletedSaleStatus = "Completed";
 
@@ -47,6 +48,15 @@ public sealed class GenerateInvoiceHandler(
     }
 
     var tenantId = new BusinessId(businessId);
+    var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
+      tenantId,
+      SubscriptionFeature.Invoices,
+      cancellationToken);
+    if (access.IsFailure)
+    {
+      return await FailAsync(command, access.Error, cancellationToken);
+    }
+
     var existing = await invoices.GetBySaleAsync(tenantId, command.SaleId, cancellationToken);
 
     if (existing is not null)

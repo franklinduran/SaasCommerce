@@ -1,5 +1,7 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Application.Auth;
 using SaasCommerce.Modules.Identity.Contracts.Responses;
@@ -16,6 +18,8 @@ public sealed class RegisterBusinessHandler(
   IPasswordHasher passwordHasher,
   IJwtTokenService jwtTokenService,
   IRefreshTokenGenerator refreshTokenGenerator,
+  ISubscriptionPlanRepository subscriptionPlans,
+  IBusinessSubscriptionRepository subscriptions,
   IClock clock,
   IUnitOfWork unitOfWork)
 {
@@ -85,8 +89,22 @@ public sealed class RegisterBusinessHandler(
       clock.UtcNow);
     user.AddRole(adminRole);
 
+    var basicPlan = await subscriptionPlans.GetByCodeAsync(SubscriptionPlanCodes.Basic, cancellationToken);
+    if (basicPlan is null)
+    {
+      return Result.Failure<RegisterBusinessResponse>(SubscriptionErrors.PlanNotFound);
+    }
+
+    var subscription = BusinessSubscription.StartTrial(
+      Guid.NewGuid(),
+      businessId,
+      basicPlan.Id,
+      clock.UtcNow,
+      clock.UtcNow.AddDays(14));
+
     await businesses.AddAsync(business, cancellationToken);
     await users.AddAsync(user, cancellationToken);
+    await subscriptions.AddAsync(subscription, cancellationToken);
 
     var accessToken = jwtTokenService.CreateAccessToken(user);
     var refreshToken = refreshTokenGenerator.Create();

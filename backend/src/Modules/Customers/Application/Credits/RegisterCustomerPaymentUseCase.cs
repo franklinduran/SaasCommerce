@@ -3,6 +3,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Customers.Contracts.Responses;
@@ -19,7 +21,8 @@ public sealed class RegisterCustomerPaymentUseCase(
   IOutboxWriter outbox,
   ICorrelationIdProvider correlationIdProvider,
   IClock clock,
-  IUnitOfWork unitOfWork) : IRegisterCustomerPaymentUseCase
+  IUnitOfWork unitOfWork,
+  ISubscriptionAccessPolicy subscriptionAccess) : IRegisterCustomerPaymentUseCase
 {
   public async Task<Result<RegisterCustomerPaymentResponse>> ExecuteAsync(
     RegisterCustomerPaymentCommand command,
@@ -40,6 +43,15 @@ public sealed class RegisterCustomerPaymentUseCase(
     }
 
     var tenant = new BusinessId(context.Value.BusinessId);
+    var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
+      tenant,
+      SubscriptionFeature.Payments,
+      cancellationToken);
+    if (access.IsFailure)
+    {
+      return Result.Failure<RegisterCustomerPaymentResponse>(access.Error);
+    }
+
     var customer = await customers.GetAsync(tenant, command.CustomerId, cancellationToken);
 
     if (customer is null)

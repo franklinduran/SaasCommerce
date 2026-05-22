@@ -17,3 +17,15 @@ export function CardHeader({ className, ...props }: Readonly<HTMLAttributes<HTML
 export function CardContent({ className, ...props }: Readonly<HTMLAttributes<HTMLDivElement>>) {
   return <div className={cn('p-4 pt-0 sm:p-5 sm:pt-0', className)} {...props} />
 }
+
+export function CardTitle({ className, ...props }: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
+  return (
+    <h2 className={cn('text-lg font-semibold text-stone-950', className)} {...props} />
+  )
+}
+
+export function CardDescription({ className, ...props }: Readonly<HTMLAttributes<HTMLParagraphElement>>) {
+  return (
+    <p className={cn('text-sm text-stone-600', className)} {...props} />
+  )
+}

@@ -7,6 +7,9 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class BillingSubscriptionTables : Migration
     {
+        private static readonly string[] SubscriptionPlansActiveCreatedColumns = ["is_active", "created_at"];
+        private static readonly string[] BusinessSubscriptionsStatusPeriodColumns = ["status", "current_period_end"];
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -21,6 +24,7 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    code = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     description = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: false, defaultValue: ""),
                     monthly_price = table.Column<decimal>(type: "numeric(10,2)", precision: 10, scale: 2, nullable: false, defaultValue: 0m),
                     max_branches = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
@@ -45,6 +49,13 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations
                 column: "is_active");
 
             migrationBuilder.CreateIndex(
+                name: "ix_subscription_plans_code_unique",
+                schema: "billing",
+                table: "subscription_plans",
+                column: "code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_subscription_plans_created_at",
                 schema: "billing",
                 table: "subscription_plans",
@@ -54,7 +65,7 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations
                 name: "ix_subscription_plans_active_created",
                 schema: "billing",
                 table: "subscription_plans",
-                columns: new[] { "is_active", "created_at" });
+                columns: SubscriptionPlansActiveCreatedColumns);
 
             // Create business_subscriptions table
             migrationBuilder.CreateTable(
@@ -68,8 +79,11 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations
                     status = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false, defaultValue: "Trial"),
                     started_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     trial_ends_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    current_period_start = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     current_period_end = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     cancelled_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    suspended_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    cancellation_reason = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
                 },
@@ -121,7 +135,7 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations
                 name: "ix_business_subscriptions_status_period",
                 schema: "billing",
                 table: "business_subscriptions",
-                columns: new[] { "status", "current_period_end" });
+                columns: BusinessSubscriptionsStatusPeriodColumns);
         }
 
         /// <inheritdoc />

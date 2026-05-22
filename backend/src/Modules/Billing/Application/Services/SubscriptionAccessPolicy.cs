@@ -28,7 +28,7 @@ public sealed class SubscriptionAccessPolicy(
     }
 
     // Check subscription status
-    var statusCheck = ValidateSubscriptionStatus(subscription);
+    var statusCheck = ValidateSubscriptionStatus(subscription, clock.UtcNow);
     if (statusCheck.IsFailure)
     {
       return statusCheck;
@@ -80,8 +80,15 @@ public sealed class SubscriptionAccessPolicy(
     return status == SubscriptionStatus.Active;
   }
 
-  private static Result ValidateSubscriptionStatus(BusinessSubscription subscription)
+  private static Result ValidateSubscriptionStatus(
+    BusinessSubscription subscription,
+    DateTimeOffset now)
   {
+    if (subscription.IsExpiredOrShouldExpire(now))
+    {
+      return Result.Failure(SubscriptionErrors.SubscriptionExpired);
+    }
+
     return subscription.Status switch
     {
       SubscriptionStatus.Active => Result.Success(),

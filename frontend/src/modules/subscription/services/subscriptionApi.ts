@@ -1,87 +1,82 @@
-import { apiClient } from '@/lib/apiClient';
-import {
-  SubscriptionPlanResponse,
+import { useAuthStore } from '@/modules/auth/authStore'
+import type {
   BusinessSubscriptionResponse,
+  SubscriptionPlanResponse,
   SubscriptionUsageResponse,
-} from '../types';
+} from '@/modules/subscription/types'
+import { httpClient } from '@/shared/services/httpClient'
+
+function getAccessToken(): string | undefined {
+  return useAuthStore.getState().session?.accessToken
+}
 
 export const subscriptionApi = {
-  /**
-   * Get all active subscription plans
-   */
-  getPlans: async (): Promise<SubscriptionPlanResponse[]> => {
-    const response = await apiClient.get<SubscriptionPlanResponse[]>('/api/subscription-plans');
-    return response.data;
+  async getPlans(): Promise<SubscriptionPlanResponse[]> {
+    const response = await httpClient<SubscriptionPlanResponse[]>('/api/subscription-plans', {
+      accessToken: getAccessToken(),
+    })
+
+    return response.data ?? []
   },
 
-  /**
-   * Get a specific subscription plan by ID
-   */
-  getPlanById: async (planId: string): Promise<SubscriptionPlanResponse> => {
-    const response = await apiClient.get<SubscriptionPlanResponse>(
-      `/api/subscription-plans/${planId}`
-    );
-    return response.data;
+  async getPlanById(planId: string): Promise<SubscriptionPlanResponse> {
+    const response = await httpClient<SubscriptionPlanResponse>(`/api/subscription-plans/${planId}`, {
+      accessToken: getAccessToken(),
+    })
+
+    return response.data!
   },
 
-  /**
-   * Get current business subscription
-   */
-  getCurrentSubscription: async (): Promise<BusinessSubscriptionResponse> => {
-    const response = await apiClient.get<BusinessSubscriptionResponse>(
-      '/api/subscription/current'
-    );
-    return response.data;
+  async getCurrentSubscription(): Promise<BusinessSubscriptionResponse> {
+    const response = await httpClient<BusinessSubscriptionResponse>('/api/subscription/current', {
+      accessToken: getAccessToken(),
+    })
+
+    return response.data!
   },
 
-  /**
-   * Get current subscription usage and limits
-   */
-  getSubscriptionUsage: async (): Promise<SubscriptionUsageResponse> => {
-    const response = await apiClient.get<SubscriptionUsageResponse>(
-      '/api/subscription/usage'
-    );
-    return response.data;
+  async getSubscriptionUsage(): Promise<SubscriptionUsageResponse> {
+    const response = await httpClient<SubscriptionUsageResponse>('/api/subscription/usage', {
+      accessToken: getAccessToken(),
+    })
+
+    return response.data!
   },
 
-  /**
-   * Start a trial subscription for a new business
-   */
-  startTrial: async (): Promise<BusinessSubscriptionResponse> => {
-    const response = await apiClient.post<BusinessSubscriptionResponse>(
-      '/api/subscription/start-trial'
-    );
-    return response.data;
+  async startTrial(): Promise<BusinessSubscriptionResponse> {
+    const response = await httpClient<BusinessSubscriptionResponse>('/api/subscription/start-trial', {
+      accessToken: getAccessToken(),
+      method: 'POST',
+    })
+
+    return response.data!
   },
 
-  /**
-   * Change the business subscription plan
-   */
-  changePlan: async (newPlanId: string): Promise<BusinessSubscriptionResponse> => {
-    const response = await apiClient.post<BusinessSubscriptionResponse>(
-      '/api/subscription/change-plan',
-      { planId: newPlanId }
-    );
-    return response.data;
+  async changePlan(planId: string): Promise<BusinessSubscriptionResponse> {
+    const response = await httpClient<BusinessSubscriptionResponse>('/api/subscription/change-plan', {
+      accessToken: getAccessToken(),
+      body: JSON.stringify({ planId }),
+      method: 'POST',
+    })
+
+    return response.data!
   },
 
-  /**
-   * Cancel the current subscription
-   */
-  cancelSubscription: async (): Promise<BusinessSubscriptionResponse> => {
-    const response = await apiClient.post<BusinessSubscriptionResponse>(
-      '/api/subscription/cancel'
-    );
-    return response.data;
+  async cancelSubscription(): Promise<BusinessSubscriptionResponse> {
+    const response = await httpClient<BusinessSubscriptionResponse>('/api/subscription/cancel', {
+      accessToken: getAccessToken(),
+      method: 'POST',
+    })
+
+    return response.data!
   },
 
-  /**
-   * Reactivate a cancelled subscription
-   */
-  reactivateSubscription: async (): Promise<BusinessSubscriptionResponse> => {
-    const response = await apiClient.post<BusinessSubscriptionResponse>(
-      '/api/subscription/reactivate'
-    );
-    return response.data;
+  async reactivateSubscription(): Promise<BusinessSubscriptionResponse> {
+    const response = await httpClient<BusinessSubscriptionResponse>('/api/subscription/reactivate', {
+      accessToken: getAccessToken(),
+      method: 'POST',
+    })
+
+    return response.data!
   },
-};
+}

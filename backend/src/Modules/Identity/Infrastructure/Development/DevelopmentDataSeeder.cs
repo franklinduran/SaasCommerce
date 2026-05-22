@@ -2,7 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
-using SaasCommerce.Modules.Billing.Infrastructure.Development;
+using SaasCommerce.Modules.Billing.Domain;
+using SaasCommerce.Modules.Development;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Domain;
 using SaasCommerce.Modules.Tenancy.Domain;
@@ -20,6 +21,9 @@ public sealed class DevelopmentDataSeeder(
 
   public async Task SeedAsync(CancellationToken cancellationToken = default)
   {
+    var now = clock.UtcNow;
+    await BillingDataSeeder.SeedPlansAsync(dbContext, now);
+
     var hasBusiness = await dbContext.Set<Business>()
       .AnyAsync(cancellationToken);
 
@@ -28,7 +32,6 @@ public sealed class DevelopmentDataSeeder(
       return;
     }
 
-    var now = clock.UtcNow;
     var businessId = new BusinessId(Guid.Parse("11111111-1111-1111-1111-111111111111"));
     var branchId = new BranchId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
     var adminRole = new Role(
@@ -57,11 +60,14 @@ public sealed class DevelopmentDataSeeder(
     dbContext.Add(business);
     dbContext.Add(adminRole);
     dbContext.Add(adminUser);
+    dbContext.Add(BusinessSubscription.StartTrial(
+      Guid.Parse("66666666-6666-6666-6666-666666666666"),
+      businessId,
+      BillingDataSeeder.GetBasicPlanId(),
+      now,
+      now.AddDays(14)));
 
     await dbContext.SaveChangesAsync(cancellationToken);
-
-    // Seed subscription plans
-    await BillingDataSeeder.SeedPlansAsync(dbContext, now);
   }
 
   private string GetAdminSecret()

@@ -21,39 +21,62 @@ public sealed class BusinessSubscriptionConfiguration : IEntityTypeConfiguration
     builder.HasKey(sub => sub.Id);
 
     builder.Property(sub => sub.Id)
+      .HasColumnName("id")
       .ValueGeneratedNever()
       .IsRequired();
 
     builder.Property(sub => sub.BusinessId)
+      .HasColumnName("business_id")
       .HasConversion(id => id.Value, value => new BusinessId(value))
       .IsRequired();
 
     builder.Property(sub => sub.PlanId)
+      .HasColumnName("plan_id")
       .IsRequired();
 
     builder.Property(sub => sub.Status)
+      .HasColumnName("status")
       .HasConversion<string>()
       .HasMaxLength(40)
       .HasDefaultValue(SubscriptionStatus.Trial)
       .IsRequired();
 
     builder.Property(sub => sub.StartedAt)
+      .HasColumnName("started_at")
       .IsRequired();
 
     builder.Property(sub => sub.TrialEndsAt)
+      .HasColumnName("trial_ends_at")
+      .IsRequired(false);
+
+    builder.Property(sub => sub.CurrentPeriodStart)
+      .HasColumnName("current_period_start")
       .IsRequired(false);
 
     builder.Property(sub => sub.CurrentPeriodEnd)
+      .HasColumnName("current_period_end")
       .IsRequired(false);
 
     builder.Property(sub => sub.CancelledAt)
+      .HasColumnName("cancelled_at")
+      .IsRequired(false);
+
+    builder.Property(sub => sub.SuspendedAt)
+      .HasColumnName("suspended_at")
+      .IsRequired(false);
+
+    builder.Property(sub => sub.CancellationReason)
+      .HasColumnName("cancellation_reason")
+      .HasMaxLength(512)
       .IsRequired(false);
 
     builder.Property(sub => sub.CreatedAt)
+      .HasColumnName("created_at")
       .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
       .IsRequired();
 
     builder.Property(sub => sub.UpdatedAt)
+      .HasColumnName("updated_at")
       .HasDefaultValueSql("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
       .IsRequired();
 

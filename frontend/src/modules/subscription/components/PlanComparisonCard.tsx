@@ -1,185 +1,185 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Check, X } from 'lucide-react';
-import { subscriptionApi } from '../services/subscriptionApi';
-import { SubscriptionPlanResponse } from '../types';
+import { Check, Loader2, Minus } from 'lucide-react'
+import { Button } from '@/shared/components/ui/button'
+import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { useSubscriptionPlans } from '@/modules/subscription/hooks/useSubscription'
+import type { SubscriptionPlanResponse } from '@/modules/subscription/types'
+import { cn } from '@/shared/utils/cn'
 
-interface PlanComparisonCardProps {
-  currentPlanId?: string;
-  onSelectPlan?: (planId: string) => void;
-  isLoading?: boolean;
+type PlanComparisonCardProps = {
+  currentPlanId?: string
+  isLoading?: boolean
+  onSelectPlan?: (planId: string) => void | Promise<void>
+  plans?: SubscriptionPlanResponse[]
+  title?: string
 }
 
-/**
- * Display plan comparison in a dialog modal
- */
-export const PlanComparisonCard: React.FC<PlanComparisonCardProps> = ({
+const baseRows: Array<{
+  getValue: (plan: SubscriptionPlanResponse) => string
+  label: string
+}> = [
+  { getValue: (plan) => formatMoney(plan.monthlyPrice), label: 'Precio mensual' },
+  { getValue: (plan) => formatLimit(plan.maxBranches), label: 'Sucursales' },
+  { getValue: (plan) => formatLimit(plan.maxUsers), label: 'Usuarios' },
+  { getValue: (plan) => formatLimit(plan.maxProducts), label: 'Productos' },
+  { getValue: (plan) => formatLimit(plan.maxSalesPerMonth), label: 'Ventas mensuales' },
+]
+
+export function PlanComparisonCard({
   currentPlanId,
-  onSelectPlan,
   isLoading = false,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ['subscription', 'plans'],
-    queryFn: subscriptionApi.getPlans,
-    staleTime: 1000 * 60 * 30, // 30 minutes
-  });
-
-  const handleSelectPlan = (planId: string) => {
-    onSelectPlan?.(planId);
-    setIsOpen(false);
-  };
-
-  const getFeatures = (plans: SubscriptionPlanResponse[]) => {
-    const allFeatures = new Set<string>();
-    plans.forEach(plan => {
-      plan.features.forEach(f => allFeatures.add(f));
-    });
-    return Array.from(allFeatures).sort();
-  };
-
-  const hasFeature = (plan: SubscriptionPlanResponse, featureName: string): boolean => {
-    return plan.features.includes(featureName);
-  };
+  onSelectPlan,
+  plans: providedPlans,
+  title = 'Comparativa de planes',
+}: Readonly<PlanComparisonCardProps>) {
+  const plansQuery = useSubscriptionPlans()
+  const plans = providedPlans ?? plansQuery.data ?? []
+  const loadingPlans = providedPlans === undefined && plansQuery.isLoading
+  const features = getFeatureList(plans)
+  const showActions = Boolean(onSelectPlan)
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Ver Comparativa de Planes</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Comparativa de Planes</DialogTitle>
-          <DialogDescription>
-            Elige el plan que mejor se adapte a tus necesidades
-          </DialogDescription>
-        </DialogHeader>
-
-        {plansLoading ? (
-          <div className="space-y-4">
-            <p className="text-muted-foreground">Cargando planes...</p>
+    <Card className="overflow-hidden rounded-md">
+      <CardHeader className="border-b border-stone-200">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-stone-950">{title}</h3>
+            <p className="text-sm font-medium text-stone-600">
+              Limites comerciales y funciones habilitadas por plan.
+            </p>
           </div>
-        ) : !plans || plans.length === 0 ? (
-          <div className="space-y-4">
-            <p className="text-muted-foreground">No hay planes disponibles.</p>
+          {loadingPlans && <Loader2 className="animate-spin text-stone-500" size={18} />}
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {plansQuery.isError && providedPlans === undefined && (
+          <div className="p-4 text-sm font-semibold text-red-700">
+            No se pudieron cargar los planes.
           </div>
-        ) : (
+        )}
+        {!loadingPlans && plans.length === 0 && (
+          <div className="p-4 text-sm font-medium text-stone-600">
+            No hay planes activos para mostrar.
+          </div>
+        )}
+        {plans.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-semibold">Característica</th>
-                  {plans.map(plan => (
-                    <th key={plan.id} className="text-center py-3 px-4 font-semibold">
-                      <div className="font-bold text-base">{plan.name}</div>
-                      <div className="text-muted-foreground">
-                        ${plan.monthlyPrice}/mes
+            <table className="w-full min-w-[880px] text-sm">
+              <thead className="bg-stone-50">
+                <tr className="border-b border-stone-200">
+                  <th className="w-56 px-4 py-3 text-left text-xs font-semibold uppercase text-stone-500">
+                    Plan
+                  </th>
+                  {plans.map((plan) => (
+                    <th className="px-4 py-3 text-left align-top" key={plan.id}>
+                      <div className="flex min-w-40 flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-semibold text-stone-950">{plan.name}</span>
+                          {plan.id === currentPlanId && (
+                            <span className="rounded-md bg-stone-900 px-2 py-0.5 text-xs font-semibold text-white">
+                              Actual
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium uppercase text-stone-400">{plan.code}</span>
                       </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {/* Pricing Row */}
-                <tr className="border-b hover:bg-muted/50">
-                  <td className="py-3 px-4">Precio mensual</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-3 px-4">
-                      <div className="font-bold text-lg">${plan.monthlyPrice}</div>
-                    </td>
-                  ))}
-                </tr>
-
-                {/* Limits */}
-                <tr className="border-b hover:bg-muted/50">
-                  <td className="py-3 px-4">Sucursales</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.maxBranches === 999 ? '∞' : plan.maxBranches}
-                    </td>
-                  ))}
-                </tr>
-
-                <tr className="border-b hover:bg-muted/50">
-                  <td className="py-3 px-4">Usuarios</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.maxUsers === 999 ? '∞' : plan.maxUsers}
-                    </td>
-                  ))}
-                </tr>
-
-                <tr className="border-b hover:bg-muted/50">
-                  <td className="py-3 px-4">Productos</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.maxProducts === 999999 ? '∞' : plan.maxProducts.toLocaleString()}
-                    </td>
-                  ))}
-                </tr>
-
-                <tr className="border-b hover:bg-muted/50">
-                  <td className="py-3 px-4">Ventas/mes</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-3 px-4">
-                      {plan.maxSalesPerMonth === 999999
-                        ? '∞'
-                        : plan.maxSalesPerMonth.toLocaleString()}
-                    </td>
-                  ))}
-                </tr>
-
-                {/* Features */}
-                {getFeatures(plans).map(featureName => (
-                  <tr key={featureName} className="border-b hover:bg-muted/50">
-                    <td className="py-3 px-4">{featureName}</td>
-                    {plans.map(plan => (
-                      <td key={plan.id} className="text-center py-3 px-4">
-                        {hasFeature(plan, featureName) ? (
-                          <Check className="w-5 h-5 text-green-600 mx-auto" />
-                        ) : (
-                          <X className="w-5 h-5 text-gray-300 mx-auto" />
-                        )}
+                {baseRows.map((row) => (
+                  <tr className="border-b border-stone-100" key={row.label}>
+                    <td className="bg-stone-50/60 px-4 py-3 font-semibold text-stone-700">{row.label}</td>
+                    {plans.map((plan) => (
+                      <td className="px-4 py-3 font-medium text-stone-950" key={plan.id}>
+                        {row.getValue(plan)}
                       </td>
                     ))}
                   </tr>
                 ))}
 
-                {/* Action Row */}
-                <tr>
-                  <td className="py-4 px-4"></td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-4 px-4">
-                      <Button
-                        onClick={() => handleSelectPlan(plan.id)}
-                        disabled={
-                          isLoading ||
-                          currentPlanId === plan.id
-                        }
-                        variant={currentPlanId === plan.id ? 'outline' : 'default'}
-                      >
-                        {currentPlanId === plan.id
-                          ? 'Plan Actual'
-                          : 'Seleccionar'}
-                      </Button>
+                {features.map((feature) => (
+                  <tr className="border-b border-stone-100" key={feature}>
+                    <td className="bg-stone-50/60 px-4 py-3 font-semibold text-stone-700">
+                      {formatFeatureName(feature)}
                     </td>
-                  ))}
-                </tr>
+                    {plans.map((plan) => {
+                      const hasFeature = plan.features.includes(feature)
+                      return (
+                        <td className="px-4 py-3" key={plan.id}>
+                          <span className={cn(
+                            'inline-flex h-7 w-7 items-center justify-center rounded-md',
+                            hasFeature ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-400',
+                          )}>
+                            {hasFeature ? <Check aria-label="Incluido" size={15} /> : <Minus aria-label="No incluido" size={15} />}
+                          </span>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+
+                {showActions && (
+                  <tr>
+                    <td className="bg-stone-50/60 px-4 py-3" />
+                    {plans.map((plan) => (
+                      <td className="px-4 py-3" key={plan.id}>
+                        <Button
+                          className="w-full"
+                          disabled={isLoading || currentPlanId === plan.id}
+                          onClick={() => onSelectPlan?.(plan.id)}
+                          size="sm"
+                          type="button"
+                          variant={currentPlanId === plan.id ? 'secondary' : 'default'}
+                        >
+                          {currentPlanId === plan.id ? 'Plan actual' : 'Cambiar'}
+                        </Button>
+                      </td>
+                    ))}
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
-  );
-};
+      </CardContent>
+    </Card>
+  )
+}
+
+function getFeatureList(plans: SubscriptionPlanResponse[]): string[] {
+  return Array.from(new Set(plans.flatMap((plan) => plan.features))).sort()
+}
+
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat('es-DO', {
+    currency: 'DOP',
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: 'currency',
+  }).format(value)
+}
+
+function formatLimit(value: number): string {
+  if (value === 999 || value >= 999999) return 'Ilimitado'
+
+  return value.toLocaleString('es-DO')
+}
+
+function formatFeatureName(value: string): string {
+  const labels: Record<string, string> = {
+    AdvancedReports: 'Reportes avanzados',
+    AuditLogs: 'Auditoria',
+    Branches: 'Sucursales',
+    InventoryTransfers: 'Transferencias',
+    Invoices: 'Recibos',
+    Payments: 'Abonos',
+    Products: 'Productos',
+    Purchases: 'Compras',
+    Reports: 'Reportes',
+    Sales: 'Ventas',
+    Users: 'Usuarios',
+  }
+
+  return labels[value] ?? value.replace(/([a-z])([A-Z])/g, '$1 $2')
+}

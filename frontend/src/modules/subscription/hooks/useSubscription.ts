@@ -1,73 +1,74 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { subscriptionApi } from '../services/subscriptionApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { subscriptionApi } from '@/modules/subscription/services/subscriptionApi'
 
-/**
- * Hook to manage business subscription state
- */
-export const useSubscription = () => {
-  const queryClient = useQueryClient();
+export const subscriptionQueryKeys = {
+  current: ['subscription', 'current'] as const,
+  plans: ['subscription', 'plans'] as const,
+  usage: ['subscription', 'usage'] as const,
+}
 
-  // Fetch current subscription
-  const {
-    data: subscription,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['subscription', 'current'],
+export function useSubscription() {
+  const queryClient = useQueryClient()
+
+  const currentSubscription = useQuery({
     queryFn: subscriptionApi.getCurrentSubscription,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 3,
-  });
+    queryKey: subscriptionQueryKeys.current,
+    retry: false,
+    staleTime: 1000 * 60 * 5,
+  })
 
-  // Mutation for changing plan
-  const changeplanMutation = useMutation({
+  const changePlanMutation = useMutation({
     mutationFn: (planId: string) => subscriptionApi.changePlan(planId),
-    onSuccess: (newSubscription) => {
-      queryClient.setQueryData(['subscription', 'current'], newSubscription);
-      queryClient.invalidateQueries({ queryKey: ['subscription', 'usage'] });
+    onSuccess: (subscription) => {
+      queryClient.setQueryData(subscriptionQueryKeys.current, subscription)
+      queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.usage })
     },
-  });
+  })
 
-  // Mutation for cancelling subscription
   const cancelMutation = useMutation({
-    mutationFn: () => subscriptionApi.cancelSubscription(),
-    onSuccess: (cancelledSubscription) => {
-      queryClient.setQueryData(['subscription', 'current'], cancelledSubscription);
-      queryClient.invalidateQueries({ queryKey: ['subscription', 'usage'] });
+    mutationFn: subscriptionApi.cancelSubscription,
+    onSuccess: (subscription) => {
+      queryClient.setQueryData(subscriptionQueryKeys.current, subscription)
+      queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.usage })
     },
-  });
+  })
 
-  // Mutation for reactivating subscription
   const reactivateMutation = useMutation({
-    mutationFn: () => subscriptionApi.reactivateSubscription(),
-    onSuccess: (reactivatedSubscription) => {
-      queryClient.setQueryData(['subscription', 'current'], reactivatedSubscription);
-      queryClient.invalidateQueries({ queryKey: ['subscription', 'usage'] });
+    mutationFn: subscriptionApi.reactivateSubscription,
+    onSuccess: (subscription) => {
+      queryClient.setQueryData(subscriptionQueryKeys.current, subscription)
+      queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.usage })
     },
-  });
+  })
 
-  // Mutation for starting trial
   const startTrialMutation = useMutation({
-    mutationFn: () => subscriptionApi.startTrial(),
-    onSuccess: (trialSubscription) => {
-      queryClient.setQueryData(['subscription', 'current'], trialSubscription);
-      queryClient.invalidateQueries({ queryKey: ['subscription', 'usage'] });
+    mutationFn: subscriptionApi.startTrial,
+    onSuccess: (subscription) => {
+      queryClient.setQueryData(subscriptionQueryKeys.current, subscription)
+      queryClient.invalidateQueries({ queryKey: subscriptionQueryKeys.usage })
     },
-  });
+  })
 
   return {
-    subscription,
-    isLoading,
-    error,
-    refetch,
-    changePlan: changeplanMutation.mutateAsync,
-    isChangingPlan: changeplanMutation.isPending,
     cancelSubscription: cancelMutation.mutateAsync,
+    changePlan: changePlanMutation.mutateAsync,
+    error: currentSubscription.error,
     isCancelling: cancelMutation.isPending,
-    reactivateSubscription: reactivateMutation.mutateAsync,
+    isChangingPlan: changePlanMutation.isPending,
+    isLoading: currentSubscription.isLoading,
     isReactivating: reactivateMutation.isPending,
-    startTrial: startTrialMutation.mutateAsync,
     isStartingTrial: startTrialMutation.isPending,
-  };
-};
+    reactivateSubscription: reactivateMutation.mutateAsync,
+    refetch: currentSubscription.refetch,
+    startTrial: startTrialMutation.mutateAsync,
+    subscription: currentSubscription.data,
+  }
+}
+
+export function useSubscriptionPlans() {
+  return useQuery({
+    queryFn: subscriptionApi.getPlans,
+    queryKey: subscriptionQueryKeys.plans,
+    staleTime: 1000 * 60 * 30,
+  })
+}

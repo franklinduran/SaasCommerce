@@ -1,66 +1,51 @@
-import { useQuery } from '@tanstack/react-query';
-import { subscriptionApi } from '../services/subscriptionApi';
+import { useQuery } from '@tanstack/react-query'
+import { subscriptionApi } from '@/modules/subscription/services/subscriptionApi'
+import type { SubscriptionResourceKey } from '@/modules/subscription/types'
+import { subscriptionQueryKeys } from '@/modules/subscription/hooks/useSubscription'
 
-/**
- * Hook to fetch and manage subscription usage information
- */
-export const useSubscriptionUsage = () => {
-  const {
-    data: usage,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['subscription', 'usage'],
+type UseSubscriptionUsageOptions = {
+  enabled?: boolean
+}
+
+export function useSubscriptionUsage(options: UseSubscriptionUsageOptions = {}) {
+  const query = useQuery({
+    enabled: options.enabled ?? true,
     queryFn: subscriptionApi.getSubscriptionUsage,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    retry: 3,
-  });
+    queryKey: subscriptionQueryKeys.usage,
+    retry: false,
+    staleTime: 1000 * 60 * 2,
+  })
 
-  /**
-   * Calculate percentage of usage for a resource
-   */
-  const getUsagePercentage = (resource: 'branches' | 'users' | 'products' | 'sales'): number => {
-    if (!usage) return 0;
-    const res = usage[resource];
-    if (res.maximum === 0) return 0;
-    return (res.current / res.maximum) * 100;
-  };
+  function getUsagePercentage(resource: SubscriptionResourceKey): number {
+    const usage = query.data
+    if (!usage) return 0
 
-  /**
-   * Check if a resource is at or near limit
-   */
-  const isNearLimit = (resource: 'branches' | 'users' | 'products' | 'sales'): boolean => {
-    if (!usage) return false;
-    const percentage = getUsagePercentage(resource);
-    return percentage >= 80; // 80% or more
-  };
+    const item = usage[resource]
+    if (item.maximum <= 0) return 0
 
-  /**
-   * Check if a resource is at its limit
-   */
-  const isAtLimit = (resource: 'branches' | 'users' | 'products' | 'sales'): boolean => {
-    if (!usage) return false;
-    return usage[resource].isAtLimit;
-  };
+    return Math.min((item.current / item.maximum) * 100, 100)
+  }
 
-  /**
-   * Check if a feature is enabled
-   */
-  const isFeatureEnabled = (featureName: string): boolean => {
-    if (!usage) return false;
-    const feature = usage.features.find(f => f.name === featureName);
-    return feature?.isEnabled ?? false;
-  };
+  function isNearLimit(resource: SubscriptionResourceKey): boolean {
+    return getUsagePercentage(resource) >= 80
+  }
+
+  function isAtLimit(resource: SubscriptionResourceKey): boolean {
+    return query.data?.[resource].isAtLimit ?? false
+  }
+
+  function isFeatureEnabled(featureName: string): boolean {
+    return query.data?.features.some((feature) => feature.name === featureName && feature.isEnabled) ?? false
+  }
 
   return {
-    usage,
-    isLoading,
-    error,
-    refetch,
+    error: query.error,
     getUsagePercentage,
-    isNearLimit,
     isAtLimit,
     isFeatureEnabled,
-  };
-};
+    isLoading: query.isLoading,
+    isNearLimit,
+    refetch: query.refetch,
+    usage: query.data,
+  }
+}

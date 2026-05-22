@@ -8,6 +8,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Catalog.Domain;
 using SaasCommerce.Modules.Catalog.Infrastructure.Inventory;
 using SaasCommerce.Modules.Inventory.Domain;
@@ -18,6 +20,7 @@ using SaasCommerce.Modules.Purchasing.Application.Suppliers;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Domain;
 using SaasCommerce.Modules.Purchasing.Infrastructure.Persistence;
+using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Tests;
@@ -700,7 +703,8 @@ public sealed class PurchasingTests
         new FixedClock(),
         new EfUnitOfWork(dbContext)),
       CreateReceiptProcessor(dbContext, outbox),
-      new FixedCorrelationIdProvider());
+      new FixedCorrelationIdProvider(),
+      new AllowAllSubscriptionAccessPolicy());
 
   private static PurchaseReceiptProcessor CreateReceiptProcessor(
     AppDbContext dbContext,
@@ -752,6 +756,25 @@ public sealed class PurchasingTests
       Events.Add(integrationEvent);
       return Task.CompletedTask;
     }
+  }
+
+  private sealed class AllowAllSubscriptionAccessPolicy : ISubscriptionAccessPolicy
+  {
+    public Task<Result> EnsureCanUseFeatureAsync(
+      BusinessId businessId,
+      SubscriptionFeature feature,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Result.Success());
+
+    public Task<SubscriptionStatus?> GetCurrentSubscriptionStatusAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<SubscriptionStatus?>(SubscriptionStatus.Active);
+
+    public Task<bool> IsSubscriptionActiveAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(true);
   }
 
   private sealed record TestCurrentUser : ICurrentUserService

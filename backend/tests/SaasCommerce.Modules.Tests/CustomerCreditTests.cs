@@ -8,6 +8,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Realtime;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Contracts.Events;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Domain;
@@ -15,6 +17,7 @@ using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Domain;
+using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Tests;
@@ -291,7 +294,7 @@ public sealed class CustomerCreditTests
         Now);
 
     public RegisterCustomerPaymentUseCase CreateRegisterPaymentUseCase()
-      => new(Customers, Credits, CurrentUser, Outbox, Correlation, Clock, UnitOfWork);
+      => new(Customers, Credits, CurrentUser, Outbox, Correlation, Clock, UnitOfWork, new AllowAllSubscriptionAccessPolicy());
 
     public RegisterCreditSaleUseCase CreateRegisterCreditSaleUseCase()
       => new(Sales, Credits, Outbox, Clock, UnitOfWork);
@@ -332,6 +335,25 @@ public sealed class CustomerCreditTests
       Events.Add(integrationEvent);
       return Task.CompletedTask;
     }
+  }
+
+  private sealed class AllowAllSubscriptionAccessPolicy : ISubscriptionAccessPolicy
+  {
+    public Task<Result> EnsureCanUseFeatureAsync(
+      BusinessId businessId,
+      SubscriptionFeature feature,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Result.Success());
+
+    public Task<SubscriptionStatus?> GetCurrentSubscriptionStatusAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<SubscriptionStatus?>(SubscriptionStatus.Active);
+
+    public Task<bool> IsSubscriptionActiveAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(true);
   }
 
   private sealed class InMemoryCustomerRepository : ICustomerRepository

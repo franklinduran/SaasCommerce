@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.Modules.Billing.Infrastructure.Persistence;
+using SaasCommerce.Modules.Development;
 using SaasCommerce.Modules.Identity.Application.Account;
 using SaasCommerce.Modules.Identity.Application.Auth;
 using SaasCommerce.Modules.Identity.Infrastructure.Auth;
@@ -223,6 +225,7 @@ public sealed class AccountRegistrationTests
   private static RegisterBusinessHandler CreateHandler(AppDbContext dbContext)
   {
     var clock = new FixedClock();
+    BillingDataSeeder.SeedPlansAsync(dbContext, clock.UtcNow).GetAwaiter().GetResult();
 
     return new RegisterBusinessHandler(
       new EfAccountBusinessRepository(dbContext),
@@ -230,6 +233,8 @@ public sealed class AccountRegistrationTests
       new PasswordHasher(),
       new JwtTokenService(CreateConfiguration(), clock),
       new RefreshTokenGenerator(),
+      new EfSubscriptionPlanRepository(dbContext),
+      new EfBusinessSubscriptionRepository(dbContext),
       clock,
       new EfUnitOfWork(dbContext));
   }

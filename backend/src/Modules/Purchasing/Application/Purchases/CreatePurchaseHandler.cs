@@ -1,4 +1,6 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Contracts.Responses;
 using SaasCommerce.Modules.Purchasing.Domain;
@@ -7,7 +9,11 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
-public sealed class CreatePurchaseHandler(PurchaseHandlerContext context, PurchaseReceiptProcessor receiptProcessor, ICorrelationIdProvider correlationIdProvider)
+public sealed class CreatePurchaseHandler(
+  PurchaseHandlerContext context,
+  PurchaseReceiptProcessor receiptProcessor,
+  ICorrelationIdProvider correlationIdProvider,
+  ISubscriptionAccessPolicy subscriptionAccess)
 {
   public Task<Result<PurchaseResponse>> Handle(
     CreatePurchaseCommand command,
@@ -31,6 +37,16 @@ public sealed class CreatePurchaseHandler(PurchaseHandlerContext context, Purcha
 
     var ctx = userContext.Value;
     var branchId = command.BranchId ?? ctx.BranchId;
+    var tenantId = new BusinessId(ctx.BusinessId);
+
+    var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
+      tenantId,
+      SubscriptionFeature.Purchases,
+      cancellationToken);
+    if (access.IsFailure)
+    {
+      return Result.Failure<PurchaseResponse>(access.Error);
+    }
 
     if (!IsValidCommand(command) || branchId == Guid.Empty)
     {
@@ -38,7 +54,7 @@ public sealed class CreatePurchaseHandler(PurchaseHandlerContext context, Purcha
     }
 
     var supplier = await context.Suppliers.GetAsync(
-      new BusinessId(ctx.BusinessId),
+      tenantId,
       command.SupplierId,
       cancellationToken);
 

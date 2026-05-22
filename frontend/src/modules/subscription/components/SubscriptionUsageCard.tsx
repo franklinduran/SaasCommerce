@@ -1,127 +1,166 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { useSubscriptionUsage } from '../hooks/useSubscriptionUsage';
+import type { LucideIcon } from 'lucide-react'
+import { Building2, Package, ReceiptText, Users } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { useSubscriptionUsage } from '@/modules/subscription/hooks/useSubscriptionUsage'
+import type {
+  ResourceUsage,
+  SubscriptionResourceKey,
+  SubscriptionUsage,
+} from '@/modules/subscription/types'
+import { cn } from '@/shared/utils/cn'
 
-/**
- * Display subscription resource usage with progress bars
- */
-export const SubscriptionUsageCard: React.FC = () => {
-  const { usage, isLoading } = useSubscriptionUsage();
+type SubscriptionUsageCardProps = {
+  error?: Error | null
+  isLoading?: boolean
+  usage?: SubscriptionUsage
+}
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Uso de Recursos</CardTitle>
-          <CardDescription>Cargando información de uso...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-12 bg-muted rounded animate-pulse" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+const resources: Array<{
+  description: string
+  icon: LucideIcon
+  key: SubscriptionResourceKey
+  label: string
+}> = [
+  { description: 'Locales operativos', icon: Building2, key: 'branches', label: 'Sucursales' },
+  { description: 'Usuarios con acceso', icon: Users, key: 'users', label: 'Usuarios' },
+  { description: 'Catalogo activo', icon: Package, key: 'products', label: 'Productos' },
+  { description: 'Ventas del periodo', icon: ReceiptText, key: 'sales', label: 'Ventas mensuales' },
+]
 
-  if (!usage) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Uso de Recursos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No se pudo cargar la información de uso.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const resources = [
-    {
-      name: 'Sucursales',
-      icon: '🏢',
-      current: usage.branches.current,
-      maximum: usage.branches.maximum,
-      isAtLimit: usage.branches.isAtLimit,
-    },
-    {
-      name: 'Usuarios',
-      icon: '👥',
-      current: usage.users.current,
-      maximum: usage.users.maximum,
-      isAtLimit: usage.users.isAtLimit,
-    },
-    {
-      name: 'Productos',
-      icon: '📦',
-      current: usage.products.current,
-      maximum: usage.products.maximum,
-      isAtLimit: usage.products.isAtLimit,
-    },
-    {
-      name: 'Ventas/Mes',
-      icon: '💰',
-      current: usage.sales.current,
-      maximum: usage.sales.maximum,
-      isAtLimit: usage.sales.isAtLimit,
-    },
-  ];
+export function SubscriptionUsageCard({
+  error,
+  isLoading,
+  usage: providedUsage,
+}: Readonly<SubscriptionUsageCardProps>) {
+  const query = useSubscriptionUsage({ enabled: providedUsage === undefined })
+  const usage = providedUsage ?? query.usage
+  const loading = isLoading ?? query.isLoading
+  const loadError = error ?? query.error
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Uso de Recursos</CardTitle>
-        <CardDescription>
-          Monitorea tu uso actual versus los límites de tu plan
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {resources.map(resource => {
-            const percentage =
-              resource.maximum === 0 ? 0 : (resource.current / resource.maximum) * 100;
-            const isWarning = percentage >= 80;
-            const isError = percentage >= 100;
-
-            return (
-              <div key={resource.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{resource.icon}</span>
-                    <span className="font-medium">{resource.name}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {resource.current} / {resource.maximum}
-                  </div>
-                </div>
-                <Progress
-                  value={Math.min(percentage, 100)}
-                  className={`h-2 ${
-                    isError
-                      ? 'bg-red-100'
-                      : isWarning
-                        ? 'bg-yellow-100'
-                        : 'bg-gray-100'
-                  }`}
-                />
-                {isError && (
-                  <p className="text-xs text-red-600 font-medium">
-                    Has alcanzado el límite de tu plan
-                  </p>
-                )}
-                {isWarning && !isError && (
-                  <p className="text-xs text-yellow-600">
-                    Estás usando el {Math.round(percentage)}% de tu límite
-                  </p>
-                )}
-              </div>
-            );
-          })}
+    <Card className="rounded-md">
+      <CardHeader className="border-b border-stone-200">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-stone-950">Uso contra limites</h3>
+            <p className="text-sm font-medium text-stone-600">Consumo actual del negocio en el periodo vigente.</p>
+          </div>
+          {usage && (
+            <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-semibold text-stone-700">
+              {usage.planName}
+            </span>
+          )}
         </div>
+      </CardHeader>
+      <CardContent className="pt-4 sm:pt-5">
+        {loading && <UsageSkeleton />}
+        {!loading && loadError && (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+            No se pudo cargar el uso de la suscripcion.
+          </p>
+        )}
+        {!loading && !loadError && !usage && (
+          <p className="rounded-md bg-stone-50 px-3 py-2 text-sm font-medium text-stone-600 ring-1 ring-stone-200">
+            No hay datos de uso disponibles.
+          </p>
+        )}
+        {!loading && usage && (
+          <div className="grid gap-3">
+            {resources.map((resource) => (
+              <UsageRow
+                description={resource.description}
+                icon={resource.icon}
+                key={resource.key}
+                label={resource.label}
+                usage={usage[resource.key]}
+              />
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
-  );
-};
+  )
+}
+
+function UsageRow({
+  description,
+  icon: Icon,
+  label,
+  usage,
+}: Readonly<{
+  description: string
+  icon: LucideIcon
+  label: string
+  usage: ResourceUsage
+}>) {
+  const percentage = getPercentage(usage)
+  const state = usage.isAtLimit ? 'limit' : percentage >= 80 ? 'warning' : 'ok'
+
+  return (
+    <div className="rounded-md border border-stone-200 bg-white p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
+            state === 'limit' && 'bg-red-50 text-red-700',
+            state === 'warning' && 'bg-amber-50 text-amber-700',
+            state === 'ok' && 'bg-stone-100 text-stone-700',
+          )}>
+            <Icon aria-hidden="true" size={17} />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold text-stone-950">{label}</p>
+            <p className="text-sm font-medium text-stone-500">{description}</p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold tabular-nums text-stone-950">
+            {usage.current.toLocaleString('es-DO')} / {formatLimit(usage.maximum)}
+          </p>
+          <p className={cn(
+            'text-xs font-semibold',
+            state === 'limit' && 'text-red-700',
+            state === 'warning' && 'text-amber-700',
+            state === 'ok' && 'text-stone-500',
+          )}>
+            {usage.isAtLimit ? 'Limite alcanzado' : `${Math.round(percentage)}% usado`}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100">
+        <div
+          aria-hidden="true"
+          className={cn(
+            'h-full rounded-full transition-all',
+            state === 'limit' && 'bg-red-600',
+            state === 'warning' && 'bg-amber-500',
+            state === 'ok' && 'bg-stone-900',
+          )}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function UsageSkeleton() {
+  return (
+    <div className="grid gap-3">
+      {[1, 2, 3, 4].map((item) => (
+        <div className="h-20 animate-pulse rounded-md bg-stone-100" key={item} />
+      ))}
+    </div>
+  )
+}
+
+function getPercentage(usage: ResourceUsage): number {
+  if (usage.maximum <= 0) return 0
+
+  return Math.min((usage.current / usage.maximum) * 100, 100)
+}
+
+function formatLimit(value: number): string {
+  if (value === 999 || value >= 999999) return 'Ilimitado'
+
+  return value.toLocaleString('es-DO')
+}

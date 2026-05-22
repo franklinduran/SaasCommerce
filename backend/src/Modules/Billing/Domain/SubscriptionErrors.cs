@@ -16,6 +16,10 @@ public static class SubscriptionErrors
     "subscription.plan_not_active",
     "The specified subscription plan is not currently available.");
 
+  public static readonly DomainError DuplicatePlanCode = new(
+    "subscription.duplicate_plan_code",
+    "A subscription plan with the same code already exists.");
+
   public static readonly DomainError SubscriptionNotFound = new(
     "subscription.not_found",
     "The business does not have an active subscription.");

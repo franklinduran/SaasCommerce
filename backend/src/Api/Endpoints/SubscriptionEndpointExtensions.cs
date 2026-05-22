@@ -1,10 +1,7 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
-using SaasCommerce.BuildingBlocks.Contracts.Common;
-using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Billing.Application.Subscriptions;
 using SaasCommerce.Modules.Billing.Application.Subscriptions.Plans;
 using SaasCommerce.Modules.Billing.Contracts.Requests;
-using SaasCommerce.SharedKernel;
 
 namespace SaasCommerce.Api.Endpoints;
 
@@ -41,7 +38,6 @@ internal static class SubscriptionEndpointExtensions
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
       .WithName("GetSubscriptionPlans")
-      .WithOpenApi()
       .WithTags(SubscriptionPlansTag);
 
     // GET /api/subscription-plans/{id} - Get specific plan details
@@ -49,29 +45,104 @@ internal static class SubscriptionEndpointExtensions
       "/api/subscription-plans/{id:guid}",
       async (
         Guid id,
-        ISubscriptionPlanRepository planRepository,
+        GetSubscriptionPlanByIdQueryHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
-        var plan = await planRepository.GetByIdAsync(id, cancellationToken);
-
-        if (plan is null)
-        {
-          var error = new DomainError("subscription.plan_not_found", "Subscription plan not found.");
-          return Results.Json(
-            ApiResponse.Failure<object>(
-              ApiHelpers.ToApiError(error),
-              correlationIdProvider.CorrelationId),
-            statusCode: StatusCodes.Status404NotFound);
-        }
-
-        var result = Modules.Billing.Application.Subscriptions.Mappers.SubscriptionPlanResponseMapper.ToResponse(plan);
-        return Results.Json(
-          ApiResponse.Success(result, correlationIdProvider.CorrelationId),
-          statusCode: StatusCodes.Status200OK);
+        var result = await handler.Handle(new GetSubscriptionPlanByIdQuery(id), cancellationToken);
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
       .WithName("GetSubscriptionPlanById")
-      .WithOpenApi()
+      .WithTags(SubscriptionPlansTag);
+
+    app.MapPost(
+      "/api/subscription-plans",
+      async (
+        CreateSubscriptionPlanRequest request,
+        CreateSubscriptionPlanCommandHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(
+          new CreateSubscriptionPlanCommand(
+            request.Name,
+            request.Code,
+            request.Description,
+            request.MonthlyPrice,
+            request.MaxBranches,
+            request.MaxUsers,
+            request.MaxProducts,
+            request.MaxSalesPerMonth,
+            request.AllowInventoryTransfers,
+            request.AllowAdvancedReports,
+            request.AllowAuditLogs),
+          cancellationToken);
+
+        return ApiHelpers.ToApiResult(result, correlationIdProvider, successStatusCode: StatusCodes.Status201Created);
+      })
+      .RequireAuthorization()
+      .WithName("CreateSubscriptionPlan")
+      .WithTags(SubscriptionPlansTag);
+
+    app.MapPut(
+      "/api/subscription-plans/{id:guid}",
+      async (
+        Guid id,
+        UpdateSubscriptionPlanRequest request,
+        UpdateSubscriptionPlanCommandHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(
+          new UpdateSubscriptionPlanCommand(
+            id,
+            request.Name,
+            request.Code,
+            request.Description,
+            request.MonthlyPrice,
+            request.MaxBranches,
+            request.MaxUsers,
+            request.MaxProducts,
+            request.MaxSalesPerMonth,
+            request.AllowInventoryTransfers,
+            request.AllowAdvancedReports,
+            request.AllowAuditLogs),
+          cancellationToken);
+
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
+      })
+      .RequireAuthorization()
+      .WithName("UpdateSubscriptionPlan")
+      .WithTags(SubscriptionPlansTag);
+
+    app.MapPost(
+      "/api/subscription-plans/{id:guid}/activate",
+      async (
+        Guid id,
+        ActivateSubscriptionPlanCommandHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(new ActivateSubscriptionPlanCommand(id), cancellationToken);
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
+      })
+      .RequireAuthorization()
+      .WithName("ActivateSubscriptionPlan")
+      .WithTags(SubscriptionPlansTag);
+
+    app.MapPost(
+      "/api/subscription-plans/{id:guid}/deactivate",
+      async (
+        Guid id,
+        DeactivateSubscriptionPlanCommandHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(new DeactivateSubscriptionPlanCommand(id), cancellationToken);
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
+      })
+      .RequireAuthorization()
+      .WithName("DeactivateSubscriptionPlan")
       .WithTags(SubscriptionPlansTag);
   }
 
@@ -90,33 +161,21 @@ internal static class SubscriptionEndpointExtensions
       })
       .RequireAuthorization()
       .WithName("GetCurrentSubscription")
-      .WithOpenApi()
       .WithTags(SubscriptionTag);
 
     // GET /api/subscription/usage - Get subscription usage limits
     app.MapGet(
       "/api/subscription/usage",
       async (
-        ISubscriptionLimitChecker limitChecker,
-        ISubscriptionAccessPolicy accessPolicy,
+        GetSubscriptionUsageQueryHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
-        // Return usage information for the current business
-        // This endpoint is informational and helps users understand their limits
-        var response = new
-        {
-          message = "Subscription usage information would be returned here",
-          note = "Implementation pending - fetches current usage vs limits"
-        };
-
-        return Results.Json(
-          ApiResponse.Success(response, correlationIdProvider.CorrelationId),
-          statusCode: StatusCodes.Status200OK);
+        var result = await handler.Handle(new GetSubscriptionUsageQuery(), cancellationToken);
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
       .RequireAuthorization()
       .WithName("GetSubscriptionUsage")
-      .WithOpenApi()
       .WithTags(SubscriptionTag);
 
     // POST /api/subscription/start-trial - Start a trial subscription (new business)
@@ -132,7 +191,6 @@ internal static class SubscriptionEndpointExtensions
       })
       .RequireAuthorization()
       .WithName("StartTrialSubscription")
-      .WithOpenApi()
       .WithTags(SubscriptionTag);
 
     // POST /api/subscription/change-plan - Change subscription plan
@@ -151,7 +209,6 @@ internal static class SubscriptionEndpointExtensions
       })
       .RequireAuthorization()
       .WithName("ChangeSubscriptionPlan")
-      .WithOpenApi()
       .WithTags(SubscriptionTag);
 
     // POST /api/subscription/cancel - Cancel subscription
@@ -167,7 +224,6 @@ internal static class SubscriptionEndpointExtensions
       })
       .RequireAuthorization()
       .WithName("CancelSubscription")
-      .WithOpenApi()
       .WithTags(SubscriptionTag);
 
     // POST /api/subscription/reactivate - Reactivate cancelled subscription
@@ -183,7 +239,6 @@ internal static class SubscriptionEndpointExtensions
       })
       .RequireAuthorization()
       .WithName("ReactivateSubscription")
-      .WithOpenApi()
       .WithTags(SubscriptionTag);
   }
 }

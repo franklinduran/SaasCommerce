@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SonarQubeAnalysisProperties xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonarsource.com/msbuild/integration/2015/1">
+  <Property Name="sonar.host.url">http://localhost:9000</Property>
+  <Property Name="sonar.login">admin</Property>
+  <Property Name="sonar.password">admin</Property>
+  <Property Name="sonar.projectKey">comercioflow-saas</Property>
+  <Property Name="sonar.projectName">ComercioFlow SaaS Platform</Property>
+  <Property Name="sonar.projectVersion">1.0.0</Property>
+  <Property Name="sonar.sources">frontend/src,backend/src</Property>
+  <Property Name="sonar.exclusions">**/node_modules/**,**/bin/**,**/obj/**,**/.next/**,**/dist/**</Property>
+  <Property Name="sonar.sourceEncoding">UTF-8</Property>
+</SonarQubeAnalysisProperties>

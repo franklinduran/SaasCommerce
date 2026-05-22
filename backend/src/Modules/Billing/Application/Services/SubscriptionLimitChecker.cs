@@ -2,8 +2,6 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
-using Microsoft.EntityFrameworkCore;
-using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 
 namespace SaasCommerce.Modules.Billing.Application.Services;
 
@@ -14,7 +12,7 @@ namespace SaasCommerce.Modules.Billing.Application.Services;
 public sealed class SubscriptionLimitChecker(
   IBusinessSubscriptionRepository subscriptionRepository,
   ISubscriptionPlanRepository planRepository,
-  AppDbContext dbContext,
+  ISubscriptionUsageReader usageReader,
   IClock clock,
   ISubscriptionAccessPolicy accessPolicy) : ISubscriptionLimitChecker
 {
@@ -34,11 +32,7 @@ public sealed class SubscriptionLimitChecker(
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
     }
 
-    var currentBranches = await dbContext.Set<dynamic>()
-      .FromSqlInterpolated($@"
-        SELECT COUNT(*) as count FROM tenancy.branches
-        WHERE business_id = {businessId.Value} AND is_active = true")
-      .CountAsync(cancellationToken);
+    var currentBranches = await usageReader.CountActiveBranchesAsync(businessId, cancellationToken);
 
     if (currentBranches >= plan.MaxBranches)
     {
@@ -69,11 +63,7 @@ public sealed class SubscriptionLimitChecker(
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
     }
 
-    var currentUsers = await dbContext.Set<dynamic>()
-      .FromSqlInterpolated($@"
-        SELECT COUNT(*) as count FROM identity.users
-        WHERE business_id = {businessId.Value} AND is_active = true")
-      .CountAsync(cancellationToken);
+    var currentUsers = await usageReader.CountActiveUsersAsync(businessId, cancellationToken);
 
     if (currentUsers >= plan.MaxUsers)
     {
@@ -104,11 +94,7 @@ public sealed class SubscriptionLimitChecker(
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
     }
 
-    var currentProducts = await dbContext.Set<dynamic>()
-      .FromSqlInterpolated($@"
-        SELECT COUNT(*) as count FROM catalog.products
-        WHERE business_id = {businessId.Value} AND is_active = true")
-      .CountAsync(cancellationToken);
+    var currentProducts = await usageReader.CountActiveProductsAsync(businessId, cancellationToken);
 
     if (currentProducts >= plan.MaxProducts)
     {
@@ -143,12 +129,11 @@ public sealed class SubscriptionLimitChecker(
     var monthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, now.Offset);
     var monthEnd = monthStart.AddMonths(1);
 
-    var salesThisMonth = await dbContext.Set<dynamic>()
-      .FromSqlInterpolated($@"
-        SELECT COUNT(*) as count FROM sales.sales
-        WHERE business_id = {businessId.Value}
-        AND created_at >= {monthStart} AND created_at < {monthEnd}")
-      .CountAsync(cancellationToken);
+    var salesThisMonth = await usageReader.CountMonthlySalesAsync(
+      businessId,
+      monthStart,
+      monthEnd,
+      cancellationToken);
 
     if (salesThisMonth >= plan.MaxSalesPerMonth)
     {

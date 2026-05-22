@@ -18,6 +18,15 @@ public sealed class EfSubscriptionPlanRepository(AppDbContext context) : ISubscr
       .FirstOrDefaultAsync(p => p.Id == planId, cancellationToken);
   }
 
+  public async Task<SubscriptionPlan?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
+  {
+    var normalizedCode = code.Trim().ToUpperInvariant();
+
+    return await context.Set<SubscriptionPlan>()
+      .AsNoTracking()
+      .FirstOrDefaultAsync(p => p.Code == normalizedCode, cancellationToken);
+  }
+
   public async Task<IReadOnlyList<SubscriptionPlan>> GetActiveAsync(CancellationToken cancellationToken = default)
   {
     return await context.Set<SubscriptionPlan>()

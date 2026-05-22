@@ -54,7 +54,8 @@ internal static class ApiHelpers
         "purchases.invalid_state" or
         "invoices.invalid_invoice" or
         "invoices.invalid_state" or
-        "sales.invalid_state" => ApiErrorCodes.ValidationError,
+        "sales.invalid_state" or
+        "subscription.invalid_plan_data" => ApiErrorCodes.ValidationError,
       "identity.invalid_credentials" or
         "identity.invalid_refresh_token" or
         "identity.not_authenticated" => ApiErrorCodes.Unauthorized,
@@ -69,6 +70,7 @@ internal static class ApiHelpers
         "credits.user_context_required" or
         "invoices.user_context_required" or
         "sales.user_context_required" or
+        "subscription.user_context_required" or
         "suppliers.user_context_required" or
         "purchases.user_context_required" => ApiErrorCodes.TenantContextMissing,
       "identity.user_not_found" or
@@ -84,7 +86,9 @@ internal static class ApiHelpers
         "sales.customer_not_found" or
         "suppliers.supplier_not_found" or
         "purchases.purchase_not_found" or
-        "purchases.supplier_not_found" => ApiErrorCodes.NotFound,
+        "purchases.supplier_not_found" or
+        "subscription.plan_not_found" or
+        "subscription.not_found" => ApiErrorCodes.NotFound,
       "identity.cannot_disable_self" or
         "identity.cannot_remove_last_owner" or
         "identity.invalid_role" or
@@ -98,7 +102,14 @@ internal static class ApiHelpers
         "account.duplicate_email" or
         "account.duplicate_identification" or
         "tenancy.duplicate_identification" or
-        "catalog.duplicate_category" => ApiErrorCodes.Conflict,
+        "catalog.duplicate_category" or
+        "subscription.duplicate" or
+        "subscription.duplicate_plan_code" => ApiErrorCodes.Conflict,
+      "subscription.expired" or
+        "subscription.suspended" or
+        "subscription.cancelled" or
+        "subscription.feature_not_available" or
+        "subscription.plan_not_active" => ApiErrorCodes.Forbidden,
       "catalog.product_not_found" or
         "inventory.product_not_found" or
         "sales.product_not_found" or
@@ -121,7 +132,8 @@ internal static class ApiHelpers
       ApiErrorCodes.Forbidden => StatusCodes.Status403Forbidden,
       ApiErrorCodes.NotFound or
         ApiErrorCodes.ProductNotFound => StatusCodes.Status404NotFound,
-      ApiErrorCodes.Conflict or
+        ApiErrorCodes.Conflict or
+        "SUBSCRIPTION_LIMIT_REACHED" or
         ApiErrorCodes.ProductSkuAlreadyExists or
         ApiErrorCodes.ProductBarcodeAlreadyExists or
         ApiErrorCodes.InventoryStockInsufficient or

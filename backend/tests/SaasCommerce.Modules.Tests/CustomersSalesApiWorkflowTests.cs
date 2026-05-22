@@ -14,6 +14,7 @@ using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Domain;
 using SaasCommerce.Modules.Customers.Domain.Credits;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
@@ -585,6 +586,8 @@ public sealed class CustomersSalesApiWorkflowTests
 
     public NoopUnitOfWork UnitOfWork { get; } = new();
 
+    public AllowAllSubscriptionLimitChecker SubscriptionLimits { get; } = new();
+
     public static TestScenario Create() => new();
 
     public CreateSaleUseCase CreateSaleUseCase()
@@ -596,7 +599,8 @@ public sealed class CustomersSalesApiWorkflowTests
           CurrentUser,
           SaleEvents,
           Clock,
-          UnitOfWork));
+          UnitOfWork),
+        SubscriptionLimits);
 
     public CreateSaleUseCase CreateCreditSaleUseCase(ICustomerCreditRepository? creditRepo = null)
       => new(
@@ -608,6 +612,7 @@ public sealed class CustomersSalesApiWorkflowTests
           SaleEvents,
           Clock,
           UnitOfWork),
+        SubscriptionLimits,
         creditRepo);
 
     public async Task<Customer> AddCustomerAsync()
@@ -685,6 +690,46 @@ public sealed class CustomersSalesApiWorkflowTests
       Events.Add(integrationEvent);
       return Task.CompletedTask;
     }
+  }
+
+  private sealed class AllowAllSubscriptionLimitChecker : ISubscriptionLimitChecker
+  {
+    private static readonly SubscriptionLimitCheckResult Allowed = new(true, "OK", "Allowed.", 0, 1000);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateBranchAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateUserAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateProductAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateSaleAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseInventoryTransfersAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseAdvancedReportsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseAuditLogsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
   }
 
   private sealed class RecordingRealtimeNotifier : IRealtimeNotifier

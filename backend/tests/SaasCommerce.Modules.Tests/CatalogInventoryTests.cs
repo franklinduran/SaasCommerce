@@ -8,6 +8,8 @@ using SaasCommerce.BuildingBlocks.Contracts.Events;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Catalog.Application.Categories;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
@@ -23,6 +25,7 @@ using SaasCommerce.Modules.Inventory.Domain;
 using SaasCommerce.Modules.Inventory.Infrastructure.Availability;
 using SaasCommerce.Modules.Inventory.Infrastructure.Persistence;
 using SaasCommerce.Modules.Tenancy.Domain;
+using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Tests;
@@ -455,7 +458,8 @@ public sealed class CatalogInventoryTests
       outbox,
       new NoopAuditLogWriter(),
       new FixedClock(),
-      new EfUnitOfWork(dbContext));
+      new EfUnitOfWork(dbContext),
+      new AllowAllSubscriptionAccessPolicy());
 
     var result = await handler.Handle(new AdjustInventoryCommand(productId, 3, "InitialStock"));
 
@@ -868,7 +872,8 @@ public sealed class CatalogInventoryTests
       new EfCatalogProductRepository(dbContext),
       currentUser,
       new FixedClock(),
-      new EfUnitOfWork(dbContext));
+      new EfUnitOfWork(dbContext),
+      new AllowAllSubscriptionLimitChecker());
 
   private static CreateCategoryHandler CreateCategoryHandler(
     AppDbContext dbContext,
@@ -899,7 +904,8 @@ public sealed class CatalogInventoryTests
       new NoopOutboxWriter(),
       new NoopAuditLogWriter(),
       new FixedClock(),
-      new EfUnitOfWork(dbContext));
+      new EfUnitOfWork(dbContext),
+      new AllowAllSubscriptionAccessPolicy());
 
   private static CreateProductCommand CreateProductCommand(
     string name,
@@ -1010,6 +1016,65 @@ public sealed class CatalogInventoryTests
       Events.Add(integrationEvent);
       return Task.CompletedTask;
     }
+  }
+
+  private sealed class AllowAllSubscriptionLimitChecker : ISubscriptionLimitChecker
+  {
+    private static readonly SubscriptionLimitCheckResult Allowed = new(true, "OK", "Allowed.", 0, 1000);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateBranchAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateUserAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateProductAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateSaleAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseInventoryTransfersAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseAdvancedReportsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseAuditLogsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+  }
+
+  private sealed class AllowAllSubscriptionAccessPolicy : ISubscriptionAccessPolicy
+  {
+    public Task<Result> EnsureCanUseFeatureAsync(
+      BusinessId businessId,
+      SubscriptionFeature feature,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Result.Success());
+
+    public Task<SubscriptionStatus?> GetCurrentSubscriptionStatusAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<SubscriptionStatus?>(SubscriptionStatus.Active);
+
+    public Task<bool> IsSubscriptionActiveAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(true);
   }
 
   private sealed class TestProductInventoryPolicyReader(

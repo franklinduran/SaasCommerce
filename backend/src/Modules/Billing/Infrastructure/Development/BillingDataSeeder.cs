@@ -1,7 +1,7 @@
 using SaasCommerce.Modules.Billing.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace SaasCommerce.Modules.Billing.Infrastructure.Development;
+namespace SaasCommerce.Modules.Development;
 
 /// <summary>
 /// Seeds initial subscription plan data for development and testing.
@@ -35,18 +35,26 @@ public static class BillingDataSeeder
     var basicPlan = SubscriptionPlan.Create(
       BasicPlanId,
       "Basic",
+      SubscriptionPlanCodes.Basic,
       "Perfect for small businesses just starting out. Includes essential features for managing sales and inventory.",
       29m,
       maxBranches: 1,
       maxUsers: 2,
       maxProducts: 300,
       maxSalesPerMonth: 1000,
-      SubscriptionFeature.Sales | SubscriptionFeature.Products | SubscriptionFeature.Users | SubscriptionFeature.Invoices,
+      SubscriptionFeature.Sales |
+        SubscriptionFeature.Products |
+        SubscriptionFeature.Branches |
+        SubscriptionFeature.Users |
+        SubscriptionFeature.Purchases |
+        SubscriptionFeature.Invoices |
+        SubscriptionFeature.Payments,
       now);
 
     var proPlan = SubscriptionPlan.Create(
       ProPlanId,
       "Pro",
+      SubscriptionPlanCodes.Pro,
       "Great for growing businesses. Multiple locations, advanced reporting, and inventory transfers.",
       99m,
       maxBranches: 3,
@@ -68,6 +76,7 @@ public static class BillingDataSeeder
     var premiumPlan = SubscriptionPlan.Create(
       PremiumPlanId,
       "Premium",
+      SubscriptionPlanCodes.Premium,
       "Enterprise-grade solution with unlimited everything and priority support.",
       299m,
       maxBranches: 999,

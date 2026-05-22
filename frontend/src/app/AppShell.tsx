@@ -32,7 +32,6 @@ import { useCurrentUserPermissions } from '@/shared/hooks/usePermissions'
 import { Permission } from '@/shared/types/permissions'
 import type { PermissionCode } from '@/shared/types/permissions'
 import { cn } from '@/shared/utils/cn'
-import { SubscriptionAlertBanner } from '@/modules/subscription/components/SubscriptionAlertBanner'
 
 type NavigationItem = {
   label: string
@@ -57,7 +56,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Reportes', path: '/reports', icon: BarChart3, requiredPermission: Permission.ReportsView },
   { label: 'Usuarios', path: '/users', icon: Shield, requiredPermission: Permission.UsersView },
   { label: 'Auditoria', path: '/audit-logs', icon: ClipboardList, requiredPermission: Permission.AuditView },
-  { label: 'Suscripción', path: '/subscription', icon: CreditCard },
+  { label: 'Suscripcion', path: '/subscription', icon: CreditCard },
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
@@ -79,7 +78,7 @@ const pageTitles: Record<string, string> = {
   '/reports': 'Reportes',
   '/users': 'Usuarios',
   '/audit-logs': 'Auditoria',
-  '/subscription': 'Mi Suscripción',
+  '/subscription': 'Mi Suscripcion',
   '/settings': 'Ajustes',
   '/forbidden': 'Acceso denegado',
 }
@@ -247,14 +246,6 @@ export function AppShell() {
         </header>
 
         <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-surface-subtle">
-          <div className="sticky top-0 z-10 border-b border-stone-200 bg-white px-6 py-3">
-            <SubscriptionAlertBanner
-              onReactivateClick={() => navigate('/subscription')}
-              onContactSupport={() => {
-                // Open support contact
-              }}
-            />
-          </div>
           <Outlet />
         </main>
       </div>

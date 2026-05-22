@@ -6,6 +6,7 @@ namespace SaasCommerce.Modules.Billing.Contracts.Responses;
 public sealed record SubscriptionPlanResponse(
   Guid Id,
   string Name,
+  string Code,
   string Description,
   decimal MonthlyPrice,
   int MaxBranches,
@@ -27,8 +28,11 @@ public sealed record BusinessSubscriptionResponse(
   string Status,
   DateTimeOffset StartedAt,
   DateTimeOffset? TrialEndsAt,
+  DateTimeOffset? CurrentPeriodStart,
   DateTimeOffset? CurrentPeriodEnd,
   DateTimeOffset? CancelledAt,
+  DateTimeOffset? SuspendedAt,
+  string? CancellationReason,
   DateTimeOffset CreatedAt,
   DateTimeOffset UpdatedAt);
 

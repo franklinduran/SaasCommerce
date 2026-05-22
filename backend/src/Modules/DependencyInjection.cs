@@ -123,13 +123,20 @@ public static class ModulesServiceCollectionExtensions
     // Billing - Subscriptions
     services.AddScoped<ISubscriptionPlanRepository, EfSubscriptionPlanRepository>();
     services.AddScoped<IBusinessSubscriptionRepository, EfBusinessSubscriptionRepository>();
+    services.AddScoped<ISubscriptionUsageReader, EfSubscriptionUsageReader>();
     services.AddScoped<ISubscriptionAccessPolicy, Billing.Application.Services.SubscriptionAccessPolicy>();
     services.AddScoped<ISubscriptionLimitChecker, Billing.Application.Services.SubscriptionLimitChecker>();
 
     // Billing - Subscription Handlers
     services.AddScoped<Billing.Application.Subscriptions.Plans.GetSubscriptionPlansQueryHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.Plans.GetSubscriptionPlanByIdQueryHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.Plans.CreateSubscriptionPlanCommandHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.Plans.UpdateSubscriptionPlanCommandHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.Plans.ActivateSubscriptionPlanCommandHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.Plans.DeactivateSubscriptionPlanCommandHandler>();
     services.AddScoped<Billing.Application.Subscriptions.StartTrialSubscriptionCommandHandler>();
     services.AddScoped<Billing.Application.Subscriptions.GetCurrentBusinessSubscriptionQueryHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.GetSubscriptionUsageQueryHandler>();
     services.AddScoped<Billing.Application.Subscriptions.ChangeBusinessPlanCommandHandler>();
     services.AddScoped<Billing.Application.Subscriptions.CancelBusinessSubscriptionCommandHandler>();
     services.AddScoped<Billing.Application.Subscriptions.ReactivateBusinessSubscriptionCommandHandler>();

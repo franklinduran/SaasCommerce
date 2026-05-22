@@ -14,6 +14,11 @@ public interface ISubscriptionPlanRepository
   Task<SubscriptionPlan?> GetByIdAsync(Guid planId, CancellationToken cancellationToken = default);
 
   /// <summary>
+  /// Get a specific plan by its stable code.
+  /// </summary>
+  Task<SubscriptionPlan?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+
+  /// <summary>
   /// Get all active plans available for new subscriptions.
   /// </summary>
   Task<IReadOnlyList<SubscriptionPlan>> GetActiveAsync(CancellationToken cancellationToken = default);

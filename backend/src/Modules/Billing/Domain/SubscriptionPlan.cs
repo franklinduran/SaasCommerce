@@ -14,6 +14,7 @@ public sealed class SubscriptionPlan
   private SubscriptionPlan(
     Guid id,
     string name,
+    string code,
     string description,
     decimal monthlyPrice,
     int maxBranches,
@@ -31,6 +32,11 @@ public sealed class SubscriptionPlan
     if (string.IsNullOrWhiteSpace(name))
     {
       throw new ArgumentException("Plan name is required.", nameof(name));
+    }
+
+    if (string.IsNullOrWhiteSpace(code))
+    {
+      throw new ArgumentException("Plan code is required.", nameof(code));
     }
 
     if (monthlyPrice < 0)
@@ -59,7 +65,8 @@ public sealed class SubscriptionPlan
     }
 
     Id = id;
-    Name = name;
+    Name = name.Trim();
+    Code = NormalizeCode(code);
     Description = description ?? string.Empty;
     MonthlyPrice = monthlyPrice;
     MaxBranches = maxBranches;
@@ -77,6 +84,9 @@ public sealed class SubscriptionPlan
 
   /// <summary>Display name of the plan (e.g., "Basic", "Pro", "Premium")</summary>
   public string Name { get; private set; } = string.Empty;
+
+  /// <summary>Stable code used by billing and integrations (e.g., BASIC, PRO, PREMIUM)</summary>
+  public string Code { get; private set; } = string.Empty;
 
   /// <summary>Detailed description of what's included in the plan</summary>
   public string Description { get; private set; } = string.Empty;
@@ -112,6 +122,7 @@ public sealed class SubscriptionPlan
   public static SubscriptionPlan Create(
     Guid id,
     string name,
+    string code,
     string description,
     decimal monthlyPrice,
     int maxBranches,
@@ -124,6 +135,7 @@ public sealed class SubscriptionPlan
     return new SubscriptionPlan(
       id,
       name,
+      code,
       description,
       monthlyPrice,
       maxBranches,
@@ -151,6 +163,7 @@ public sealed class SubscriptionPlan
   /// <summary>Update plan details (admin operation)</summary>
   public void Update(
     string name,
+    string code,
     string description,
     decimal monthlyPrice,
     int maxBranches,
@@ -160,8 +173,29 @@ public sealed class SubscriptionPlan
     SubscriptionFeature features,
     DateTimeOffset now)
   {
-    Name = name ?? throw new ArgumentNullException(nameof(name));
-    Description = description ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(name))
+    {
+      throw new ArgumentException("Plan name is required.", nameof(name));
+    }
+
+    if (string.IsNullOrWhiteSpace(code))
+    {
+      throw new ArgumentException("Plan code is required.", nameof(code));
+    }
+
+    if (monthlyPrice < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(monthlyPrice), "Monthly price cannot be negative.");
+    }
+
+    if (maxBranches < 1 || maxUsers < 1 || maxProducts < 1 || maxSalesPerMonth < 1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maxBranches), "Plan limits must be at least 1.");
+    }
+
+    Name = name.Trim();
+    Code = NormalizeCode(code);
+    Description = description?.Trim() ?? string.Empty;
     MonthlyPrice = monthlyPrice;
     MaxBranches = maxBranches;
     MaxUsers = maxUsers;
@@ -176,4 +210,7 @@ public sealed class SubscriptionPlan
   {
     return (Features & feature) != 0;
   }
+
+  private static string NormalizeCode(string code)
+    => code.Trim().ToUpperInvariant();
 }

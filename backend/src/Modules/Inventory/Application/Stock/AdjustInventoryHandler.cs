@@ -3,6 +3,8 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Catalog.Contracts.Inventory;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
@@ -20,7 +22,8 @@ public sealed class AdjustInventoryHandler(
   IOutboxWriter outbox,
   IAuditLogWriter auditLog,
   IClock clock,
-  IUnitOfWork unitOfWork)
+  IUnitOfWork unitOfWork,
+  ISubscriptionAccessPolicy subscriptionAccess)
 {
   public Task<Result<InventoryAdjustmentResponse>> Handle(
     AdjustInventoryCommand command,
@@ -56,6 +59,15 @@ public sealed class AdjustInventoryHandler(
     }
 
     var tenantId = new BusinessId(businessId);
+    var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
+      tenantId,
+      SubscriptionFeature.Products,
+      cancellationToken);
+    if (access.IsFailure)
+    {
+      return Result.Failure<InventoryAdjustmentResponse>(access.Error);
+    }
+
     var currentBranchId = new BranchId(branchId.Value);
     var productPolicy = await productPolicies.GetAsync(businessId, command.ProductId, cancellationToken);
 

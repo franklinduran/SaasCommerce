@@ -9,6 +9,7 @@ using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Billing.Application.Invoices;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.Modules.Billing.Domain;
+using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
 
 #pragma warning disable CA1707
@@ -324,7 +325,7 @@ public sealed class BillingInvoiceTests
     public static Scenario Create(string saleStatus = "Completed") => new(saleStatus);
 
     public GenerateInvoiceHandler CreateGenerateHandler()
-      => new(Invoices, Sales, Outbox, CurrentUser, Clock, UnitOfWork);
+      => new(Invoices, Sales, Outbox, CurrentUser, Clock, UnitOfWork, new AllowAllSubscriptionAccessPolicy());
 
     public Invoice CreateInvoice()
       => Invoice.Issue(
@@ -410,6 +411,25 @@ public sealed class BillingInvoiceTests
       Events.Add(integrationEvent);
       return Task.CompletedTask;
     }
+  }
+
+  private sealed class AllowAllSubscriptionAccessPolicy : ISubscriptionAccessPolicy
+  {
+    public Task<Result> EnsureCanUseFeatureAsync(
+      BusinessId businessId,
+      SubscriptionFeature feature,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Result.Success());
+
+    public Task<SubscriptionStatus?> GetCurrentSubscriptionStatusAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<SubscriptionStatus?>(SubscriptionStatus.Active);
+
+    public Task<bool> IsSubscriptionActiveAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(true);
   }
 
   private sealed class TestCurrentUser(Guid businessId, Guid branchId, Guid userId) : ICurrentUserService

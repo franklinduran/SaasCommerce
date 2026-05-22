@@ -22,6 +22,7 @@ using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Domain;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.SharedKernel.Tenancy;
 
@@ -44,7 +45,8 @@ public sealed class SalesWorkflowTests
         scenario.CurrentUser,
         scenario.SaleEvents,
         scenario.Clock,
-        scenario.UnitOfWork));
+        scenario.UnitOfWork),
+      scenario.SubscriptionLimits);
 
     var result = await useCase.ExecuteAsync(saleCreated);
     var persisted = await scenario.Sales.GetAsync(new BusinessId(scenario.BusinessId), scenario.SaleId);
@@ -69,7 +71,8 @@ public sealed class SalesWorkflowTests
         scenario.CurrentUser,
         scenario.SaleEvents,
         scenario.Clock,
-        scenario.UnitOfWork));
+        scenario.UnitOfWork),
+      scenario.SubscriptionLimits);
 
     var result = await useCase.ExecuteAsync(SaleCreated(scenario));
 
@@ -90,7 +93,8 @@ public sealed class SalesWorkflowTests
         scenario.CurrentUser,
         scenario.SaleEvents,
         scenario.Clock,
-        scenario.UnitOfWork));
+        scenario.UnitOfWork),
+      scenario.SubscriptionLimits);
 
     var result = await useCase.ExecuteAsync(new SaleCreatedEventV1(
       Guid.NewGuid(),
@@ -688,6 +692,8 @@ public sealed class SalesWorkflowTests
 
     public RecordingRealtimeNotifier Realtime { get; } = new();
 
+    public AllowAllSubscriptionLimitChecker SubscriptionLimits { get; } = new();
+
     public ISaleEventWriter SaleEvents => new SaleEventWriter(Outbox, Realtime, Clock);
 
     public static TestScenario Create() => new();
@@ -718,6 +724,46 @@ public sealed class SalesWorkflowTests
       Events.Add(integrationEvent);
       return Task.CompletedTask;
     }
+  }
+
+  private sealed class AllowAllSubscriptionLimitChecker : ISubscriptionLimitChecker
+  {
+    private static readonly SubscriptionLimitCheckResult Allowed = new(true, "OK", "Allowed.", 0, 1000);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateBranchAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateUserAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateProductAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanCreateSaleAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseInventoryTransfersAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseAdvancedReportsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
+
+    public Task<SubscriptionLimitCheckResult> CanUseAuditLogsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Allowed);
   }
 
   private sealed class FixedClock : IClock
