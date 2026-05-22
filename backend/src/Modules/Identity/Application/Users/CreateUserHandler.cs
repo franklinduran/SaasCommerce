@@ -4,6 +4,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Application.Permissions;
 using SaasCommerce.Modules.Identity.Contracts;
@@ -21,7 +22,8 @@ public sealed class CreateUserHandler(
   IClock clock,
   IUnitOfWork unitOfWork,
   IAuditLogWriter auditLogWriter,
-  IEventBus eventBus)
+  IEventBus eventBus,
+  ISubscriptionLimitChecker limitChecker)
 {
   public async Task<Result<Guid>> Handle(
     CreateUserCommand command,
@@ -64,6 +66,13 @@ public sealed class CreateUserHandler(
     }
 
     var businessIdVo = new BusinessId(businessId);
+
+    // Check subscription limits
+    var limitCheck = await limitChecker.CanCreateUserAsync(businessIdVo, cancellationToken);
+    if (!limitCheck.IsAllowed)
+    {
+      return Result.Failure<Guid>(new DomainError("subscription.limit_reached", limitCheck.Message));
+    }
 
     // Check email uniqueness within business
     var emailExists = await repository.EmailExistsInBusinessAsync(

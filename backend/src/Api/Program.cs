@@ -1225,6 +1225,10 @@ app.MapPost(
 
 app.MapReportsEndpoints();
 
+// ── Billing & Subscriptions ───────────────────────────────────────────────
+
+app.MapSubscriptionEndpoints();
+
 // ── Branches & Inventory Transfers ────────────────────────────────────────
 
 app.MapBranchEndpoints();

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.Modules.Billing.Infrastructure.Development;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Identity.Domain;
 using SaasCommerce.Modules.Tenancy.Domain;
@@ -58,6 +59,9 @@ public sealed class DevelopmentDataSeeder(
     dbContext.Add(adminUser);
 
     await dbContext.SaveChangesAsync(cancellationToken);
+
+    // Seed subscription plans
+    await BillingDataSeeder.SeedPlansAsync(dbContext, now);
   }
 
   private string GetAdminSecret()

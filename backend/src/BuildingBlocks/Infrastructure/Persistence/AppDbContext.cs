@@ -14,6 +14,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
   public DbSet<SaleSagaState> SaleSagaStates => Set<SaleSagaState>();
 
+  /// <summary>
+  /// Subscription plans are configured via module IEntityTypeConfiguration.
+  /// Using dynamic Set<T>() to avoid circular dependency issues.
+  /// </summary>
+  public DbSet<dynamic> SubscriptionPlans => Set<dynamic>();
+
+  /// <summary>
+  /// Business subscriptions are configured via module IEntityTypeConfiguration.
+  /// Using dynamic Set<T>() to avoid circular dependency issues.
+  /// </summary>
+  public DbSet<dynamic> BusinessSubscriptions => Set<dynamic>();
+
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     ArgumentNullException.ThrowIfNull(modelBuilder);

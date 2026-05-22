@@ -1,4 +1,5 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Domain.Credits;
@@ -12,6 +13,7 @@ namespace SaasCommerce.Modules.Sales.Application.Sales;
 
 public sealed class CreateSaleUseCase(
   SaleHandlerContext context,
+  ISubscriptionLimitChecker limitChecker,
   ICustomerCreditRepository? customerCredits = null) : ICreateSaleUseCase
 {
   public Task<Result<SaleResponse>> ExecuteAsync(
@@ -79,6 +81,19 @@ public sealed class CreateSaleUseCase(
     CreateSaleCommand command,
     CancellationToken cancellationToken)
   {
+    // Check subscription limits
+    var businessId = new BusinessId(command.BusinessId ?? context.CurrentUser.BusinessId ?? Guid.Empty);
+    if (businessId.Value == Guid.Empty)
+    {
+      return Result.Failure<SaleResponse>(SalesErrors.UserContextRequired);
+    }
+
+    var limitCheck = await limitChecker.CanCreateSaleAsync(businessId, cancellationToken);
+    if (!limitCheck.IsAllowed)
+    {
+      return Result.Failure<SaleResponse>(new DomainError("subscription.limit_reached", limitCheck.Message));
+    }
+
     var userContext = ResolveUserContext();
 
     if (userContext.IsFailure)

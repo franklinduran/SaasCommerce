@@ -19,7 +19,8 @@ public sealed record CreateSaleCommand(
   Guid? BranchId,
   Guid? CustomerId,
   string PaymentMethod,
-  IReadOnlyCollection<CreateSaleItemCommand> Items);
+  IReadOnlyCollection<CreateSaleItemCommand> Items,
+  Guid? BusinessId = null);
 
 public sealed record CreateSaleItemCommand(
   Guid ProductId,

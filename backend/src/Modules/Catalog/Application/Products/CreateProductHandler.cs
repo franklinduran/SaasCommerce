@@ -1,6 +1,7 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Catalog.Application.Abstractions;
 using SaasCommerce.Modules.Catalog.Contracts.Responses;
 using SaasCommerce.Modules.Catalog.Domain;
@@ -13,7 +14,8 @@ public sealed class CreateProductHandler(
   ICatalogProductRepository products,
   ICurrentUserService currentUser,
   IClock clock,
-  IUnitOfWork unitOfWork)
+  IUnitOfWork unitOfWork,
+  ISubscriptionLimitChecker limitChecker)
 {
   public Task<Result<ProductResponse>> Handle(
     CreateProductCommand command,
@@ -33,12 +35,19 @@ public sealed class CreateProductHandler(
       return Result.Failure<ProductResponse>(CatalogErrors.UserContextRequired);
     }
 
+    var tenantId = new BusinessId(businessId);
+
+    // Check subscription limits
+    var limitCheck = await limitChecker.CanCreateProductAsync(tenantId, cancellationToken);
+    if (!limitCheck.IsAllowed)
+    {
+      return Result.Failure<ProductResponse>(new DomainError("subscription.limit_reached", limitCheck.Message));
+    }
+
     if (!TryParse(command, out var productType, out var unitOfMeasure, out var taxCategory))
     {
       return Result.Failure<ProductResponse>(CatalogErrors.InvalidProduct);
     }
-
-    var tenantId = new BusinessId(businessId);
     var normalizedSku = command.Sku.Trim().ToUpperInvariant();
     var existingSku = await products.GetBySkuAsync(normalizedSku, tenantId, cancellationToken);
 

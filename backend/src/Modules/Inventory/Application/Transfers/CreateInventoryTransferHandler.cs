@@ -2,6 +2,7 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Responses;
 using SaasCommerce.Modules.Inventory.Domain;
@@ -15,7 +16,8 @@ public sealed class CreateInventoryTransferHandler(
   ICurrentUserService currentUser,
   IOutboxWriter outbox,
   IClock clock,
-  IUnitOfWork unitOfWork)
+  IUnitOfWork unitOfWork,
+  ISubscriptionLimitChecker limitChecker)
 {
   public Task<Result<InventoryTransferResponse>> Handle(
     CreateInventoryTransferCommand command,
@@ -36,6 +38,15 @@ public sealed class CreateInventoryTransferHandler(
       return Result.Failure<InventoryTransferResponse>(TransferErrors.UserContextRequired);
     }
 
+    var tenantId = new BusinessId(businessId);
+
+    // Check if business can use inventory transfers feature
+    var featureCheck = await limitChecker.CanUseInventoryTransfersAsync(tenantId, cancellationToken);
+    if (!featureCheck.IsAllowed)
+    {
+      return Result.Failure<InventoryTransferResponse>(new DomainError("subscription.feature_not_available", featureCheck.Message));
+    }
+
     if (command.SourceBranchId == command.TargetBranchId)
     {
       return Result.Failure<InventoryTransferResponse>(TransferErrors.SameBranch);
@@ -51,7 +62,6 @@ public sealed class CreateInventoryTransferHandler(
       return Result.Failure<InventoryTransferResponse>(TransferErrors.InvalidQuantity);
     }
 
-    var tenantId = new BusinessId(businessId);
     var sourceBranchId = new BranchId(command.SourceBranchId);
     var targetBranchId = new BranchId(command.TargetBranchId);
     var transferId = Guid.NewGuid();

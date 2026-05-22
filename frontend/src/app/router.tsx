@@ -23,6 +23,7 @@ import {
   SaleDetailRoute,
   SalesRoute,
   SettingsRoute,
+  SubscriptionRoute,
   SuppliersRoute,
   UsersRoute,
 } from '@/app/LazyPages'
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
       { path: 'audit-logs', element: withPageLoading(<AuditLogsRoute />) },
       { path: 'forbidden', element: withPageLoading(<ForbiddenRoute />) },
       { path: 'settings', element: withPageLoading(<SettingsRoute />) },
+      { path: 'subscription', element: withPageLoading(<SubscriptionRoute />) },
     ],
   },
 ])

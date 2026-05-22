@@ -1,6 +1,7 @@
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
+using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Tenancy.Contracts.Responses;
 using SaasCommerce.Modules.Tenancy.Domain;
 using SaasCommerce.SharedKernel;
@@ -12,7 +13,8 @@ public sealed class CreateBranchHandler(
   IBranchRepository repository,
   ICurrentUserService currentUser,
   IClock clock,
-  IUnitOfWork unitOfWork)
+  IUnitOfWork unitOfWork,
+  ISubscriptionLimitChecker limitChecker)
 {
   public Task<Result<BranchResponse>> Handle(
     CreateBranchCommand command,
@@ -33,6 +35,14 @@ public sealed class CreateBranchHandler(
     }
 
     var tenantId = new BusinessId(businessId);
+
+    // Check subscription limits
+    var limitCheck = await limitChecker.CanCreateBranchAsync(tenantId, cancellationToken);
+    if (!limitCheck.IsAllowed)
+    {
+      return Result.Failure<BranchResponse>(new DomainError("subscription.limit_reached", limitCheck.Message));
+    }
+
     var normalizedCode = command.Code.Trim().ToUpperInvariant();
 
     if (await repository.ExistsByCodeAsync(tenantId, normalizedCode, null, cancellationToken))

@@ -96,6 +96,11 @@ const InventoryTransfersPage = lazy(() =>
     default: module.InventoryTransfersPage,
   })),
 )
+const SubscriptionPage = lazy(() =>
+  import('@/modules/subscription/pages/SubscriptionPage').then((module) => ({
+    default: module.SubscriptionPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -183,4 +188,8 @@ export function BranchesRoute() {
 
 export function InventoryTransfersRoute() {
   return <InventoryTransfersPage />
+}
+
+export function SubscriptionRoute() {
+  return <SubscriptionPage />
 }

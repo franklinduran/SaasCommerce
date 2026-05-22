@@ -120,6 +120,20 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetInvoicesHandler>();
     services.AddScoped<CancelInvoiceHandler>();
 
+    // Billing - Subscriptions
+    services.AddScoped<ISubscriptionPlanRepository, EfSubscriptionPlanRepository>();
+    services.AddScoped<IBusinessSubscriptionRepository, EfBusinessSubscriptionRepository>();
+    services.AddScoped<ISubscriptionAccessPolicy, Billing.Application.Services.SubscriptionAccessPolicy>();
+    services.AddScoped<ISubscriptionLimitChecker, Billing.Application.Services.SubscriptionLimitChecker>();
+
+    // Billing - Subscription Handlers
+    services.AddScoped<Billing.Application.Subscriptions.Plans.GetSubscriptionPlansQueryHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.StartTrialSubscriptionCommandHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.GetCurrentBusinessSubscriptionQueryHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.ChangeBusinessPlanCommandHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.CancelBusinessSubscriptionCommandHandler>();
+    services.AddScoped<Billing.Application.Subscriptions.ReactivateBusinessSubscriptionCommandHandler>();
+
     // Customers
     services.AddScoped<ICustomerRepository, EfCustomerRepository>();
     services.AddScoped<ICustomerCreditRepository, EfCustomerCreditRepository>();
