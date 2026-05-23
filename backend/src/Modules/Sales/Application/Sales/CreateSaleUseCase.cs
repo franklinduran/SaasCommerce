@@ -313,7 +313,8 @@ public sealed class CreateSaleUseCase(
     return Result.Success(new SaleLine(
       item.ProductId,
       item.Quantity,
-      productPolicy.SalePrice));
+      productPolicy.SalePrice,
+      productPolicy.CostPrice > 0 ? productPolicy.CostPrice : null));
   }
 
   private Result<Sale> CreateSale(

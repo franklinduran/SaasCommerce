@@ -68,6 +68,12 @@ export const Permission = {
   ExpensesCreate: 'expenses.create',
   ExpensesManage: 'expenses.manage',
   ExpenseCategoriesManage: 'expenses.categories.manage',
+
+  // Profitability (Rentabilidad)
+  ProfitabilityView: 'profitability.view',
+  ProfitabilityProducts: 'profitability.products',
+  ProfitabilityBranches: 'profitability.branches',
+  ProfitabilityAlerts: 'profitability.alerts',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

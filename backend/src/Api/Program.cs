@@ -1243,6 +1243,10 @@ app.MapCashEndpoints();
 
 app.MapExpenseEndpoints();
 
+// ── Profitability (Rentabilidad) ──────────────────────────────────────────
+
+app.MapProfitabilityEndpoints();
+
 // ── Branches & Inventory Transfers ────────────────────────────────────────
 
 app.MapBranchEndpoints();

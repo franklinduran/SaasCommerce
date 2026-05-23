@@ -80,4 +80,10 @@ public static class SystemPermissions
   public const string ExpensesCreate = "expenses.create";
   public const string ExpensesManage = "expenses.manage";
   public const string ExpenseCategoriesManage = "expenses.categories.manage";
+
+  // Profitability (Rentabilidad)
+  public const string ProfitabilityView = "profitability.view";
+  public const string ProfitabilityProducts = "profitability.products";
+  public const string ProfitabilityBranches = "profitability.branches";
+  public const string ProfitabilityAlerts = "profitability.alerts";
 }

@@ -134,6 +134,26 @@ const ExpenseCategoriesPage = lazy(() =>
     default: module.ExpenseCategoriesPage,
   })),
 )
+const ProfitabilityPage = lazy(() =>
+  import('@/modules/profitability/pages/ProfitabilityPage').then((module) => ({
+    default: module.ProfitabilityPage,
+  })),
+)
+const ProductProfitabilityPage = lazy(() =>
+  import('@/modules/profitability/pages/ProductProfitabilityPage').then((module) => ({
+    default: module.ProductProfitabilityPage,
+  })),
+)
+const BranchProfitabilityPage = lazy(() =>
+  import('@/modules/profitability/pages/BranchProfitabilityPage').then((module) => ({
+    default: module.BranchProfitabilityPage,
+  })),
+)
+const ProfitabilityAlertsPage = lazy(() =>
+  import('@/modules/profitability/pages/ProfitabilityAlertsPage').then((module) => ({
+    default: module.ProfitabilityAlertsPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -253,4 +273,20 @@ export function ExpenseDetailRoute() {
 
 export function ExpenseCategoriesRoute() {
   return <ExpenseCategoriesPage />
+}
+
+export function ProfitabilityRoute() {
+  return <ProfitabilityPage />
+}
+
+export function ProductProfitabilityRoute() {
+  return <ProductProfitabilityPage />
+}
+
+export function BranchProfitabilityRoute() {
+  return <BranchProfitabilityPage />
+}
+
+export function ProfitabilityAlertsRoute() {
+  return <ProfitabilityAlertsPage />
 }

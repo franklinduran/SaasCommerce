@@ -112,6 +112,7 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
         candidate.ProductType,
         candidate.UnitOfMeasure,
         candidate.SalePrice,
+        candidate.CostPrice,
         candidate.TaxCategory,
         candidate.TaxRate,
         candidate.IsTaxIncluded,
@@ -148,7 +149,8 @@ public sealed class EfProductInventoryPolicyReader(AppDbContext dbContext) :
       product.IsActive,
       blockedReason is null,
       blockedReason,
-      product.MinimumStock);
+      product.MinimumStock,
+      product.CostPrice);
   }
 
   private static string? GetBlockedReason(bool isActive, decimal salePrice)

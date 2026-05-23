@@ -82,7 +82,8 @@ internal static class ApiHelpers
         "suppliers.user_context_required" or
         "purchases.user_context_required" or
         "cash.user_context_required" or
-        "expenses.user_context_required" => ApiErrorCodes.TenantContextMissing,
+        "expenses.user_context_required" or
+        "profitability.user_context_required" => ApiErrorCodes.TenantContextMissing,
       "identity.user_not_found" or
         "tenancy.business_not_found" or
         "tenancy.branch_not_found" or

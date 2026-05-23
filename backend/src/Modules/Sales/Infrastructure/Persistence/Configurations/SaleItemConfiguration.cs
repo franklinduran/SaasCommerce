@@ -25,7 +25,12 @@ public sealed class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
       .HasPrecision(18, 2)
       .IsRequired();
 
+    builder.Property(item => item.UnitCost)
+      .HasPrecision(18, 2)
+      .IsRequired(false);
+
     builder.Ignore(item => item.LineTotal);
+    builder.Ignore(item => item.LineCost);
 
     builder.HasIndex(item => new { item.SaleId, item.ProductId });
   }

@@ -47,6 +47,7 @@ using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Cash;
 using SaasCommerce.Modules.Sales.Application.Expenses;
+using SaasCommerce.Modules.Sales.Application.Profitability;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Settings.Application;
@@ -166,6 +167,13 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetCurrentCashSessionHandler>();
     services.AddScoped<GetCashSessionDetailHandler>();
     services.AddScoped<GetCashSessionsHandler>();
+
+    // Sales — Profitability (Rentabilidad)
+    services.AddScoped<IProfitabilityReadRepository, EfProfitabilityReadRepository>();
+    services.AddScoped<GetProfitabilitySummaryHandler>();
+    services.AddScoped<GetProductProfitabilityHandler>();
+    services.AddScoped<GetBranchProfitabilityHandler>();
+    services.AddScoped<GetProfitabilityAlertsHandler>();
 
     // Sales — Operating Expenses (Gastos Operativos)
     services.AddScoped<IExpenseCategoryRepository, EfExpenseCategoryRepository>();

@@ -97,7 +97,8 @@ public sealed class Sale
         sale.Id,
         line.ProductId,
         line.Quantity,
-        line.UnitPrice);
+        line.UnitPrice,
+        line.UnitCost);
 
       sale.items.Add(item);
       sale.Total += item.LineTotal;
@@ -211,4 +212,4 @@ public sealed class Sale
   }
 }
 
-public sealed record SaleLine(Guid ProductId, decimal Quantity, decimal UnitPrice);
+public sealed record SaleLine(Guid ProductId, decimal Quantity, decimal UnitPrice, decimal? UnitCost = null);

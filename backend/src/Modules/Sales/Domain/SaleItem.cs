@@ -11,7 +11,8 @@ public sealed class SaleItem
     Guid saleId,
     Guid productId,
     decimal quantity,
-    decimal unitPrice)
+    decimal unitPrice,
+    decimal? unitCost = null)
   {
     if (productId == Guid.Empty)
     {
@@ -28,11 +29,17 @@ public sealed class SaleItem
       throw new ArgumentOutOfRangeException(nameof(unitPrice), "Unit price cannot be negative.");
     }
 
+    if (unitCost.HasValue && unitCost.Value < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(unitCost), "Unit cost cannot be negative.");
+    }
+
     Id = id;
     SaleId = saleId;
     ProductId = productId;
     Quantity = quantity;
     UnitPrice = unitPrice;
+    UnitCost = unitCost;
   }
 
   public Guid Id { get; private set; }
@@ -45,5 +52,12 @@ public sealed class SaleItem
 
   public decimal UnitPrice { get; private set; }
 
+  /// <summary>
+  /// Cost per unit at the time of sale. Null for historical sales migrated before this field was added.
+  /// </summary>
+  public decimal? UnitCost { get; private set; }
+
   public decimal LineTotal => Quantity * UnitPrice;
+
+  public decimal LineCost => Quantity * (UnitCost ?? 0m);
 }

@@ -68,7 +68,12 @@ public static class RolePermissionMatrix
     SystemPermissions.ExpensesView,
     SystemPermissions.ExpensesCreate,
     SystemPermissions.ExpensesManage,
-    SystemPermissions.ExpenseCategoriesManage
+    SystemPermissions.ExpenseCategoriesManage,
+
+    SystemPermissions.ProfitabilityView,
+    SystemPermissions.ProfitabilityProducts,
+    SystemPermissions.ProfitabilityBranches,
+    SystemPermissions.ProfitabilityAlerts
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -114,7 +119,12 @@ public static class RolePermissionMatrix
     SystemPermissions.ExpensesView,
     SystemPermissions.ExpensesCreate,
     SystemPermissions.ExpensesManage,
-    SystemPermissions.ExpenseCategoriesManage
+    SystemPermissions.ExpenseCategoriesManage,
+
+    SystemPermissions.ProfitabilityView,
+    SystemPermissions.ProfitabilityProducts,
+    SystemPermissions.ProfitabilityBranches,
+    SystemPermissions.ProfitabilityAlerts
   };
 
   private static readonly IReadOnlySet<string> CashierAccess = new HashSet<string>(StringComparer.Ordinal)

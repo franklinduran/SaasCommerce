@@ -18,4 +18,5 @@ public sealed record ProductSalesPolicy(
   bool IsActive,
   bool CanBeSold,
   string? ReasonIfCannotBeSold,
-  decimal? MinimumStock = null);
+  decimal? MinimumStock = null,
+  decimal CostPrice = 0m);
