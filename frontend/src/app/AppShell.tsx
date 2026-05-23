@@ -21,6 +21,7 @@ import {
   ShoppingCart,
   Truck,
   Users,
+  Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -45,6 +46,7 @@ type NavigationItem = {
 const navigationItems: readonly NavigationItem[] = [
   { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
   { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
+  { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
   { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
   { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
   { label: 'Inventario', path: '/inventory', icon: Boxes, requiredPermission: Permission.InventoryView },
@@ -67,6 +69,8 @@ const growthTools = navigationItems.slice(7)
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
   '/pos': 'POS',
+  '/cash': 'Caja',
+  '/cash/history': 'Historial de cajas',
   '/sales': 'Ventas',
   '/products': 'Productos',
   '/inventory': 'Inventario',
@@ -282,6 +286,10 @@ export function AppShell() {
 function getPageTitle(pathname: string) {
   if (pageTitles[pathname]) {
     return pageTitles[pathname]
+  }
+
+  if (pathname.startsWith('/cash/') && pathname !== '/cash/history') {
+    return 'Detalle de caja'
   }
 
   if (pathname.startsWith('/sales/')) {

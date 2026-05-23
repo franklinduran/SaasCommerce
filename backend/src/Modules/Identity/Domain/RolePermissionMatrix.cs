@@ -58,7 +58,12 @@ public static class RolePermissionMatrix
     SystemPermissions.BranchesUpdate,
 
     SystemPermissions.SettingsView,
-    SystemPermissions.SettingsUpdate
+    SystemPermissions.SettingsUpdate,
+
+    SystemPermissions.CashView,
+    SystemPermissions.CashOpen,
+    SystemPermissions.CashClose,
+    SystemPermissions.CashRegisterMovement
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -94,7 +99,12 @@ public static class RolePermissionMatrix
 
     SystemPermissions.UsersView,
 
-    SystemPermissions.BranchesView
+    SystemPermissions.BranchesView,
+
+    SystemPermissions.CashView,
+    SystemPermissions.CashOpen,
+    SystemPermissions.CashClose,
+    SystemPermissions.CashRegisterMovement
   };
 
   private static readonly IReadOnlySet<string> CashierAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -112,7 +122,12 @@ public static class RolePermissionMatrix
     SystemPermissions.AccountsReceivableView,
     SystemPermissions.AccountsReceivableRegisterPayment,
 
-    SystemPermissions.InvoicesView
+    SystemPermissions.InvoicesView,
+
+    SystemPermissions.CashView,
+    SystemPermissions.CashOpen,
+    SystemPermissions.CashClose,
+    SystemPermissions.CashRegisterMovement
   };
 
   private static readonly IReadOnlySet<string> InventoryManagerAccess = new HashSet<string>(StringComparer.Ordinal)

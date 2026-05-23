@@ -68,4 +68,10 @@ public static class SystemPermissions
   // Settings
   public const string SettingsView = "settings.view";
   public const string SettingsUpdate = "settings.update";
+
+  // Cash Register (Caja)
+  public const string CashView = "cash.view";
+  public const string CashOpen = "cash.open";
+  public const string CashClose = "cash.close";
+  public const string CashRegisterMovement = "cash.registerMovement";
 }

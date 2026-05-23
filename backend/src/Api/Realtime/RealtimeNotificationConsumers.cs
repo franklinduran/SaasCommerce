@@ -390,6 +390,78 @@ public sealed class InventoryTransferCancelledRealtimeConsumer(
   }
 }
 
+public sealed class CashSessionOpenedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<CashSessionOpenedRealtimeConsumer> logger)
+  : IdempotentConsumer<CashSessionOpenedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<CashSessionOpenedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "cash.session.opened",
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      "cash.session.opened",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class CashMovementRegisteredRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<CashMovementRegisteredRealtimeConsumer> logger)
+  : IdempotentConsumer<CashMovementRegisteredEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<CashMovementRegisteredEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "cash.movement.registered",
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      "cash.movement.registered",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class CashSessionClosedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<CashSessionClosedRealtimeConsumer> logger)
+  : IdempotentConsumer<CashSessionClosedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<CashSessionClosedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "cash.session.closed",
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      "cash.session.closed",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
 public sealed class ProductCostUpdatedRealtimeConsumer(
   IInboxStore inboxStore,
   IClock clock,

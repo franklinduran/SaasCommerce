@@ -56,6 +56,12 @@ export const Permission = {
   BranchesView: 'branches.view',
   BranchesCreate: 'branches.create',
   BranchesUpdate: 'branches.update',
+
+  // Cash Register (Caja)
+  CashView: 'cash.view',
+  CashOpen: 'cash.open',
+  CashClose: 'cash.close',
+  CashRegisterMovement: 'cash.registerMovement',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

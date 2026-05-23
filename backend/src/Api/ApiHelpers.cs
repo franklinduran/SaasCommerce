@@ -72,7 +72,8 @@ internal static class ApiHelpers
         "sales.user_context_required" or
         "subscription.user_context_required" or
         "suppliers.user_context_required" or
-        "purchases.user_context_required" => ApiErrorCodes.TenantContextMissing,
+        "purchases.user_context_required" or
+        "cash.user_context_required" => ApiErrorCodes.TenantContextMissing,
       "identity.user_not_found" or
         "tenancy.business_not_found" or
         "tenancy.branch_not_found" or
@@ -88,7 +89,8 @@ internal static class ApiHelpers
         "purchases.purchase_not_found" or
         "purchases.supplier_not_found" or
         "subscription.plan_not_found" or
-        "subscription.not_found" => ApiErrorCodes.NotFound,
+        "subscription.not_found" or
+        "cash.session_not_found" => ApiErrorCodes.NotFound,
       "identity.cannot_disable_self" or
         "identity.cannot_remove_last_owner" or
         "identity.invalid_role" or

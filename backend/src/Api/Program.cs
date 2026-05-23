@@ -80,6 +80,9 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<CustomerPaymentRegisteredRealtimeConsumer>();
     massTransit.AddConsumer<InvoiceGeneratedRealtimeConsumer>();
     massTransit.AddConsumer<InvoiceCancelledRealtimeConsumer>();
+    massTransit.AddConsumer<CashSessionOpenedRealtimeConsumer>();
+    massTransit.AddConsumer<CashMovementRegisteredRealtimeConsumer>();
+    massTransit.AddConsumer<CashSessionClosedRealtimeConsumer>();
   });
 builder.Services.AddCors(options =>
   options.AddPolicy(
@@ -1228,6 +1231,10 @@ app.MapReportsEndpoints();
 // ── Billing & Subscriptions ───────────────────────────────────────────────
 
 app.MapSubscriptionEndpoints();
+
+// ── Cash Register ─────────────────────────────────────────────────────────
+
+app.MapCashEndpoints();
 
 // ── Branches & Inventory Transfers ────────────────────────────────────────
 

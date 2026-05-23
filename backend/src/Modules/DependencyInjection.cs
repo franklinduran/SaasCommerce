@@ -45,6 +45,7 @@ using SaasCommerce.Modules.Reporting.Application.Reports;
 using SaasCommerce.Modules.Reporting.Infrastructure.Export;
 using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
+using SaasCommerce.Modules.Sales.Application.Cash;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Settings.Application;
@@ -155,6 +156,15 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IBlockCustomerCreditUseCase, BlockCustomerCreditUseCase>();
     services.AddScoped<IUnblockCustomerCreditUseCase, UnblockCustomerCreditUseCase>();
     services.AddScoped<IRegisterCreditSaleUseCase, RegisterCreditSaleUseCase>();
+
+    // Sales — Cash Register
+    services.AddScoped<ICashSessionRepository, EfCashSessionRepository>();
+    services.AddScoped<OpenCashSessionHandler>();
+    services.AddScoped<CloseCashSessionHandler>();
+    services.AddScoped<RegisterCashMovementHandler>();
+    services.AddScoped<GetCurrentCashSessionHandler>();
+    services.AddScoped<GetCashSessionDetailHandler>();
+    services.AddScoped<GetCashSessionsHandler>();
 
     // Sales
     services.AddScoped<ISaleRepository, EfSaleRepository>();

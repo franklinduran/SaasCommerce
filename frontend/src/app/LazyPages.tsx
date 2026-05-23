@@ -101,6 +101,19 @@ const SubscriptionPage = lazy(() =>
     default: module.SubscriptionPage,
   })),
 )
+const CashPage = lazy(() =>
+  import('@/modules/cash/pages/CashPage').then((module) => ({ default: module.CashPage })),
+)
+const CashHistoryPage = lazy(() =>
+  import('@/modules/cash/pages/CashHistoryPage').then((module) => ({
+    default: module.CashHistoryPage,
+  })),
+)
+const CashSessionDetailPage = lazy(() =>
+  import('@/modules/cash/pages/CashSessionDetailPage').then((module) => ({
+    default: module.CashSessionDetailPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -192,4 +205,16 @@ export function InventoryTransfersRoute() {
 
 export function SubscriptionRoute() {
   return <SubscriptionPage />
+}
+
+export function CashRoute() {
+  return <CashPage />
+}
+
+export function CashHistoryRoute() {
+  return <CashHistoryPage />
+}
+
+export function CashSessionDetailRoute() {
+  return <CashSessionDetailPage />
 }

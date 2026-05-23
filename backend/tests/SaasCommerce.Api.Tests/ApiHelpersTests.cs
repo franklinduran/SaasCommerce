@@ -67,6 +67,7 @@ public sealed class ApiHelpersTests
   [InlineData("sales.user_context_required", "TENANT_CONTEXT_MISSING")]
   [InlineData("suppliers.user_context_required", "TENANT_CONTEXT_MISSING")]
   [InlineData("purchases.user_context_required", "TENANT_CONTEXT_MISSING")]
+  [InlineData("cash.user_context_required", "TENANT_CONTEXT_MISSING")]
   public void ToPublicErrorCode_ShouldReturnTenantContextMissing_ForContextCodes(string code, string expected)
   {
     var result = ApiHelpers.ToPublicErrorCode(code);
@@ -89,6 +90,7 @@ public sealed class ApiHelpersTests
   [InlineData("suppliers.supplier_not_found", "NOT_FOUND")]
   [InlineData("purchases.purchase_not_found", "NOT_FOUND")]
   [InlineData("purchases.supplier_not_found", "NOT_FOUND")]
+  [InlineData("cash.session_not_found", "NOT_FOUND")]
   public void ToPublicErrorCode_ShouldReturnNotFound_ForNotFoundCodes(string code, string expected)
   {
     var result = ApiHelpers.ToPublicErrorCode(code);
