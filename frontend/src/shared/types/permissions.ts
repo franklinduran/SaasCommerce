@@ -62,6 +62,12 @@ export const Permission = {
   CashOpen: 'cash.open',
   CashClose: 'cash.close',
   CashRegisterMovement: 'cash.registerMovement',
+
+  // Operating Expenses (Gastos Operativos)
+  ExpensesView: 'expenses.view',
+  ExpensesCreate: 'expenses.create',
+  ExpensesManage: 'expenses.manage',
+  ExpenseCategoriesManage: 'expenses.categories.manage',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

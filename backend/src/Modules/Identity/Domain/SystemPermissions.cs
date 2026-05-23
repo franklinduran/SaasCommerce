@@ -74,4 +74,10 @@ public static class SystemPermissions
   public const string CashOpen = "cash.open";
   public const string CashClose = "cash.close";
   public const string CashRegisterMovement = "cash.registerMovement";
+
+  // Operating Expenses (Gastos Operativos)
+  public const string ExpensesView = "expenses.view";
+  public const string ExpensesCreate = "expenses.create";
+  public const string ExpensesManage = "expenses.manage";
+  public const string ExpenseCategoriesManage = "expenses.categories.manage";
 }

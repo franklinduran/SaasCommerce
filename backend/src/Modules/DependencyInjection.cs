@@ -46,6 +46,7 @@ using SaasCommerce.Modules.Reporting.Infrastructure.Export;
 using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Cash;
+using SaasCommerce.Modules.Sales.Application.Expenses;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Settings.Application;
@@ -165,6 +166,18 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetCurrentCashSessionHandler>();
     services.AddScoped<GetCashSessionDetailHandler>();
     services.AddScoped<GetCashSessionsHandler>();
+
+    // Sales — Operating Expenses (Gastos Operativos)
+    services.AddScoped<IExpenseCategoryRepository, EfExpenseCategoryRepository>();
+    services.AddScoped<IOperatingExpenseRepository, EfOperatingExpenseRepository>();
+    services.AddScoped<CreateExpenseCategoryHandler>();
+    services.AddScoped<GetExpenseCategoriesHandler>();
+    services.AddScoped<CreateOperatingExpenseHandler>();
+    services.AddScoped<PayOperatingExpenseHandler>();
+    services.AddScoped<CancelOperatingExpenseHandler>();
+    services.AddScoped<GetOperatingExpensesHandler>();
+    services.AddScoped<GetOperatingExpenseDetailHandler>();
+    services.AddScoped<GetExpenseSummaryHandler>();
 
     // Sales
     services.AddScoped<ISaleRepository, EfSaleRepository>();

@@ -83,6 +83,9 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<CashSessionOpenedRealtimeConsumer>();
     massTransit.AddConsumer<CashMovementRegisteredRealtimeConsumer>();
     massTransit.AddConsumer<CashSessionClosedRealtimeConsumer>();
+    massTransit.AddConsumer<OperatingExpenseCreatedRealtimeConsumer>();
+    massTransit.AddConsumer<OperatingExpensePaidRealtimeConsumer>();
+    massTransit.AddConsumer<OperatingExpenseCancelledRealtimeConsumer>();
   });
 builder.Services.AddCors(options =>
   options.AddPolicy(
@@ -1235,6 +1238,10 @@ app.MapSubscriptionEndpoints();
 // ── Cash Register ─────────────────────────────────────────────────────────
 
 app.MapCashEndpoints();
+
+// ── Operating Expenses (Gastos Operativos) ────────────────────────────────
+
+app.MapExpenseEndpoints();
 
 // ── Branches & Inventory Transfers ────────────────────────────────────────
 

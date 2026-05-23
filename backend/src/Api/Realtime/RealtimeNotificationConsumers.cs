@@ -485,3 +485,75 @@ public sealed class ProductCostUpdatedRealtimeConsumer(
       context.CancellationToken);
   }
 }
+
+public sealed class OperatingExpenseCreatedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<OperatingExpenseCreatedRealtimeConsumer> logger)
+  : IdempotentConsumer<OperatingExpenseCreatedEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<OperatingExpenseCreatedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "expenses.created",
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      "expenses.created",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class OperatingExpensePaidRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<OperatingExpensePaidRealtimeConsumer> logger)
+  : IdempotentConsumer<OperatingExpensePaidEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<OperatingExpensePaidEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "expenses.paid",
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      "expenses.paid",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class OperatingExpenseCancelledRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<OperatingExpenseCancelledRealtimeConsumer> logger)
+  : IdempotentConsumer<OperatingExpenseCancelledEventV1>(inboxStore, clock, logger)
+{
+  protected override async Task ConsumeMessageAsync(ConsumeContext<OperatingExpenseCancelledEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "expenses.cancelled",
+      context.Message,
+      context.CancellationToken);
+    await realtime.NotifyBranchAsync(
+      context.Message.BranchId,
+      "expenses.cancelled",
+      context.Message,
+      context.CancellationToken);
+  }
+}

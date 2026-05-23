@@ -55,7 +55,15 @@ internal static class ApiHelpers
         "invoices.invalid_invoice" or
         "invoices.invalid_state" or
         "sales.invalid_state" or
-        "subscription.invalid_plan_data" => ApiErrorCodes.ValidationError,
+        "subscription.invalid_plan_data" or
+        "expenses.invalid_expense" or
+        "expenses.invalid_amount" or
+        "expenses.invalid_payment_method" or
+        "expenses.invalid_status" or
+        "expenses.already_paid" or
+        "expenses.already_cancelled" or
+        "expenses.cannot_cancel_paid" or
+        "expenses.cash_session_required" => ApiErrorCodes.ValidationError,
       "identity.invalid_credentials" or
         "identity.invalid_refresh_token" or
         "identity.not_authenticated" => ApiErrorCodes.Unauthorized,
@@ -73,7 +81,8 @@ internal static class ApiHelpers
         "subscription.user_context_required" or
         "suppliers.user_context_required" or
         "purchases.user_context_required" or
-        "cash.user_context_required" => ApiErrorCodes.TenantContextMissing,
+        "cash.user_context_required" or
+        "expenses.user_context_required" => ApiErrorCodes.TenantContextMissing,
       "identity.user_not_found" or
         "tenancy.business_not_found" or
         "tenancy.branch_not_found" or
@@ -90,7 +99,9 @@ internal static class ApiHelpers
         "purchases.supplier_not_found" or
         "subscription.plan_not_found" or
         "subscription.not_found" or
-        "cash.session_not_found" => ApiErrorCodes.NotFound,
+        "cash.session_not_found" or
+        "expenses.expense_not_found" or
+        "expenses.category_not_found" => ApiErrorCodes.NotFound,
       "identity.cannot_disable_self" or
         "identity.cannot_remove_last_owner" or
         "identity.invalid_role" or
@@ -106,7 +117,8 @@ internal static class ApiHelpers
         "tenancy.duplicate_identification" or
         "catalog.duplicate_category" or
         "subscription.duplicate" or
-        "subscription.duplicate_plan_code" => ApiErrorCodes.Conflict,
+        "subscription.duplicate_plan_code" or
+        "expenses.duplicate_category_name" => ApiErrorCodes.Conflict,
       "subscription.expired" or
         "subscription.suspended" or
         "subscription.cancelled" or

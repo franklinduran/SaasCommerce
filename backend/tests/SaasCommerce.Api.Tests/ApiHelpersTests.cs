@@ -68,6 +68,7 @@ public sealed class ApiHelpersTests
   [InlineData("suppliers.user_context_required", "TENANT_CONTEXT_MISSING")]
   [InlineData("purchases.user_context_required", "TENANT_CONTEXT_MISSING")]
   [InlineData("cash.user_context_required", "TENANT_CONTEXT_MISSING")]
+  [InlineData("expenses.user_context_required", "TENANT_CONTEXT_MISSING")]
   public void ToPublicErrorCode_ShouldReturnTenantContextMissing_ForContextCodes(string code, string expected)
   {
     var result = ApiHelpers.ToPublicErrorCode(code);
@@ -91,6 +92,8 @@ public sealed class ApiHelpersTests
   [InlineData("purchases.purchase_not_found", "NOT_FOUND")]
   [InlineData("purchases.supplier_not_found", "NOT_FOUND")]
   [InlineData("cash.session_not_found", "NOT_FOUND")]
+  [InlineData("expenses.expense_not_found", "NOT_FOUND")]
+  [InlineData("expenses.category_not_found", "NOT_FOUND")]
   public void ToPublicErrorCode_ShouldReturnNotFound_ForNotFoundCodes(string code, string expected)
   {
     var result = ApiHelpers.ToPublicErrorCode(code);
@@ -114,6 +117,7 @@ public sealed class ApiHelpersTests
   [InlineData("account.duplicate_identification", "CONFLICT")]
   [InlineData("tenancy.duplicate_identification", "CONFLICT")]
   [InlineData("catalog.duplicate_category", "CONFLICT")]
+  [InlineData("expenses.duplicate_category_name", "CONFLICT")]
   public void ToPublicErrorCode_ShouldReturnConflict_ForDuplicateCodes(string code, string expected)
   {
     var result = ApiHelpers.ToPublicErrorCode(code);
@@ -254,6 +258,24 @@ public sealed class ApiHelpersTests
 
     apiError.ValidationErrors.Should().ContainSingle(e =>
       e.Field == "field.required" && e.Message == "Field is required.");
+  }
+
+  // ── Expense error code mappings ─────────────────────────────────────────
+
+  [Theory]
+  [InlineData("expenses.invalid_expense", "VALIDATION_ERROR")]
+  [InlineData("expenses.invalid_amount", "VALIDATION_ERROR")]
+  [InlineData("expenses.invalid_payment_method", "VALIDATION_ERROR")]
+  [InlineData("expenses.invalid_status", "VALIDATION_ERROR")]
+  [InlineData("expenses.already_paid", "VALIDATION_ERROR")]
+  [InlineData("expenses.already_cancelled", "VALIDATION_ERROR")]
+  [InlineData("expenses.cannot_cancel_paid", "VALIDATION_ERROR")]
+  [InlineData("expenses.cash_session_required", "VALIDATION_ERROR")]
+  public void ToPublicErrorCode_ShouldReturnValidationError_ForExpenseErrors(string code, string expected)
+  {
+    var result = ApiHelpers.ToPublicErrorCode(code);
+
+    result.Should().Be(expected);
   }
 }
 

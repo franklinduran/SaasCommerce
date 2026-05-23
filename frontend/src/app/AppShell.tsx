@@ -47,6 +47,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
   { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
   { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
+  { label: 'Gastos', path: '/expenses', icon: CircleDollarSign, requiredPermission: Permission.ExpensesView },
   { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
   { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
   { label: 'Inventario', path: '/inventory', icon: Boxes, requiredPermission: Permission.InventoryView },
@@ -63,14 +64,17 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
-const mainNavigation = navigationItems.slice(0, 7)
-const growthTools = navigationItems.slice(7)
+const mainNavigation = navigationItems.slice(0, 8)
+const growthTools = navigationItems.slice(8)
 
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
   '/pos': 'POS',
   '/cash': 'Caja',
   '/cash/history': 'Historial de cajas',
+  '/expenses': 'Gastos operativos',
+  '/expenses/new': 'Nuevo gasto',
+  '/expenses/categories': 'Categorías de gastos',
   '/sales': 'Ventas',
   '/products': 'Productos',
   '/inventory': 'Inventario',

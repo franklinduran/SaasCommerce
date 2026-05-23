@@ -114,6 +114,26 @@ const CashSessionDetailPage = lazy(() =>
     default: module.CashSessionDetailPage,
   })),
 )
+const ExpensesPage = lazy(() =>
+  import('@/modules/expenses/pages/ExpensesPage').then((module) => ({
+    default: module.ExpensesPage,
+  })),
+)
+const NewExpensePage = lazy(() =>
+  import('@/modules/expenses/pages/NewExpensePage').then((module) => ({
+    default: module.NewExpensePage,
+  })),
+)
+const ExpenseDetailPage = lazy(() =>
+  import('@/modules/expenses/pages/ExpenseDetailPage').then((module) => ({
+    default: module.ExpenseDetailPage,
+  })),
+)
+const ExpenseCategoriesPage = lazy(() =>
+  import('@/modules/expenses/pages/ExpenseCategoriesPage').then((module) => ({
+    default: module.ExpenseCategoriesPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -217,4 +237,20 @@ export function CashHistoryRoute() {
 
 export function CashSessionDetailRoute() {
   return <CashSessionDetailPage />
+}
+
+export function ExpensesRoute() {
+  return <ExpensesPage />
+}
+
+export function NewExpenseRoute() {
+  return <NewExpensePage />
+}
+
+export function ExpenseDetailRoute() {
+  return <ExpenseDetailPage />
+}
+
+export function ExpenseCategoriesRoute() {
+  return <ExpenseCategoriesPage />
 }

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -110,7 +110,7 @@ describe('CashPage', () => {
 
     await screen.findAllByText('Abrir caja') // wait for render
     // Submitting with empty balance (NaN) triggers the same validation error as negative
-    await user.click(screen.getByRole('button', { name: 'Abrir caja', exact: true }))
+    await user.click(screen.getByRole('button', { name: 'Abrir caja' }))
 
     expect(await screen.findByText('El balance inicial debe ser 0 o mayor.')).toBeTruthy()
   })
