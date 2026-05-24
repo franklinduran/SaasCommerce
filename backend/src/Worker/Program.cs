@@ -49,6 +49,14 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InvoiceGeneratedAuditConsumer>();
     massTransit.AddConsumer<PurchaseReceivedAuditConsumer>();
     massTransit.AddConsumer<InventoryAdjustedAuditConsumer>();
+    massTransit.AddConsumer<DailyClosingCreatedConsumer>();
+    massTransit.AddConsumer<DailyClosingClosedConsumer>();
+    // Notification consumers (persist to DB)
+    massTransit.AddConsumer<LowStockNotificationConsumer>();
+    massTransit.AddConsumer<SaleFailedNotificationConsumer>();
+    massTransit.AddConsumer<InvoiceFailedNotificationConsumer>();
+    massTransit.AddConsumer<CashSessionClosedNotificationConsumer>();
+    massTransit.AddConsumer<DailyClosingClosedNotificationConsumer>();
     massTransit.AddSagaStateMachine<SaleStateMachine, SaleSagaState>()
       .EntityFrameworkRepository(repository =>
       {

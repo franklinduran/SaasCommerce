@@ -47,11 +47,15 @@ using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Cash;
 using SaasCommerce.Modules.Sales.Application.Expenses;
+using SaasCommerce.Modules.Sales.Application.DailyClosings;
 using SaasCommerce.Modules.Sales.Application.Profitability;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Settings.Application;
 using SaasCommerce.Modules.Settings.Infrastructure;
+using SaasCommerce.Modules.Notifications.Application.Abstractions;
+using SaasCommerce.Modules.Notifications.Application.Handlers;
+using SaasCommerce.Modules.Notifications.Infrastructure.Persistence;
 using SaasCommerce.Modules.Tenancy.Application.Branches;
 using SaasCommerce.Modules.Tenancy.Infrastructure.Persistence;
 
@@ -175,6 +179,16 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetBranchProfitabilityHandler>();
     services.AddScoped<GetProfitabilityAlertsHandler>();
 
+    // Sales — Daily Closing (Cierre Operativo Diario)
+    services.AddScoped<IDailyClosingRepository, EfDailyClosingRepository>();
+    services.AddScoped<IDailyClosingReadRepository, EfDailyClosingReadRepository>();
+    services.AddScoped<IDailyClosingDataGatherer, EfDailyClosingDataGatherer>();
+    services.AddScoped<PreviewDailyClosingHandler>();
+    services.AddScoped<CreateDailyClosingHandler>();
+    services.AddScoped<CloseDailyClosingHandler>();
+    services.AddScoped<GetDailyClosingsHandler>();
+    services.AddScoped<GetDailyClosingDetailHandler>();
+
     // Sales — Operating Expenses (Gastos Operativos)
     services.AddScoped<IExpenseCategoryRepository, EfExpenseCategoryRepository>();
     services.AddScoped<IOperatingExpenseRepository, EfOperatingExpenseRepository>();
@@ -236,6 +250,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<RegisterBusinessHandler>();
     services.AddScoped<LoginHandler>();
     services.AddScoped<RefreshTokenHandler>();
+    services.AddScoped<LogoutHandler>();
     services.AddScoped<GetCurrentUserHandler>();
     services.AddScoped<GetMeHandler>();
     services.AddScoped<UpdateMyProfileHandler>();
@@ -279,6 +294,14 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetAccountsReceivableReportHandler>();
     services.AddScoped<GetLowStockReportHandler>();
     services.AddScoped<GetPurchaseReportHandler>();
+
+    // Notifications
+    services.AddScoped<IOperationalNotificationRepository, EfOperationalNotificationRepository>();
+    services.AddScoped<CreateNotificationHandler>();
+    services.AddScoped<GetNotificationsHandler>();
+    services.AddScoped<GetUnreadCountHandler>();
+    services.AddScoped<MarkNotificationReadHandler>();
+    services.AddScoped<MarkAllNotificationsReadHandler>();
 
     return services;
   }

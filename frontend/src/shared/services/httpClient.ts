@@ -1,7 +1,12 @@
+import { useAuthStore } from '@/modules/auth/authStore'
 import type { ApiError, ApiResponse } from '@/shared/types/api'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 const normalizedApiBaseUrl = apiBaseUrl.replace(/\/$/, '')
+
+/** Paths that should NOT trigger an automatic session-clear on 401.
+ *  A wrong password on the login form returns 401 by design. */
+const AUTH_EXEMPT_PATHS = ['/api/auth/login']
 
 type RequestOptions = RequestInit & {
   accessToken?: string
@@ -44,6 +49,15 @@ export async function httpClient<T>(
     const message =
       payload === null ? 'Request failed' : payload.error?.message ?? 'Request failed'
     const error = payload === null ? null : payload.error
+
+    // Expired / invalid access token on any non-login endpoint → force re-login
+    if (
+      response.status === 401 &&
+      !AUTH_EXEMPT_PATHS.some((p) => path.startsWith(p))
+    ) {
+      useAuthStore.getState().clearSession()
+      window.location.replace('/login')
+    }
 
     throw new HttpClientError(message, response.status, error)
   }

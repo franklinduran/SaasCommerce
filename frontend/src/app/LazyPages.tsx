@@ -154,6 +154,26 @@ const ProfitabilityAlertsPage = lazy(() =>
     default: module.ProfitabilityAlertsPage,
   })),
 )
+const DailyClosingPage = lazy(() =>
+  import('@/modules/daily-closing/pages/DailyClosingPage').then((module) => ({
+    default: module.DailyClosingPage,
+  })),
+)
+const DailyClosingHistoryPage = lazy(() =>
+  import('@/modules/daily-closing/pages/DailyClosingHistoryPage').then((module) => ({
+    default: module.DailyClosingHistoryPage,
+  })),
+)
+const DailyClosingDetailPage = lazy(() =>
+  import('@/modules/daily-closing/pages/DailyClosingDetailPage').then((module) => ({
+    default: module.DailyClosingDetailPage,
+  })),
+)
+const NotificationListPage = lazy(() =>
+  import('@/modules/notifications/pages/NotificationListPage').then((module) => ({
+    default: module.NotificationListPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -289,4 +309,20 @@ export function BranchProfitabilityRoute() {
 
 export function ProfitabilityAlertsRoute() {
   return <ProfitabilityAlertsPage />
+}
+
+export function DailyClosingRoute() {
+  return <DailyClosingPage />
+}
+
+export function DailyClosingHistoryRoute() {
+  return <DailyClosingHistoryPage />
+}
+
+export function DailyClosingDetailRoute() {
+  return <DailyClosingDetailPage />
+}
+
+export function NotificationsRoute() {
+  return <NotificationListPage />
 }

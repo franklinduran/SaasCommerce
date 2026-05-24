@@ -6,6 +6,10 @@ import type {
   RefreshTokenRequest,
 } from '@/modules/auth/types'
 
+export type LogoutRequest = {
+  refreshToken: string
+}
+
 export async function login(request: LoginRequest): Promise<LoginResponse> {
   const response = await httpClient<LoginResponse>('/api/auth/login', {
     method: 'POST',
@@ -32,4 +36,15 @@ export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
   })
 
   return response.data!
+}
+
+export async function logout(
+  accessToken: string,
+  refreshToken: string,
+): Promise<void> {
+  await httpClient<void>('/api/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken } satisfies LogoutRequest),
+    accessToken,
+  })
 }

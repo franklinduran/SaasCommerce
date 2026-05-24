@@ -86,4 +86,16 @@ public static class SystemPermissions
   public const string ProfitabilityProducts = "profitability.products";
   public const string ProfitabilityBranches = "profitability.branches";
   public const string ProfitabilityAlerts = "profitability.alerts";
+
+  // Daily Closing (Cierre Operativo Diario)
+  public const string DailyClosingView = "daily_closing.view";
+  public const string DailyClosingPreview = "daily_closing.preview";
+  public const string DailyClosingCreate = "daily_closing.create";
+  public const string DailyClosingClose = "daily_closing.close";
+  public const string DailyClosingHistory = "daily_closing.history";
+
+  // Operational Notifications (Notificaciones Operativas)
+  public const string NotificationsView = "notifications.view";
+  public const string NotificationsRead = "notifications.read";
+  public const string NotificationsManage = "notifications.manage";
 }

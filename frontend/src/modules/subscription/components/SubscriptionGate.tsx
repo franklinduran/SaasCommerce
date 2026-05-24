@@ -88,7 +88,7 @@ export function SubscriptionGate({ children }: Readonly<PropsWithChildren>) {
           <Button
             className="min-w-48"
             disabled={isStartingTrial}
-            onClick={() => void startTrial()}
+            onClick={() => { startTrial() }}
             type="button"
           >
             {isStartingTrial ? (

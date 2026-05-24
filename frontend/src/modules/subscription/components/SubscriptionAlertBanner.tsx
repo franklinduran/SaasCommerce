@@ -46,7 +46,7 @@ export function SubscriptionAlertBanner({
         alert.className,
         className,
       )}
-      role="status"
+      role="alert"
     >
       <div className="flex min-w-0 items-start gap-3">
         <Icon aria-hidden="true" className="mt-0.5 shrink-0" size={18} />

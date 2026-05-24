@@ -74,6 +74,18 @@ export const Permission = {
   ProfitabilityProducts: 'profitability.products',
   ProfitabilityBranches: 'profitability.branches',
   ProfitabilityAlerts: 'profitability.alerts',
+
+  // Daily Closing (Cierre Diario)
+  DailyClosingView: 'daily_closing.view',
+  DailyClosingPreview: 'daily_closing.preview',
+  DailyClosingCreate: 'daily_closing.create',
+  DailyClosingClose: 'daily_closing.close',
+  DailyClosingHistory: 'daily_closing.history',
+
+  // Notifications (Notificaciones)
+  NotificationsView: 'notifications.view',
+  NotificationsRead: 'notifications.read',
+  NotificationsManage: 'notifications.manage',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

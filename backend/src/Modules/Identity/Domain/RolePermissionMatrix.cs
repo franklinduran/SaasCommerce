@@ -73,7 +73,17 @@ public static class RolePermissionMatrix
     SystemPermissions.ProfitabilityView,
     SystemPermissions.ProfitabilityProducts,
     SystemPermissions.ProfitabilityBranches,
-    SystemPermissions.ProfitabilityAlerts
+    SystemPermissions.ProfitabilityAlerts,
+
+    SystemPermissions.DailyClosingView,
+    SystemPermissions.DailyClosingPreview,
+    SystemPermissions.DailyClosingCreate,
+    SystemPermissions.DailyClosingClose,
+    SystemPermissions.DailyClosingHistory,
+
+    SystemPermissions.NotificationsView,
+    SystemPermissions.NotificationsRead,
+    SystemPermissions.NotificationsManage
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -124,7 +134,16 @@ public static class RolePermissionMatrix
     SystemPermissions.ProfitabilityView,
     SystemPermissions.ProfitabilityProducts,
     SystemPermissions.ProfitabilityBranches,
-    SystemPermissions.ProfitabilityAlerts
+    SystemPermissions.ProfitabilityAlerts,
+
+    SystemPermissions.DailyClosingView,
+    SystemPermissions.DailyClosingPreview,
+    SystemPermissions.DailyClosingCreate,
+    SystemPermissions.DailyClosingClose,
+    SystemPermissions.DailyClosingHistory,
+
+    SystemPermissions.NotificationsView,
+    SystemPermissions.NotificationsRead
   };
 
   private static readonly IReadOnlySet<string> CashierAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -150,7 +169,15 @@ public static class RolePermissionMatrix
     SystemPermissions.CashRegisterMovement,
 
     SystemPermissions.ExpensesView,
-    SystemPermissions.ExpensesCreate
+    SystemPermissions.ExpensesCreate,
+
+    SystemPermissions.DailyClosingView,
+    SystemPermissions.DailyClosingPreview,
+    SystemPermissions.DailyClosingCreate,
+    SystemPermissions.DailyClosingClose,
+
+    SystemPermissions.NotificationsView,
+    SystemPermissions.NotificationsRead
   };
 
   private static readonly IReadOnlySet<string> InventoryManagerAccess = new HashSet<string>(StringComparer.Ordinal)

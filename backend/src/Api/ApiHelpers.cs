@@ -6,6 +6,28 @@ namespace SaasCommerce.Api;
 
 internal static class ApiHelpers
 {
+  internal static IResult ToApiResult(
+    Result result,
+    ICorrelationIdProvider correlationIdProvider,
+    int? failureStatusCode = null,
+    int? successStatusCode = null)
+  {
+    ArgumentNullException.ThrowIfNull(result);
+    ArgumentNullException.ThrowIfNull(correlationIdProvider);
+
+    if (result.IsSuccess)
+    {
+      return Results.Json(
+        ApiResponse.Success<object?>(null, correlationIdProvider.CorrelationId),
+        statusCode: successStatusCode ?? StatusCodes.Status200OK);
+    }
+
+    var apiError = ToApiError(result.Error);
+    return Results.Json(
+      ApiResponse.Failure<object?>(apiError, correlationIdProvider.CorrelationId),
+      statusCode: failureStatusCode ?? ToFailureStatusCode(apiError.Code));
+  }
+
   internal static IResult ToApiResult<T>(
     Result<T> result,
     ICorrelationIdProvider correlationIdProvider,
@@ -83,7 +105,9 @@ internal static class ApiHelpers
         "purchases.user_context_required" or
         "cash.user_context_required" or
         "expenses.user_context_required" or
-        "profitability.user_context_required" => ApiErrorCodes.TenantContextMissing,
+        "profitability.user_context_required" or
+        "daily_closing.user_context_required" or
+        "notifications.user_context_required" => ApiErrorCodes.TenantContextMissing,
       "identity.user_not_found" or
         "tenancy.business_not_found" or
         "tenancy.branch_not_found" or
@@ -102,7 +126,9 @@ internal static class ApiHelpers
         "subscription.not_found" or
         "cash.session_not_found" or
         "expenses.expense_not_found" or
-        "expenses.category_not_found" => ApiErrorCodes.NotFound,
+        "expenses.category_not_found" or
+        "daily_closing.not_found" or
+        "notifications.not_found" => ApiErrorCodes.NotFound,
       "identity.cannot_disable_self" or
         "identity.cannot_remove_last_owner" or
         "identity.invalid_role" or
@@ -119,7 +145,10 @@ internal static class ApiHelpers
         "catalog.duplicate_category" or
         "subscription.duplicate" or
         "subscription.duplicate_plan_code" or
-        "expenses.duplicate_category_name" => ApiErrorCodes.Conflict,
+        "expenses.duplicate_category_name" or
+        "daily_closing.already_closed" or
+        "daily_closing.already_closed_status" or
+        "daily_closing.open_cash_sessions" => ApiErrorCodes.Conflict,
       "subscription.expired" or
         "subscription.suspended" or
         "subscription.cancelled" or

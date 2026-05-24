@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using SaasCommerce.Api;
 using SaasCommerce.Api.Endpoints;
@@ -95,6 +97,59 @@ builder.Services.AddCors(options =>
       .AllowAnyHeader()
       .AllowAnyMethod()
       .AllowCredentials()));
+
+builder.Services.AddRateLimiter(options =>
+{
+  options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+  options.OnRejected = async (context, cancellationToken) =>
+  {
+    context.HttpContext.Response.ContentType = "application/json";
+    var correlationId = context.HttpContext.RequestServices
+      .GetService<ICorrelationIdProvider>()?.CorrelationId
+      ?? context.HttpContext.TraceIdentifier;
+    await context.HttpContext.Response.WriteAsJsonAsync(
+      ApiResponse.Failure<object?>(
+        new ApiError(ApiErrorCodes.TooManyRequests, "Demasiadas solicitudes. Por favor intenta de nuevo en un momento."),
+        correlationId),
+      cancellationToken);
+  };
+
+  // Auth login: 5 requests per minute per IP address
+  options.AddSlidingWindowLimiter(
+    ProgramHelpers.RateLimitPolicies.AuthLogin,
+    limiterOptions =>
+    {
+      limiterOptions.PermitLimit = 5;
+      limiterOptions.Window = TimeSpan.FromMinutes(1);
+      limiterOptions.SegmentsPerWindow = 2;
+      limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+      limiterOptions.QueueLimit = 0;
+    });
+
+  // Refresh token: 10 requests per minute per IP address
+  options.AddSlidingWindowLimiter(
+    ProgramHelpers.RateLimitPolicies.AuthRefresh,
+    limiterOptions =>
+    {
+      limiterOptions.PermitLimit = 10;
+      limiterOptions.Window = TimeSpan.FromMinutes(1);
+      limiterOptions.SegmentsPerWindow = 2;
+      limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+      limiterOptions.QueueLimit = 0;
+    });
+
+  // Business registration: 3 requests per minute per IP address
+  options.AddSlidingWindowLimiter(
+    ProgramHelpers.RateLimitPolicies.AuthRegister,
+    limiterOptions =>
+    {
+      limiterOptions.PermitLimit = 3;
+      limiterOptions.Window = TimeSpan.FromMinutes(1);
+      limiterOptions.SegmentsPerWindow = 2;
+      limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+      limiterOptions.QueueLimit = 0;
+    });
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -146,7 +201,16 @@ builder.Services.AddAuthorization(options =>
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseSerilogRequestLogging();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseSerilogRequestLogging(options =>
+{
+  // Avoid logging the value of Authorization headers (contains JWT tokens)
+  options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+  {
+    diagnosticContext.Set("RemoteIpAddress", httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+    diagnosticContext.Set("RequestPath", httpContext.Request.Path);
+  };
+});
 app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseStatusCodePages(ProgramHelpers.WriteStatusCodeResponseAsync);
 
@@ -159,6 +223,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("Default");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -225,6 +290,7 @@ app.MapPost(
     return ApiHelpers.ToApiResult(result, correlationIdProvider);
   })
   .AllowAnonymous()
+  .RequireRateLimiting(ProgramHelpers.RateLimitPolicies.AuthRegister)
   .WithTags(accountTag);
 
 app.MapPost(
@@ -242,6 +308,7 @@ app.MapPost(
     return ApiHelpers.ToApiResult(result, correlationIdProvider);
   })
   .AllowAnonymous()
+  .RequireRateLimiting(ProgramHelpers.RateLimitPolicies.AuthLogin)
   .WithTags(authTag);
 
 app.MapPost(
@@ -259,6 +326,24 @@ app.MapPost(
     return ApiHelpers.ToApiResult(result, correlationIdProvider);
   })
   .AllowAnonymous()
+  .RequireRateLimiting(ProgramHelpers.RateLimitPolicies.AuthRefresh)
+  .WithTags(authTag);
+
+app.MapPost(
+  "/api/auth/logout",
+  async (
+    RefreshTokenRequest request,
+    LogoutHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(
+      new LogoutCommand(request.RefreshToken),
+      cancellationToken);
+
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization()
   .WithTags(authTag);
 
 app.MapGet(
@@ -1246,6 +1331,14 @@ app.MapExpenseEndpoints();
 // ── Profitability (Rentabilidad) ──────────────────────────────────────────
 
 app.MapProfitabilityEndpoints();
+
+// ── Daily Closing (Cierre Operativo Diario) ───────────────────────────────
+
+app.MapDailyClosingEndpoints();
+
+// ── Operational Notifications (Notificaciones Operativas) ─────────────────
+
+app.MapNotificationEndpoints();
 
 // ── Branches & Inventory Transfers ────────────────────────────────────────
 

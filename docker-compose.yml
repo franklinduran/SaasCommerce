@@ -48,6 +48,8 @@ services:
       Jwt__Secret: ${JWT_SECRET:-}
       Jwt__Issuer: ${JWT_ISSUER:-SaasCommerce}
       Jwt__Audience: ${JWT_AUDIENCE:-SaasCommerce}
+      Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN_0:-http://localhost:5173}
     ports:
       - "8080:8080"
     depends_on:

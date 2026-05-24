@@ -16,4 +16,5 @@ internal static class ApiErrorCodes
   public const string ProductBarcodeAlreadyExists = "PRODUCT_BARCODE_ALREADY_EXISTS";
   public const string InventoryStockInsufficient = "INVENTORY_STOCK_INSUFFICIENT";
   public const string InventoryProductNotTracked = "INVENTORY_PRODUCT_NOT_TRACKED";
+  public const string TooManyRequests = "TOO_MANY_REQUESTS";
 }

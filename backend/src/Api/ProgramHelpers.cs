@@ -16,6 +16,14 @@ internal static class ProgramHelpers
   private const int RabbitMqDefaultPort = 5672;
   private const int ReadyCheckTimeoutSeconds = 2;
 
+  /// <summary>Named rate-limit policy identifiers used across the API.</summary>
+  internal static class RateLimitPolicies
+  {
+    internal const string AuthLogin = "auth-login";
+    internal const string AuthRefresh = "auth-refresh";
+    internal const string AuthRegister = "auth-register";
+  }
+
   internal static async Task<bool> CanConnectToDatabaseAsync(
     AppDbContext dbContext,
     CancellationToken cancellationToken)
@@ -101,6 +109,9 @@ internal static class ProgramHelpers
       StatusCodes.Status404NotFound => new ApiError(
         ApiErrorCodes.NotFound,
         "The requested resource was not found."),
+      StatusCodes.Status429TooManyRequests => new ApiError(
+        ApiErrorCodes.TooManyRequests,
+        "Too many requests. Please try again later."),
       _ => null
     };
 

@@ -27,47 +27,48 @@ public sealed class DevelopmentDataSeeder(
     var hasBusiness = await dbContext.Set<Business>()
       .AnyAsync(cancellationToken);
 
-    if (hasBusiness)
+    if (!hasBusiness)
     {
-      return;
+      var businessId = new BusinessId(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+      var branchId = new BranchId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+      var adminRole = new Role(
+        Guid.Parse("33333333-3333-3333-3333-333333333333"),
+        businessId,
+        "Admin");
+      var adminUser = new User(
+        Guid.Parse("44444444-4444-4444-4444-444444444444"),
+        businessId,
+        branchId,
+        "Admin",
+        AdminEmail,
+        passwordHasher.Hash(GetAdminSecret()),
+        now);
+      var business = new Business(
+        businessId,
+        "Colmado El Buen Precio",
+        now,
+        BusinessIdentificationType.Rnc,
+        "132001234");
+
+      business.AddBranch(branchId, "Sucursal Principal", "MAIN", now, isMain: true);
+      business.AddPhone(Guid.Parse("55555555-5555-5555-5555-555555555555"), "8095550001", "Principal", true, now);
+      adminUser.AddRole(adminRole);
+
+      dbContext.Add(business);
+      dbContext.Add(adminRole);
+      dbContext.Add(adminUser);
+      dbContext.Add(BusinessSubscription.StartTrial(
+        Guid.Parse("66666666-6666-6666-6666-666666666666"),
+        businessId,
+        BillingDataSeeder.GetBasicPlanId(),
+        now,
+        now.AddDays(14)));
+
+      await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    var businessId = new BusinessId(Guid.Parse("11111111-1111-1111-1111-111111111111"));
-    var branchId = new BranchId(Guid.Parse("22222222-2222-2222-2222-222222222222"));
-    var adminRole = new Role(
-      Guid.Parse("33333333-3333-3333-3333-333333333333"),
-      businessId,
-      "Admin");
-    var adminUser = new User(
-      Guid.Parse("44444444-4444-4444-4444-444444444444"),
-      businessId,
-      branchId,
-      "Admin",
-      AdminEmail,
-      passwordHasher.Hash(GetAdminSecret()),
-      now);
-    var business = new Business(
-      businessId,
-      "Demo Business",
-      now,
-      BusinessIdentificationType.Rnc,
-      "123456789");
-
-    business.AddBranch(branchId, "Main Branch", "MAIN", now, isMain: true);
-    business.AddPhone(Guid.Parse("55555555-5555-5555-5555-555555555555"), "8090000000", "Principal", true, now);
-    adminUser.AddRole(adminRole);
-
-    dbContext.Add(business);
-    dbContext.Add(adminRole);
-    dbContext.Add(adminUser);
-    dbContext.Add(BusinessSubscription.StartTrial(
-      Guid.Parse("66666666-6666-6666-6666-666666666666"),
-      businessId,
-      BillingDataSeeder.GetBasicPlanId(),
-      now,
-      now.AddDays(14)));
-
-    await dbContext.SaveChangesAsync(cancellationToken);
+    var adminUserId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+    await DemoDataSeeder.SeedAsync(dbContext, adminUserId, now, cancellationToken);
   }
 
   private string GetAdminSecret()

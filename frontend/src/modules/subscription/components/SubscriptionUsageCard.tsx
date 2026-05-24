@@ -94,7 +94,14 @@ function UsageRow({
   usage: ResourceUsage
 }>) {
   const percentage = getPercentage(usage)
-  const state = usage.isAtLimit ? 'limit' : percentage >= 80 ? 'warning' : 'ok'
+  let state: 'limit' | 'warning' | 'ok'
+  if (usage.isAtLimit) {
+    state = 'limit'
+  } else if (percentage >= 80) {
+    state = 'warning'
+  } else {
+    state = 'ok'
+  }
 
   return (
     <div className="rounded-md border border-stone-200 bg-white p-3">

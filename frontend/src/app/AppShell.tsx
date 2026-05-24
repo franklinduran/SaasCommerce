@@ -3,6 +3,7 @@ import {
   BarChart3,
   Boxes,
   Building2,
+  CalendarCheck,
   ChevronDown,
   CircleDollarSign,
   ClipboardList,
@@ -28,6 +29,8 @@ import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
+import { logout as serverLogout } from '@/modules/auth/services/authService'
+import { NotificationBell } from '@/modules/notifications/components/NotificationBell'
 import { SubscriptionAlertBanner } from '@/modules/subscription/components/SubscriptionAlertBanner'
 import { Button } from '@/shared/components/ui/button'
 import { useAppStore } from '@/shared/hooks/useAppStore'
@@ -48,6 +51,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
   { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
   { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
+  { label: 'Cierre Diario', path: '/daily-closing', icon: CalendarCheck, requiredPermission: Permission.DailyClosingView },
   { label: 'Gastos', path: '/expenses', icon: CircleDollarSign, requiredPermission: Permission.ExpensesView },
   { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
   { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
@@ -66,14 +70,17 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
-const mainNavigation = navigationItems.slice(0, 8)
-const growthTools = navigationItems.slice(8)
+const mainNavigation = navigationItems.slice(0, 9)
+const growthTools = navigationItems.slice(9)
 
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
   '/pos': 'POS',
   '/cash': 'Caja',
   '/cash/history': 'Historial de cajas',
+  '/daily-closing': 'Cierre diario',
+  '/daily-closing/history': 'Historial de cierres',
+  '/notifications': 'Notificaciones',
   '/expenses': 'Gastos operativos',
   '/expenses/new': 'Nuevo gasto',
   '/expenses/categories': 'Categorías de gastos',
@@ -132,7 +139,14 @@ export function AppShell() {
     }
   }, [session?.user.mustChangePassword, navigate, location.pathname])
 
-  function handleLogout() {
+  async function handleLogout() {
+    if (session) {
+      try {
+        await serverLogout(session.accessToken, session.refreshToken)
+      } catch {
+        // Ignore server errors — still clear the local session
+      }
+    }
     clearSession()
     navigate('/login', { replace: true })
   }
@@ -266,11 +280,14 @@ export function AppShell() {
             </p>
             <h1 className="text-lg font-semibold text-stone-900">{pageTitle}</h1>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-semibold text-stone-900">
-              {session?.user.fullName ?? 'Admin'}
-            </p>
-            <p className="text-xs font-medium text-stone-500">{businessName}</p>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <div className="text-right">
+              <p className="text-sm font-semibold text-stone-900">
+                {session?.user.fullName ?? 'Admin'}
+              </p>
+              <p className="text-xs font-medium text-stone-500">{businessName}</p>
+            </div>
           </div>
         </header>
 
@@ -300,6 +317,10 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith('/cash/') && pathname !== '/cash/history') {
     return 'Detalle de caja'
+  }
+
+  if (pathname.startsWith('/daily-closing/') && pathname !== '/daily-closing/history') {
+    return 'Detalle de cierre'
   }
 
   if (pathname.startsWith('/sales/')) {
