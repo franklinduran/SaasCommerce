@@ -6,6 +6,9 @@ import {
   AuditLogsRoute,
   AuthRoute,
   BranchesRoute,
+  OnboardingRoute,
+  PilotBusinessRoute,
+  ProductImportRoute,
   BranchProfitabilityRoute,
   CashHistoryRoute,
   CashRoute,
@@ -325,6 +328,30 @@ export const router = createBrowserRouter([
       { path: 'forbidden', element: withPageLoading(<ForbiddenRoute />) },
       { path: 'settings', element: withPageLoading(<SettingsRoute />) },
       { path: 'subscription', element: withPageLoading(<SubscriptionRoute />) },
+      {
+        path: 'onboarding',
+        element: (
+          <PermissionRoute permissions={Permission.OnboardingView}>
+            {withPageLoading(<OnboardingRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'admin/pilot-businesses',
+        element: (
+          <PermissionRoute permissions={Permission.SaasManageBusinesses}>
+            {withPageLoading(<PilotBusinessRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'products/import',
+        element: (
+          <PermissionRoute permissions={Permission.ProductsImport}>
+            {withPageLoading(<ProductImportRoute />)}
+          </PermissionRoute>
+        ),
+      },
       {
         path: 'daily-closing',
         element: (

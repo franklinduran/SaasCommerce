@@ -98,4 +98,14 @@ public static class SystemPermissions
   public const string NotificationsView = "notifications.view";
   public const string NotificationsRead = "notifications.read";
   public const string NotificationsManage = "notifications.manage";
+
+  // SaaS Platform Administration (Pilot Businesses, Platform Admin)
+  public const string SaasManageBusinesses = "saas.manage_businesses";
+
+  // Onboarding
+  public const string OnboardingView = "onboarding.view";
+  public const string OnboardingManage = "onboarding.manage";
+
+  // Product Import
+  public const string ProductsImport = "products.import";
 }

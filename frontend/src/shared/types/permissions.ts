@@ -86,6 +86,16 @@ export const Permission = {
   NotificationsView: 'notifications.view',
   NotificationsRead: 'notifications.read',
   NotificationsManage: 'notifications.manage',
+
+  // SaaS Platform Administration
+  SaasManageBusinesses: 'saas.manage_businesses',
+
+  // Onboarding
+  OnboardingView: 'onboarding.view',
+  OnboardingManage: 'onboarding.manage',
+
+  // Product Import
+  ProductsImport: 'products.import',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

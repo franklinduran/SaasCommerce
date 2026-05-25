@@ -83,7 +83,14 @@ public static class RolePermissionMatrix
 
     SystemPermissions.NotificationsView,
     SystemPermissions.NotificationsRead,
-    SystemPermissions.NotificationsManage
+    SystemPermissions.NotificationsManage,
+
+    SystemPermissions.SaasManageBusinesses,
+
+    SystemPermissions.OnboardingView,
+    SystemPermissions.OnboardingManage,
+
+    SystemPermissions.ProductsImport
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -143,7 +150,11 @@ public static class RolePermissionMatrix
     SystemPermissions.DailyClosingHistory,
 
     SystemPermissions.NotificationsView,
-    SystemPermissions.NotificationsRead
+    SystemPermissions.NotificationsRead,
+
+    SystemPermissions.OnboardingView,
+
+    SystemPermissions.ProductsImport
   };
 
   private static readonly IReadOnlySet<string> CashierAccess = new HashSet<string>(StringComparer.Ordinal)

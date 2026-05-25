@@ -19,12 +19,16 @@ using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
+using SaasCommerce.Modules.Catalog.Application.Import;
 using SaasCommerce.Modules.Identity.Application.Account;
 using SaasCommerce.Modules.Identity.Application.Audit;
 using SaasCommerce.Modules.Identity.Application.Auth;
+using SaasCommerce.Modules.Identity.Application.Onboarding;
 using SaasCommerce.Modules.Identity.Application.Permissions;
+using SaasCommerce.Modules.Identity.Application.PilotBusiness;
 using SaasCommerce.Modules.Identity.Application.Settings;
 using SaasCommerce.Modules.Identity.Application.Users;
+using SaasCommerce.Modules.Identity.Infrastructure.Onboarding;
 using SaasCommerce.Modules.Identity.Domain;
 using SaasCommerce.Modules.Identity.Infrastructure.Auth;
 using SaasCommerce.Modules.Identity.Infrastructure.Development;
@@ -245,6 +249,17 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<ResetUserPasswordHandler>();
     services.AddScoped<UpdateUserRoleHandler>();
     services.AddScoped<DisableUserHandler>();
+
+    // Identity — pilot business
+    services.AddScoped<CreatePilotBusinessHandler>();
+
+    // Identity — onboarding
+    services.AddScoped<IOnboardingStatusReader, EfOnboardingStatusReader>();
+    services.AddScoped<GetOnboardingStatusHandler>();
+    services.AddScoped<CompleteOnboardingStepHandler>();
+
+    // Catalog — import
+    services.AddScoped<ImportProductsHandler>();
 
     // Identity — application handlers
     services.AddScoped<RegisterBusinessHandler>();

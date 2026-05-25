@@ -1351,6 +1351,18 @@ app.MapUsersEndpoints();
 app.MapAuditEndpoints();
 app.MapSettingsEndpoints();
 
+// ── Admin (Pilot Businesses) ──────────────────────────────────────────────
+
+app.MapAdminEndpoints();
+
+// ── Onboarding ────────────────────────────────────────────────────────────
+
+app.MapOnboardingEndpoints();
+
+// ── Product Import ────────────────────────────────────────────────────────
+
+app.MapProductImportEndpoints();
+
 app.MapHub<RealtimeHub>("/hubs/realtime")
   .RequireAuthorization()
   .WithTags(realtimeTag);

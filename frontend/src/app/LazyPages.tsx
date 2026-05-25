@@ -3,6 +3,21 @@ import { lazy } from 'react'
 const AuthPage = lazy(() =>
   import('@/modules/auth/AuthPage').then((module) => ({ default: module.AuthPage })),
 )
+const OnboardingPage = lazy(() =>
+  import('@/modules/onboarding/pages/OnboardingPage').then((module) => ({
+    default: module.OnboardingPage,
+  })),
+)
+const PilotBusinessPage = lazy(() =>
+  import('@/modules/admin/pages/PilotBusinessPage').then((module) => ({
+    default: module.PilotBusinessPage,
+  })),
+)
+const ProductImportPage = lazy(() =>
+  import('@/modules/products/pages/ProductImportPage').then((module) => ({
+    default: module.ProductImportPage,
+  })),
+)
 const RegisterBusinessPage = lazy(() =>
   import('@/modules/account/RegisterBusinessPage').then((module) => ({
     default: module.RegisterBusinessPage,
@@ -325,4 +340,16 @@ export function DailyClosingDetailRoute() {
 
 export function NotificationsRoute() {
   return <NotificationListPage />
+}
+
+export function OnboardingRoute() {
+  return <OnboardingPage />
+}
+
+export function PilotBusinessRoute() {
+  return <PilotBusinessPage />
+}
+
+export function ProductImportRoute() {
+  return <ProductImportPage />
 }
