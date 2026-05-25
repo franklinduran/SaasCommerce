@@ -5,7 +5,10 @@ import { InventoryFilters } from '@/modules/inventory/components/InventoryFilter
 import { InventoryTable } from '@/modules/inventory/components/InventoryTable'
 import { useInventory, useInventoryRealtimeInvalidation } from '@/modules/inventory/hooks/useInventory'
 import type { StockFilters } from '@/modules/inventory/types'
+import { CsvExportButton } from '@/shared/components/CsvExportButton'
 import { Button } from '@/shared/components/ui/button'
+import { useHasPermission } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
 
 const initialFilters: StockFilters = {
   branchId: '',
@@ -26,6 +29,7 @@ type AdjustTarget = { productId: string; productName: string }
 export function InventoryPage() {
   const [filters, setFilters] = useState(initialFilters)
   const [adjustTarget, setAdjustTarget] = useState<AdjustTarget | null>(null)
+  const canExportInventory = useHasPermission(Permission.InventoryExport)
   const inventory = useInventory(filters)
   const items = inventory.data?.items ?? []
   useInventoryRealtimeInvalidation()
@@ -48,6 +52,12 @@ export function InventoryPage() {
             Busca productos y usa el boton Ajustar para corregir existencias fila por fila.
           </p>
         </div>
+        {canExportInventory && (
+          <CsvExportButton
+            endpoint="/api/inventory/export"
+            filename={`inventario_${new Date().toISOString().slice(0, 10)}.csv`}
+          />
+        )}
       </div>
 
       <InventoryFilters filters={filters} onChange={updateFilters} />

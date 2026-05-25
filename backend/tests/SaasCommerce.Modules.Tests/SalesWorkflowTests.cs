@@ -959,6 +959,12 @@ public sealed class SalesWorkflowTests
       CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Customer>>(
         customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
+
+    public Task<IReadOnlyCollection<Customer>> ExportAllAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<Customer>>(
+        customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
   }
 
   private sealed class RecordingRealtimeNotifier : IRealtimeNotifier

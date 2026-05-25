@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { AlertTriangle, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { z } from 'zod'
+import { useCurrentCashSession } from '@/modules/cash/hooks/useCash'
 import { CustomerSelector } from '@/modules/pos/components/CustomerSelector'
 import { PaymentMethodSelector } from '@/modules/pos/components/PaymentMethodSelector'
 import { POSCart } from '@/modules/pos/components/POSCart'
@@ -39,6 +42,8 @@ export function POSPage() {
   const session = useAuthStore((state) => state.session)
   const currentBranch = useCurrentBranchForPOS(Boolean(session && !session.user.branchId))
   const branchId = session?.user.branchId ?? currentBranch.data?.branchId ?? null
+  const { data: cashSession, isLoading: cashLoading } = useCurrentCashSession()
+  const hasOpenCashSession = !cashLoading && cashSession !== null && cashSession !== undefined
   const queryClient = useQueryClient()
   const [productQuery, setProductQuery] = useState('')
   const [customerQuery, setCustomerQuery] = useState('')
@@ -249,8 +254,10 @@ export function POSPage() {
 
           <PaymentMethodSelector onChange={setPaymentMethod} value={paymentMethod} />
 
+          {!cashLoading && !hasOpenCashSession && <NoCashSessionBanner />}
+
           <SaleSummary
-            disabled={createSaleMutation.isPending || !branchId}
+            disabled={createSaleMutation.isPending || !branchId || !hasOpenCashSession}
             isSubmitting={createSaleMutation.isPending}
             itemCount={cart.itemCount}
             onProcessSale={handleProcessSale}
@@ -291,8 +298,36 @@ function getSaleErrorMessage(error: unknown) {
       return 'La sesion expiro. Inicia sesion nuevamente.'
     }
 
+    if (error.status === 403) {
+      return 'Sin permiso para esta operacion. Verifica tu suscripcion o permisos.'
+    }
+
     if (error.status === 404) {
       return 'Uno de los productos no esta disponible.'
+    }
+
+    const code = error.error?.code
+
+    if (error.status === 409) {
+      if (code === 'CASH_SESSION_NOT_OPEN' || code === 'NO_OPEN_CASH_SESSION') {
+        return 'No hay caja abierta. Ve a Caja y abre una sesion primero.'
+      }
+    }
+
+    if (code === 'SUBSCRIPTION_LIMIT_REACHED') {
+      return error.error?.message || 'Has alcanzado el limite de tu plan. Cambia de plan para continuar.'
+    }
+
+    if (code === 'SUBSCRIPTION_EXPIRED') {
+      return 'Tu suscripcion ha expirado. Renovela para continuar vendiendo.'
+    }
+
+    if (code === 'SUBSCRIPTION_SUSPENDED') {
+      return 'Tu cuenta esta suspendida. Contacta a soporte.'
+    }
+
+    if (error.status === 400 || error.status === 422) {
+      return error.error?.message || error.message || 'Los datos de la venta no son validos.'
     }
 
     return error.message || 'No se pudo crear la venta.'
@@ -318,6 +353,27 @@ function getSaleTotal(
   }
 
   return null
+}
+
+function NoCashSessionBanner() {
+  return (
+    <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-4">
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-amber-800">Caja cerrada</p>
+        <p className="mt-0.5 text-sm text-amber-700">
+          No hay sesion de caja abierta. Debes abrir una caja antes de registrar ventas.
+        </p>
+        <Link
+          className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-900"
+          to="/cash"
+        >
+          <Wallet className="h-4 w-4" />
+          Ir a Caja
+        </Link>
+      </div>
+    </div>
+  )
 }
 
 function formatMoney(value: number) {

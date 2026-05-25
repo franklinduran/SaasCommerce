@@ -348,6 +348,9 @@ public sealed class SalesUseCaseTests
 
     public Task<IReadOnlyCollection<SaleResponse>> ListAsync(BusinessId businessId, SaleSearchCriteria criteria, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<SaleResponse>>(Items.ToArray());
+
+    public Task<IReadOnlyCollection<SaleResponse>> ExportAllAsync(BusinessId businessId, DateTimeOffset? dateFrom, DateTimeOffset? dateTo, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<SaleResponse>>(Items.ToArray());
   }
 
   private sealed class StubPolicyReader : IProductSalesPolicyReader

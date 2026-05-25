@@ -5,8 +5,11 @@ import { SalesFilters } from '@/modules/sales/components/SalesFilters'
 import { SalesTable } from '@/modules/sales/components/SalesTable'
 import { useSales, useSaleStatusInvalidation } from '@/modules/sales/hooks/useSales'
 import type { SalesFilters as SalesFiltersState } from '@/modules/sales/types/salesTypes'
+import { CsvExportButton } from '@/shared/components/CsvExportButton'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardHeader } from '@/shared/components/ui/card'
+import { useHasPermission } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
 
 const initialFilters: SalesFiltersState = {
   dateFrom: '',
@@ -21,6 +24,7 @@ const pageSizes = [10, 25, 50]
 
 export function SalesPage() {
   const [filters, setFilters] = useState<SalesFiltersState>(initialFilters)
+  const canExportSales = useHasPermission(Permission.SalesExport)
   const sales = useSales(filters)
   const items = useMemo(() => sales.data?.items ?? [], [sales.data?.items])
   const totalItems = sales.data?.totalItems ?? 0
@@ -61,12 +65,24 @@ export function SalesPage() {
             Consulta ventas, revisa estados y abre recibos simples.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/pos">
-            <ShoppingCart size={16} />
-            Abrir POS
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canExportSales && (
+            <CsvExportButton
+              endpoint="/api/sales/export"
+              filename={`ventas_${new Date().toISOString().slice(0, 10)}.csv`}
+              queryParams={{
+                dateFrom: filters.dateFrom || undefined,
+                dateTo: filters.dateTo || undefined,
+              }}
+            />
+          )}
+          <Button asChild>
+            <Link to="/pos">
+              <ShoppingCart size={16} />
+              Abrir POS
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card className="rounded-md">

@@ -2,9 +2,12 @@ import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDailyClosingList } from '@/modules/daily-closing/hooks/useDailyClosing'
+import { CsvExportButton } from '@/shared/components/CsvExportButton'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { useHasPermission } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(amount)
@@ -24,6 +27,7 @@ const PAGE_SIZE = 20
 export function DailyClosingHistoryPage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
+  const canExportReports = useHasPermission(Permission.ReportsExport)
 
   const { data, isLoading, isError } = useDailyClosingList({ page, pageSize: PAGE_SIZE })
   const items = data?.items ?? []
@@ -40,7 +44,15 @@ export function DailyClosingHistoryPage() {
               : 'Sin cierres registrados aún.'}
           </p>
         </div>
-        <Button onClick={() => navigate('/daily-closing')}>Nuevo cierre</Button>
+        <div className="flex flex-wrap gap-2">
+          {canExportReports && (
+            <CsvExportButton
+              endpoint="/api/reports/daily/export"
+              filename={`cierres_diarios_${new Date().toISOString().slice(0, 10)}.csv`}
+            />
+          )}
+          <Button onClick={() => navigate('/daily-closing')}>Nuevo cierre</Button>
+        </div>
       </div>
 
       {isLoading && (

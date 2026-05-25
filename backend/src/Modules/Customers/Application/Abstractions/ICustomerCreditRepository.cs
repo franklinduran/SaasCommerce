@@ -48,4 +48,8 @@ public interface ICustomerCreditRepository
     int page,
     int pageSize,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<CustomerCreditAccount>> ExportAllAccountsAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default);
 }

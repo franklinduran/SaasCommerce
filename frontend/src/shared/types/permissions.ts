@@ -96,6 +96,17 @@ export const Permission = {
 
   // Product Import
   ProductsImport: 'products.import',
+
+  // Exports (CSV / data exports)
+  ProductsExport: 'products.export',
+  SalesExport: 'sales.export',
+  InventoryExport: 'inventory.export',
+  CustomersExport: 'customers.export',
+  CreditsExport: 'credits.export',
+  CashExport: 'cash.export',
+
+  // SaaS Pilot Metrics
+  SaasPilotMetrics: 'saas.pilot_metrics',
 } as const
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission]

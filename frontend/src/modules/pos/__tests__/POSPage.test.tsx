@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
+import { MemoryRouter } from 'react-router-dom'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { POSPage } from '@/modules/pos/pages/POSPage'
@@ -30,6 +31,9 @@ vi.mock('@/shared/services/signalrClient', () => ({
 }))
 
 const server = setupServer(
+  http.get('http://localhost:5000/api/cash-sessions/current', () =>
+    HttpResponse.json(createApiResponse(createOpenCashSession())),
+  ),
   http.get('http://localhost:5000/api/catalog/products', ({ request }) => {
     productRequests += 1
     const url = new URL(request.url)
@@ -226,9 +230,11 @@ function renderPOSPage() {
   })
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      <POSPage />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <POSPage />
+      </QueryClientProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -343,6 +349,18 @@ function createSaleResponse(
     status,
     total: 250,
     updatedAt: '2026-05-17T12:00:00Z',
+    userId,
+  }
+}
+
+function createOpenCashSession() {
+  return {
+    id: 'cc000000-0000-4000-8000-000000000001',
+    branchId,
+    businessId,
+    openedAt: '2026-05-25T08:00:00Z',
+    openingBalance: 1000,
+    status: 'Open',
     userId,
   }
 }

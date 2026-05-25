@@ -253,6 +253,10 @@ public sealed class CustomerQueryUseCaseTests
     public Task<IReadOnlyCollection<Customer>> ListAsync(BusinessId businessId, CustomerSearchCriteria criteria, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Customer>>(
         items.Where(c => c.BusinessId == businessId).ToArray());
+
+    public Task<IReadOnlyCollection<Customer>> ExportAllAsync(BusinessId businessId, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<Customer>>(
+        items.Where(c => c.BusinessId == businessId).ToArray());
   }
 
   private sealed class StubCreditRepo : ICustomerCreditRepository
@@ -301,6 +305,10 @@ public sealed class CustomerQueryUseCaseTests
           .Skip((page - 1) * pageSize)
           .Take(pageSize)
           .ToArray());
+
+    public Task<IReadOnlyCollection<CustomerCreditAccount>> ExportAllAccountsAsync(BusinessId businessId, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<CustomerCreditAccount>>(
+        accounts.Values.Where(a => a.BusinessId == businessId).ToArray());
   }
 }
 

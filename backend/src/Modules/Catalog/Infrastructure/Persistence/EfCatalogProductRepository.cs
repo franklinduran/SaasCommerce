@@ -60,6 +60,15 @@ public sealed class EfCatalogProductRepository(AppDbContext dbContext) : ICatalo
       .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
 
+  public async Task<IReadOnlyCollection<Product>> ExportAllAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default)
+    => await Products(businessId)
+      .AsNoTracking()
+      .OrderBy(product => product.Name)
+      .Take(10_000)
+      .ToArrayAsync(cancellationToken);
+
   private IQueryable<Product> Products(BusinessId businessId)
     => dbContext.Set<Product>()
       .Where(product => product.BusinessId == businessId);

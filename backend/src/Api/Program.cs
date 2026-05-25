@@ -1351,9 +1351,13 @@ app.MapUsersEndpoints();
 app.MapAuditEndpoints();
 app.MapSettingsEndpoints();
 
-// ── Admin (Pilot Businesses) ──────────────────────────────────────────────
+// ── Admin (Pilot Businesses + Metrics) ───────────────────────────────────
 
 app.MapAdminEndpoints();
+
+// ── CSV Exports ───────────────────────────────────────────────────────────
+
+app.MapExportEndpoints();
 
 // ── Onboarding ────────────────────────────────────────────────────────────
 

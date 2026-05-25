@@ -19,4 +19,10 @@ public interface ISaleReadRepository
     BusinessId businessId,
     SaleSearchCriteria criteria,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<SaleResponse>> ExportAllAsync(
+    BusinessId businessId,
+    DateTimeOffset? dateFrom,
+    DateTimeOffset? dateTo,
+    CancellationToken cancellationToken = default);
 }

@@ -371,6 +371,10 @@ public sealed class DailyClosingUseCaseTests
     public Task<DailyClosingDetailResponse?> GetDetailAsync(
       Guid id, BusinessId businessId, CancellationToken cancellationToken = default)
       => Task.FromResult(Detail?.Id == id ? Detail : null);
+
+    public Task<IReadOnlyCollection<DailyClosingListItemResponse>> ExportAllAsync(
+      BusinessId businessId, DateOnly? dateFrom, DateOnly? dateTo, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<DailyClosingListItemResponse>>([]);
   }
 
   private sealed class FakeDataGatherer : IDailyClosingDataGatherer

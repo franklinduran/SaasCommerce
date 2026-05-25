@@ -1,9 +1,12 @@
 import { Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCashSessions } from '@/modules/cash/hooks/useCash'
+import { CsvExportButton } from '@/shared/components/CsvExportButton'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { useHasPermission } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(amount)
@@ -23,6 +26,7 @@ export function CashHistoryPage() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useCashSessions()
   const items = data?.items ?? []
+  const canExportCash = useHasPermission(Permission.CashExport)
 
   return (
     <div className="space-y-6 p-6">
@@ -31,9 +35,17 @@ export function CashHistoryPage() {
           <h2 className="text-lg font-semibold text-stone-900">Historial de cajas</h2>
           <p className="text-sm text-stone-500">Todas las sesiones de caja de esta sucursal.</p>
         </div>
-        <Button onClick={() => navigate('/cash')} variant="outline">
-          Caja actual
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canExportCash && (
+            <CsvExportButton
+              endpoint="/api/cash-registers/export"
+              filename={`cajas_${new Date().toISOString().slice(0, 10)}.csv`}
+            />
+          )}
+          <Button onClick={() => navigate('/cash')} variant="outline">
+            Caja actual
+          </Button>
+        </div>
       </div>
 
       {isLoading && (

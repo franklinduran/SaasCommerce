@@ -92,6 +92,72 @@ public sealed class EfDailyClosingReadRepository(AppDbContext dbContext) : IDail
     return (items, totalCount);
   }
 
+  public async Task<IReadOnlyCollection<DailyClosingListItemResponse>> ExportAllAsync(
+    BusinessId businessId,
+    DateOnly? dateFrom,
+    DateOnly? dateTo,
+    CancellationToken cancellationToken = default)
+  {
+    var query = dbContext.Set<DailyClosing>()
+      .AsNoTracking()
+      .Where(dc => dc.BusinessId == businessId);
+
+    if (dateFrom.HasValue)
+    {
+      query = query.Where(dc => dc.ClosingDate >= dateFrom.Value);
+    }
+
+    if (dateTo.HasValue)
+    {
+      query = query.Where(dc => dc.ClosingDate <= dateTo.Value);
+    }
+
+    var rows = await query
+      .OrderBy(dc => dc.ClosingDate)
+      .Take(10_000)
+      .Select(dc => new
+      {
+        dc.Id,
+        dc.BranchId,
+        dc.ClosingDate,
+        dc.Status,
+        dc.TotalSales,
+        dc.EstimatedNetProfit,
+        dc.NetMarginPercent,
+        AlertCount = dc.Alerts.Count(),
+        dc.CreatedAt,
+        dc.ClosedAt,
+      })
+      .ToArrayAsync(cancellationToken);
+
+    if (rows.Length == 0)
+    {
+      return [];
+    }
+
+    var branchIdObjects = rows.Select(r => r.BranchId).Distinct().ToArray();
+    var branchNames = await dbContext.Set<Branch>()
+      .AsNoTracking()
+      .Where(b => b.BusinessId == businessId && branchIdObjects.Contains(b.Id))
+      .Select(b => new { b.Id, b.Name })
+      .ToDictionaryAsync(b => b.Id, b => b.Name, cancellationToken);
+
+    return rows
+      .Select(r => new DailyClosingListItemResponse(
+        Id: r.Id,
+        BranchId: r.BranchId.Value,
+        BranchName: branchNames.GetValueOrDefault(r.BranchId, "Sucursal desconocida"),
+        ClosingDate: r.ClosingDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+        Status: r.Status.ToString(),
+        TotalSales: r.TotalSales,
+        EstimatedNetProfit: r.EstimatedNetProfit,
+        NetMarginPercent: r.NetMarginPercent,
+        AlertCount: r.AlertCount,
+        CreatedAt: r.CreatedAt,
+        ClosedAt: r.ClosedAt))
+      .ToArray();
+  }
+
   public async Task<DailyClosingDetailResponse?> GetDetailAsync(
     Guid id,
     BusinessId businessId,

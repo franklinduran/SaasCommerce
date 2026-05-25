@@ -37,6 +37,20 @@ internal static class AdminEndpointExtensions
       .RequireAuthorization($"Permission:{SystemPermissions.SaasManageBusinesses}")
       .WithTags(AdminTag);
 
+    app.MapGet(
+      "/api/admin/pilot-metrics",
+      async (
+        GetPilotMetricsHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(new GetPilotMetricsQuery(), cancellationToken);
+
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
+      })
+      .RequireAuthorization($"Permission:{SystemPermissions.SaasPilotMetrics}")
+      .WithTags(AdminTag);
+
     return app;
   }
 }

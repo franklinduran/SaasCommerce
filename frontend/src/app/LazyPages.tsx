@@ -13,6 +13,11 @@ const PilotBusinessPage = lazy(() =>
     default: module.PilotBusinessPage,
   })),
 )
+const PilotMetricsPage = lazy(() =>
+  import('@/modules/admin/pages/PilotMetricsPage').then((module) => ({
+    default: module.PilotMetricsPage,
+  })),
+)
 const ProductImportPage = lazy(() =>
   import('@/modules/products/pages/ProductImportPage').then((module) => ({
     default: module.ProductImportPage,
@@ -348,6 +353,10 @@ export function OnboardingRoute() {
 
 export function PilotBusinessRoute() {
   return <PilotBusinessPage />
+}
+
+export function PilotMetricsRoute() {
+  return <PilotMetricsPage />
 }
 
 export function ProductImportRoute() {

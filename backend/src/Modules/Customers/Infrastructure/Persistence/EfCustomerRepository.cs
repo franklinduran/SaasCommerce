@@ -38,6 +38,15 @@ public sealed class EfCustomerRepository(AppDbContext dbContext) : ICustomerRepo
       .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
 
+  public async Task<IReadOnlyCollection<Customer>> ExportAllAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default)
+    => await Customers(businessId)
+      .AsNoTracking()
+      .OrderBy(customer => customer.FullName)
+      .Take(10_000)
+      .ToArrayAsync(cancellationToken);
+
   private IQueryable<Customer> Customers(BusinessId businessId)
     => dbContext.Set<Customer>()
       .Where(customer => customer.BusinessId == businessId);

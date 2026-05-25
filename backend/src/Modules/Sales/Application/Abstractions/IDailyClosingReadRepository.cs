@@ -18,4 +18,10 @@ public interface IDailyClosingReadRepository
     Guid id,
     BusinessId businessId,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<DailyClosingListItemResponse>> ExportAllAsync(
+    BusinessId businessId,
+    DateOnly? dateFrom,
+    DateOnly? dateTo,
+    CancellationToken cancellationToken = default);
 }

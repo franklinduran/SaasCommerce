@@ -2,6 +2,7 @@ import { useAuthStore } from '@/modules/auth/authStore'
 import type {
   CreatePilotBusinessRequest,
   CreatePilotBusinessResponse,
+  PilotMetricsSummary,
 } from '@/modules/admin/types'
 import { httpClient } from '@/shared/services/httpClient'
 
@@ -20,6 +21,15 @@ export const adminApi = {
         body: JSON.stringify(request),
         method: 'POST',
       },
+    )
+
+    return response.data!
+  },
+
+  async getPilotMetrics(): Promise<PilotMetricsSummary> {
+    const response = await httpClient<PilotMetricsSummary>(
+      '/api/admin/pilot-metrics',
+      { accessToken: getAccessToken() },
     )
 
     return response.data!

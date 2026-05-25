@@ -39,6 +39,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { CsvExportButton } from '@/shared/components/CsvExportButton'
+import { useHasPermission } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
 
 const productTypes = [
   { label: 'Todos', value: '' },
@@ -71,6 +74,7 @@ export function ProductsPage() {
   const categories = useCategoriesQuery()
   const activateProduct = useActivateProductMutation()
   const deactivateProduct = useDeactivateProductMutation()
+  const canExportProducts = useHasPermission(Permission.ProductsExport)
   const items = products.data?.items ?? []
   const totalItems = products.data?.totalItems ?? 0
   const totalPages = products.data?.totalPages ?? 0
@@ -141,10 +145,18 @@ export function ProductsPage() {
             Busca, filtra y administra productos, servicios, unidades, codigos y precios.
           </p>
         </div>
-        <Button onClick={openCreateDrawer}>
-          <Plus size={16} />
-          Crear producto
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canExportProducts && (
+            <CsvExportButton
+              endpoint="/api/products/export"
+              filename={`productos_${new Date().toISOString().slice(0, 10)}.csv`}
+            />
+          )}
+          <Button onClick={openCreateDrawer}>
+            <Plus size={16} />
+            Crear producto
+          </Button>
+        </div>
       </div>
 
       {savedMessage && (

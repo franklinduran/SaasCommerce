@@ -417,6 +417,10 @@ public sealed class CashUseCaseTests
     public Task<IReadOnlyCollection<CashSession>> ListAsync(
       BusinessId businessId, CashSessionSearchCriteria criteria, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<CashSession>>([]);
+
+    public Task<IReadOnlyCollection<CashSession>> ExportAllAsync(
+      BusinessId businessId, DateTimeOffset? dateFrom, DateTimeOffset? dateTo, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<CashSession>>([]);
   }
 }
 

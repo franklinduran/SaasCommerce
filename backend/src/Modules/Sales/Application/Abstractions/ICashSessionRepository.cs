@@ -32,6 +32,12 @@ public interface ICashSessionRepository
     BusinessId businessId,
     CashSessionSearchCriteria criteria,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<CashSession>> ExportAllAsync(
+    BusinessId businessId,
+    DateTimeOffset? dateFrom,
+    DateTimeOffset? dateTo,
+    CancellationToken cancellationToken = default);
 }
 
 public sealed record CashSessionSearchCriteria(

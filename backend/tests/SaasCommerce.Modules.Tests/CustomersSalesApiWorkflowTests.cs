@@ -808,6 +808,12 @@ public sealed class CustomersSalesApiWorkflowTests
       CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Customer>>(
         customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
+
+    public Task<IReadOnlyCollection<Customer>> ExportAllAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<Customer>>(
+        customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
   }
 
   private sealed class InMemorySaleRepository : ISaleRepository
@@ -908,6 +914,12 @@ public sealed class CustomersSalesApiWorkflowTests
       int pageSize,
       CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<CustomerCreditMovement>>([]);
+
+    public Task<IReadOnlyCollection<CustomerCreditAccount>> ExportAllAccountsAsync(
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<CustomerCreditAccount>>(
+        Accounts.Where(a => a.BusinessId == businessId).ToArray());
   }
 }
 

@@ -66,6 +66,31 @@ public sealed class EfCashSessionRepository(AppDbContext dbContext) : ICashSessi
       .Take(criteria.PageSize)
       .ToArrayAsync(cancellationToken);
 
+  public async Task<IReadOnlyCollection<CashSession>> ExportAllAsync(
+    BusinessId businessId,
+    DateTimeOffset? dateFrom,
+    DateTimeOffset? dateTo,
+    CancellationToken cancellationToken = default)
+  {
+    var baseQuery = Sessions(businessId).AsNoTracking();
+
+    if (dateFrom.HasValue)
+    {
+      baseQuery = baseQuery.Where(cs => cs.OpenedAt >= dateFrom.Value);
+    }
+
+    if (dateTo.HasValue)
+    {
+      baseQuery = baseQuery.Where(cs => cs.OpenedAt <= dateTo.Value);
+    }
+
+    return await baseQuery
+      .Include(cs => cs.Movements)
+      .OrderBy(cs => cs.OpenedAt)
+      .Take(10_000)
+      .ToArrayAsync(cancellationToken);
+  }
+
   private IQueryable<CashSession> Sessions(BusinessId businessId)
     => dbContext.Set<CashSession>()
       .Where(cs => cs.BusinessId == businessId);

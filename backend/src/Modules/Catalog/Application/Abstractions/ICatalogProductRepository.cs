@@ -31,6 +31,10 @@ public interface ICatalogProductRepository
     BusinessId businessId,
     ProductSearchCriteria criteria,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<Product>> ExportAllAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default);
 }
 
 public sealed record ProductSearchCriteria(

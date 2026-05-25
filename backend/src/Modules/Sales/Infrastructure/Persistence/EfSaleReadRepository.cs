@@ -64,6 +64,35 @@ public sealed class EfSaleReadRepository(AppDbContext dbContext) : ISaleReadRepo
       .ToArray();
   }
 
+  public async Task<IReadOnlyCollection<SaleResponse>> ExportAllAsync(
+    BusinessId businessId,
+    DateTimeOffset? dateFrom,
+    DateTimeOffset? dateTo,
+    CancellationToken cancellationToken = default)
+  {
+    var criteria = new SaleSearchCriteria(
+      null, null, null, dateFrom, dateTo,
+      Page: 1, PageSize: int.MaxValue,
+      SortBy: SaleSortOption.CreatedAt, SortDirection: SaleSortDirection.Asc);
+
+    var headers = await BuildHeaderQuery(businessId, criteria)
+      .OrderBy(s => s.CreatedAt)
+      .Take(10_000)
+      .ToArrayAsync(cancellationToken);
+
+    if (headers.Length == 0)
+    {
+      return [];
+    }
+
+    var items = await ListItemsAsync(
+      businessId,
+      headers.Select(h => h.SaleId).ToArray(),
+      cancellationToken);
+
+    return headers.Select(h => ToResponse(h, items)).ToArray();
+  }
+
   private IQueryable<SaleHeaderProjection> BuildHeaderQuery(
     BusinessId businessId,
     SaleSearchCriteria? criteria = null)

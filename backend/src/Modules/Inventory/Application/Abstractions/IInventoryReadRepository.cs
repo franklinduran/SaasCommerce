@@ -19,6 +19,10 @@ public interface IInventoryReadRepository
     BusinessId businessId,
     Guid productId,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<StockItemResponse>> ExportAllAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default);
 }
 
 public sealed record InventoryReadCriteria(

@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  BarChart2,
   BarChart3,
   Boxes,
   Building2,
@@ -67,6 +68,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Usuarios', path: '/users', icon: Shield, requiredPermission: Permission.UsersView },
   { label: 'Auditoria', path: '/audit-logs', icon: ClipboardList, requiredPermission: Permission.AuditView },
   { label: 'Suscripcion', path: '/subscription', icon: CreditCard },
+  { label: 'Metricas Piloto', path: '/admin/pilot-metrics', icon: BarChart2, requiredPermission: Permission.SaasPilotMetrics },
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
@@ -101,6 +103,7 @@ const pageTitles: Record<string, string> = {
   '/users': 'Usuarios',
   '/audit-logs': 'Auditoria',
   '/subscription': 'Mi Suscripcion',
+  '/admin/pilot-metrics': 'Metricas del Piloto',
   '/settings': 'Ajustes',
   '/forbidden': 'Acceso denegado',
 }

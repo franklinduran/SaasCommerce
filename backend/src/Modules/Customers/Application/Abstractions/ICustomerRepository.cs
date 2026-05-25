@@ -21,6 +21,10 @@ public interface ICustomerRepository
     BusinessId businessId,
     CustomerSearchCriteria criteria,
     CancellationToken cancellationToken = default);
+
+  Task<IReadOnlyCollection<Customer>> ExportAllAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default);
 }
 
 public sealed record CustomerSearchCriteria(

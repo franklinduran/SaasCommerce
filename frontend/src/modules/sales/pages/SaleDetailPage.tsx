@@ -7,13 +7,19 @@ import { SaleReceipt } from '@/modules/sales/components/SaleReceipt'
 import { PrintReceiptButton } from '@/modules/sales/components/PrintReceiptButton'
 import { useSaleDetail } from '@/modules/sales/hooks/useSaleDetail'
 import { useSaleStatusInvalidation } from '@/modules/sales/hooks/useSales'
-import { useCurrentBusinessQuery } from '@/modules/settings/hooks/useSettings'
+import {
+  useBillingSettingsQuery,
+  useBusinessSettingsQuery,
+  useCurrentBusinessQuery,
+} from '@/modules/settings/hooks/useSettings'
 import { Button } from '@/shared/components/ui/button'
 
 export function SaleDetailPage() {
   const { saleId } = useParams()
   const sale = useSaleDetail(saleId)
   const business = useCurrentBusinessQuery()
+  const businessSettings = useBusinessSettingsQuery()
+  const billingSettings = useBillingSettingsQuery()
   const invoice = useInvoiceBySale(saleId, sale.data?.status === 'Completed')
 
   useSaleStatusInvalidation(saleId ? [saleId] : [])
@@ -51,6 +57,8 @@ export function SaleDetailPage() {
   }
 
   const businessName = business.data?.name ?? 'Negocio'
+  const bs = businessSettings.data
+  const billing = billingSettings.data
 
   return (
     <section className="space-y-6 p-4 sm:p-6 lg:p-8">
@@ -83,7 +91,15 @@ export function SaleDetailPage() {
         </div>
 
         <div className="xl:sticky xl:top-20 xl:self-start">
-          <SaleReceipt businessName={businessName} sale={sale.data} />
+          <SaleReceipt
+            businessName={businessName}
+            phone={bs?.phone}
+            receiptFooterText={billing?.receiptFooterText ?? bs?.receiptFooterText}
+            receiptHeaderText={billing?.receiptHeaderText}
+            rnc={bs?.rnc}
+            sale={sale.data}
+            showRnc={billing?.showRncOnReceipt ?? false}
+          />
         </div>
       </div>
     </section>

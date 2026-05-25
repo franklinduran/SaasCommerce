@@ -108,4 +108,15 @@ public static class SystemPermissions
 
   // Product Import
   public const string ProductsImport = "products.import";
+
+  // Exports (CSV / data exports)
+  public const string ProductsExport = "products.export";
+  public const string SalesExport = "sales.export";
+  public const string InventoryExport = "inventory.export";
+  public const string CustomersExport = "customers.export";
+  public const string CreditsExport = "credits.export";
+  public const string CashExport = "cash.export";
+
+  // Pilot Metrics (SaaS Admin only)
+  public const string SaasPilotMetrics = "saas.pilot_metrics";
 }

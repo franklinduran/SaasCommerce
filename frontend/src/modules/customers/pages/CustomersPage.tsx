@@ -12,6 +12,10 @@ import {
   useCustomers,
 } from '@/modules/customers/hooks/useCustomers'
 import type { CustomerFilters } from '@/modules/customers/types'
+import { CreateCustomerDialog } from '@/modules/customers/components/CreateCustomerDialog'
+import { CustomerDetailPanel } from '@/modules/customers/components/CustomerDetailPanel'
+import { CustomerListItem } from '@/modules/customers/components/CustomerListItem'
+import { CsvExportButton } from '@/shared/components/CsvExportButton'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import {
@@ -21,9 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { CreateCustomerDialog } from '@/modules/customers/components/CreateCustomerDialog'
-import { CustomerDetailPanel } from '@/modules/customers/components/CustomerDetailPanel'
-import { CustomerListItem } from '@/modules/customers/components/CustomerListItem'
+import { useHasPermission } from '@/shared/hooks/usePermissions'
+import { Permission } from '@/shared/types/permissions'
 
 const defaultFilters: CustomerFilters = {
   isActive: '',
@@ -41,6 +44,7 @@ export function CustomersPage() {
 
   const [filters, setFilters] = useState<CustomerFilters>(defaultFilters)
   const [createOpen, setCreateOpen] = useState(false)
+  const canExportCustomers = useHasPermission(Permission.CustomersExport)
 
   const customers = useCustomers(filters)
   const createCustomer = useCreateCustomer()
@@ -120,6 +124,12 @@ export function CustomersPage() {
               <RefreshCw className={customers.isFetching ? 'animate-spin' : undefined} size={14} />
               Refrescar
             </Button>
+            {canExportCustomers && (
+              <CsvExportButton
+                endpoint="/api/customers/export"
+                filename={`clientes_${new Date().toISOString().slice(0, 10)}.csv`}
+              />
+            )}
             <Button onClick={() => setCreateOpen(true)} size="sm" type="button">
               <UserPlus size={14} />
               Crear cliente

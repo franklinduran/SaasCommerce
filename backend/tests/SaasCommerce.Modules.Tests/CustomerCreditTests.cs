@@ -374,6 +374,9 @@ public sealed class CustomerCreditTests
 
     public Task<IReadOnlyCollection<Customer>> ListAsync(BusinessId businessId, CustomerSearchCriteria criteria, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Customer>>(customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
+
+    public Task<IReadOnlyCollection<Customer>> ExportAllAsync(BusinessId businessId, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<Customer>>(customers.Values.Where(customer => customer.BusinessId == businessId).ToArray());
   }
 
   private sealed class InMemoryCreditRepository : ICustomerCreditRepository
@@ -418,6 +421,9 @@ public sealed class CustomerCreditTests
 
     public Task<bool> HasPaymentAsync(BusinessId businessId, Guid paymentId, CancellationToken cancellationToken = default)
       => Task.FromResult(Payments.Any(payment => payment.BusinessId == businessId && payment.Id == paymentId));
+
+    public Task<IReadOnlyCollection<CustomerCreditAccount>> ExportAllAccountsAsync(BusinessId businessId, CancellationToken cancellationToken = default)
+      => Task.FromResult<IReadOnlyCollection<CustomerCreditAccount>>(accounts.Values.Where(a => a.BusinessId == businessId).ToArray());
 
     public Task<int> CountMovementsAsync(BusinessId businessId, Guid customerId, CancellationToken cancellationToken = default)
       => Task.FromResult(Movements.Count(movement => movement.BusinessId == businessId && movement.CustomerId == customerId));

@@ -8,6 +8,7 @@ import {
   BranchesRoute,
   OnboardingRoute,
   PilotBusinessRoute,
+  PilotMetricsRoute,
   ProductImportRoute,
   BranchProfitabilityRoute,
   CashHistoryRoute,
@@ -341,6 +342,14 @@ export const router = createBrowserRouter([
         element: (
           <PermissionRoute permissions={Permission.SaasManageBusinesses}>
             {withPageLoading(<PilotBusinessRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'admin/pilot-metrics',
+        element: (
+          <PermissionRoute permissions={Permission.SaasPilotMetrics}>
+            {withPageLoading(<PilotMetricsRoute />)}
           </PermissionRoute>
         ),
       },

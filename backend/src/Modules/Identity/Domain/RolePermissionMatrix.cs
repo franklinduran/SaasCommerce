@@ -86,11 +86,19 @@ public static class RolePermissionMatrix
     SystemPermissions.NotificationsManage,
 
     SystemPermissions.SaasManageBusinesses,
+    SystemPermissions.SaasPilotMetrics,
 
     SystemPermissions.OnboardingView,
     SystemPermissions.OnboardingManage,
 
-    SystemPermissions.ProductsImport
+    SystemPermissions.ProductsImport,
+
+    SystemPermissions.ProductsExport,
+    SystemPermissions.SalesExport,
+    SystemPermissions.InventoryExport,
+    SystemPermissions.CustomersExport,
+    SystemPermissions.CreditsExport,
+    SystemPermissions.CashExport
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)

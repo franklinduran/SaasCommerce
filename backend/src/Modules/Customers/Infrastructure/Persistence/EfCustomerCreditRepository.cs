@@ -102,6 +102,16 @@ public sealed class EfCustomerCreditRepository(AppDbContext dbContext) : ICustom
       .Take(pageSize)
       .ToArrayAsync(cancellationToken);
 
+  public async Task<IReadOnlyCollection<CustomerCreditAccount>> ExportAllAccountsAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default)
+    => await dbContext.Set<CustomerCreditAccount>()
+      .AsNoTracking()
+      .Where(account => account.BusinessId == businessId)
+      .OrderBy(account => account.CustomerId)
+      .Take(10_000)
+      .ToArrayAsync(cancellationToken);
+
   private IQueryable<CustomerCreditMovement> Movements(BusinessId businessId, Guid customerId)
     => dbContext.Set<CustomerCreditMovement>()
       .AsNoTracking()

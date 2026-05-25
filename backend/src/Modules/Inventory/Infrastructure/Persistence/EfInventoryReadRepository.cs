@@ -152,6 +152,45 @@ public sealed class EfInventoryReadRepository(AppDbContext dbContext) : IInvento
       alerts);
   }
 
+  public async Task<IReadOnlyCollection<StockItemResponse>> ExportAllAsync(
+    BusinessId businessId,
+    CancellationToken cancellationToken = default)
+  {
+    var criteria = new InventoryReadCriteria(
+      null, null, null,
+      LowStockOnly: false,
+      OutOfStockOnly: false,
+      Page: 1, PageSize: int.MaxValue,
+      SortBy: StockSortOption.ProductId,
+      SortDirection: InventorySortDirection.Asc);
+
+    var rows = await BuildRowsQuery(businessId, criteria)
+      .OrderBy(r => r.ProductName)
+      .ThenBy(r => r.BranchName)
+      .Take(10_000)
+      .ToArrayAsync(cancellationToken);
+
+    return rows
+      .Select(row => new StockItemResponse(
+        row.StockId,
+        row.BusinessId,
+        row.BranchId,
+        row.BranchName,
+        row.ProductId,
+        row.ProductName,
+        row.Sku,
+        row.Barcode,
+        row.UnitOfMeasure,
+        row.Quantity,
+        row.MinimumStock,
+        row.ReorderPoint,
+        row.IsLowStock,
+        row.IsOutOfStock,
+        GetStockStatus(row.IsLowStock, row.IsOutOfStock),
+        row.LastUpdatedAt))
+      .ToArray();
+  }
+
   private IQueryable<InventoryRowProjection> BuildRowsQuery(BusinessId businessId, InventoryReadCriteria criteria)
   {
     var stockItems = dbContext.Set<StockItem>()

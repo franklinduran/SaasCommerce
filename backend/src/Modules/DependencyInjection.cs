@@ -19,6 +19,7 @@ using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
+using SaasCommerce.Modules.Catalog.Application.Export;
 using SaasCommerce.Modules.Catalog.Application.Import;
 using SaasCommerce.Modules.Identity.Application.Account;
 using SaasCommerce.Modules.Identity.Application.Audit;
@@ -99,6 +100,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetInventoryProductDetailHandler>();
     services.AddScoped<GetStockHandler>();
     services.AddScoped<GetInventoryMovementsHandler>();
+    services.AddScoped<ExportInventoryCsvHandler>();
     services.AddScoped<IInventoryTransferRepository, EfInventoryTransferRepository>();
     services.AddScoped<IProcessInventoryTransferUseCase, ProcessInventoryTransferUseCase>();
     services.AddScoped<CreateInventoryTransferHandler>();
@@ -166,6 +168,8 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IBlockCustomerCreditUseCase, BlockCustomerCreditUseCase>();
     services.AddScoped<IUnblockCustomerCreditUseCase, UnblockCustomerCreditUseCase>();
     services.AddScoped<IRegisterCreditSaleUseCase, RegisterCreditSaleUseCase>();
+    services.AddScoped<ExportCustomersCsvHandler>();
+    services.AddScoped<ExportCustomerCreditsCsvHandler>();
 
     // Sales — Cash Register
     services.AddScoped<ICashSessionRepository, EfCashSessionRepository>();
@@ -175,6 +179,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<GetCurrentCashSessionHandler>();
     services.AddScoped<GetCashSessionDetailHandler>();
     services.AddScoped<GetCashSessionsHandler>();
+    services.AddScoped<ExportCashSessionsCsvHandler>();
 
     // Sales — Profitability (Rentabilidad)
     services.AddScoped<IProfitabilityReadRepository, EfProfitabilityReadRepository>();
@@ -192,6 +197,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<CloseDailyClosingHandler>();
     services.AddScoped<GetDailyClosingsHandler>();
     services.AddScoped<GetDailyClosingDetailHandler>();
+    services.AddScoped<ExportDailyClosingsCsvHandler>();
 
     // Sales — Operating Expenses (Gastos Operativos)
     services.AddScoped<IExpenseCategoryRepository, EfExpenseCategoryRepository>();
@@ -220,6 +226,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IGenerateSaleInvoiceUseCase, GenerateSaleInvoiceUseCase>();
     services.AddScoped<ICompleteSaleUseCase, CompleteSaleUseCase>();
     services.AddScoped<IFailSaleUseCase, FailSaleUseCase>();
+    services.AddScoped<ExportSalesCsvHandler>();
 
     // Identity — auth infrastructure
     services.AddScoped<IAccountBusinessRepository, EfAccountBusinessRepository>();
@@ -250,16 +257,19 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateUserRoleHandler>();
     services.AddScoped<DisableUserHandler>();
 
-    // Identity — pilot business
+    // Identity — pilot business / metrics
     services.AddScoped<CreatePilotBusinessHandler>();
+    services.AddScoped<IPilotMetricsRepository, EfPilotMetricsRepository>();
+    services.AddScoped<GetPilotMetricsHandler>();
 
     // Identity — onboarding
     services.AddScoped<IOnboardingStatusReader, EfOnboardingStatusReader>();
     services.AddScoped<GetOnboardingStatusHandler>();
     services.AddScoped<CompleteOnboardingStepHandler>();
 
-    // Catalog — import
+    // Catalog — import / export
     services.AddScoped<ImportProductsHandler>();
+    services.AddScoped<ExportProductsCsvHandler>();
 
     // Identity — application handlers
     services.AddScoped<RegisterBusinessHandler>();
