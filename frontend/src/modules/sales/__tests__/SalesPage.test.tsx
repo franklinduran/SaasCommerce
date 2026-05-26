@@ -175,6 +175,41 @@ describe('SaleDetailPage', () => {
 
     expect(await screen.findByText('Pago rechazado por el proveedor.')).toBeTruthy()
   })
+
+  it('SaleDetailPage should show existing sale returns', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ returns: [createApiSaleReturn()] }))
+    renderSaleDetailPage()
+
+    expect(await screen.findByText('Devoluciones')).toBeTruthy()
+    expect(await screen.findByText('NC-20260526-ABC123')).toBeTruthy()
+    expect(screen.getByText('Cliente devuelve una unidad')).toBeTruthy()
+  })
+
+  it('SaleDetailPage should submit a partial return', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createSalesFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+    renderSaleDetailPage()
+
+    await screen.findByText('Devoluciones')
+    await user.click(screen.getByRole('button', { name: /Registrar devolución/i }))
+    await user.type(screen.getByLabelText('Motivo'), 'Producto equivocado')
+    await user.type(screen.getByLabelText('Cantidad a devolver de Cafe molido'), '1')
+    await user.click(screen.getByRole('button', { name: /^Registrar$/i }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/sales/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/returns'),
+        expect.objectContaining({
+          body: JSON.stringify({
+            reason: 'Producto equivocado',
+            items: [{ saleItemId: 'sale-item-1', quantity: 1 }],
+          }),
+          method: 'POST',
+        }),
+      )
+    })
+  })
 })
 
 describe('SaleReceipt', () => {
@@ -347,6 +382,7 @@ function createSalesFetchMock({
   failBusiness = false,
   failDetail = false,
   failList = false,
+  returns = [],
   sales = [createApiSale()],
 }: {
   detailSale?: ApiSaleMock
@@ -354,9 +390,10 @@ function createSalesFetchMock({
   failBusiness?: boolean
   failDetail?: boolean
   failList?: boolean
+  returns?: ApiSaleReturnMock[]
   sales?: ApiSaleMock[]
 } = {}) {
-  return vi.fn(async (input: RequestInfo | URL) => {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input.toString()
 
     if (url.includes('/api/business/current')) {
@@ -392,6 +429,14 @@ function createSalesFetchMock({
         phone: '8091234567',
         rnc: '101123456',
       })
+    }
+
+    if (url.includes('/api/sales/') && url.includes('/returns')) {
+      if (init?.method === 'POST') {
+        return createJsonResponse(createApiSaleReturn({ reason: 'Producto equivocado' }))
+      }
+
+      return createJsonResponse(returns)
     }
 
     if (url.includes('/api/sales/') && !url.endsWith('/api/sales')) {
@@ -438,6 +483,7 @@ type ApiSaleMock = {
     productId: string
     productName: string
     quantity: number
+    saleItemId: string
     sku: string
     subtotal: number
     unitPrice: number
@@ -470,6 +516,7 @@ function createApiSaleBase(): ApiSaleMock {
         productId: 'product-internal-id',
         productName: 'Cafe molido',
         quantity: 2,
+        saleItemId: 'sale-item-1',
         sku: 'SKU-001',
         subtotal: 250,
         unitPrice: 125,
@@ -496,6 +543,7 @@ function createReceiptSale(): SaleDetail {
         productId: 'product-internal-id',
         productName: 'Cafe molido',
         quantity: 2,
+        saleItemId: 'sale-item-1',
         sku: 'SKU-001',
         subtotal: 250,
         unitPrice: 125,
@@ -504,6 +552,73 @@ function createReceiptSale(): SaleDetail {
     paymentMethod: 'Cash',
     status: 'Completed',
     total: 250,
+  }
+}
+
+type ApiSaleReturnMock = {
+  approvedAt: string | null
+  creditNote: {
+    code: string
+    createdAt: string
+    customerId: string | null
+    id: string
+    saleId: string
+    saleReturnId: string
+    total: number
+  } | null
+  failedAt: string | null
+  failureReason: string | null
+  id: string
+  items: Array<{
+    id: string
+    lineTotal: number
+    productId: string
+    productName: string
+    quantity: number
+    saleItemId: string
+    sku: string
+    unitPrice: number
+  }>
+  reason: string
+  requestedAt: string
+  saleId: string
+  status: 'Requested' | 'Approved' | 'Failed'
+  total: number
+}
+
+function createApiSaleReturn(overrides: Partial<ApiSaleReturnMock> = {}): ApiSaleReturnMock {
+  return {
+    approvedAt: '2026-05-26T10:03:00Z',
+    creditNote: {
+      code: 'NC-20260526-ABC123',
+      createdAt: '2026-05-26T10:03:00Z',
+      customerId: null,
+      id: 'credit-note-1',
+      saleId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      saleReturnId: 'return-1',
+      total: 125,
+    },
+    failedAt: null,
+    failureReason: null,
+    id: 'return-1',
+    items: [
+      {
+        id: 'return-item-1',
+        lineTotal: 125,
+        productId: 'product-internal-id',
+        productName: 'Cafe molido',
+        quantity: 1,
+        saleItemId: 'sale-item-1',
+        sku: 'SKU-001',
+        unitPrice: 125,
+      },
+    ],
+    reason: 'Cliente devuelve una unidad',
+    requestedAt: '2026-05-26T10:00:00Z',
+    saleId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    status: 'Approved',
+    total: 125,
+    ...overrides,
   }
 }
 

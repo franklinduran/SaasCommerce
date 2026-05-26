@@ -27,12 +27,60 @@ export type SaleDetail = SaleListItem & {
 }
 
 export type SaleDetailItem = {
+  saleItemId: string
   productId: string
   productName: string
   sku: string | null
   quantity: number
   unitPrice: number
   subtotal: number
+}
+
+export type SaleReturnStatus = 'Requested' | 'Approved' | 'Failed'
+
+export type SaleReturnItem = {
+  id: string
+  saleItemId: string
+  productId: string
+  productName: string
+  sku: string | null
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+}
+
+export type CreditNote = {
+  id: string
+  saleId: string
+  saleReturnId: string
+  customerId: string | null
+  code: string
+  total: number
+  createdAt: string
+}
+
+export type SaleReturn = {
+  id: string
+  saleId: string
+  status: SaleReturnStatus
+  reason: string
+  total: number
+  items: SaleReturnItem[]
+  creditNote: CreditNote | null
+  requestedAt: string
+  approvedAt: string | null
+  failedAt: string | null
+  failureReason: string | null
+}
+
+export type CreateSaleReturnItemInput = {
+  saleItemId: string
+  quantity: number
+}
+
+export type CreateSaleReturnInput = {
+  reason: string
+  items: CreateSaleReturnItemInput[]
 }
 
 export type SaleListResponse = {
@@ -49,4 +97,11 @@ export type SaleStatusChangedNotification = {
   saleId: string
   businessId: string
   status: SaleStatus
+}
+
+export type SaleReturnChangedNotification = {
+  saleId: string
+  saleReturnId: string
+  businessId: string
+  status: SaleReturnStatus
 }

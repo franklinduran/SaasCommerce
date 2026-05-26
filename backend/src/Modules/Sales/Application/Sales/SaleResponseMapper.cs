@@ -22,6 +22,7 @@ internal static class SaleResponseMapper
       sale.Total,
       sale.Items
         .Select(item => new SaleItemResponse(
+          item.Id,
           item.ProductId,
           "Producto no disponible",
           null,

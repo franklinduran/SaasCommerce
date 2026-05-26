@@ -21,4 +21,13 @@ public static class SalesErrors
 
   public static readonly DomainError CustomerNotFound =
     new("sales.customer_not_found", "The sale customer was not found.");
+
+  public static readonly DomainError InvalidSaleReturn =
+    new("sales.invalid_return", "The sale return request is invalid.");
+
+  public static readonly DomainError SaleReturnNotFound =
+    new("sales.return_not_found", "The sale return was not found.");
+
+  public static readonly DomainError SaleReturnAlreadyProcessed =
+    new("sales.return_already_processed", "The sale return was already processed.");
 }

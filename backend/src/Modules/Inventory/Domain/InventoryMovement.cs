@@ -29,6 +29,7 @@ public sealed class InventoryMovement
     Reason = snapshot.Reason;
     SaleId = snapshot.SaleId;
     PurchaseId = snapshot.PurchaseId;
+    ReturnId = snapshot.ReturnId;
     TransferId = snapshot.TransferId;
     Note = NormalizeNote(snapshot.Note);
     UserId = userId;
@@ -55,6 +56,8 @@ public sealed class InventoryMovement
 
   public Guid? PurchaseId { get; private set; }
 
+  public Guid? ReturnId { get; private set; }
+
   public Guid? TransferId { get; private set; }
 
   public string? Note { get; private set; }
@@ -77,5 +80,6 @@ public sealed record InventoryMovementSnapshot(
   InventoryMovementReason Reason,
   Guid? SaleId = null,
   Guid? PurchaseId = null,
+  Guid? ReturnId = null,
   Guid? TransferId = null,
   string? Note = null);

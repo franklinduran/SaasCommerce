@@ -31,6 +31,9 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<SaleStatusChangedConsumer>();
     massTransit.AddConsumer<PurchaseReceivedConsumer>();
     massTransit.AddConsumer<RegisterCreditSaleConsumer>();
+    massTransit.AddConsumer<SaleReturnRequestedConsumer>();
+    massTransit.AddConsumer<RestoreInventoryFromSaleReturnConsumer>();
+    massTransit.AddConsumer<GenerateCreditNoteForReturnConsumer>();
     massTransit.AddConsumer<CustomerCreditDebitedNotificationConsumer>();
     massTransit.AddConsumer<CustomerPaymentRegisteredNotificationConsumer>();
     massTransit.AddConsumer<ValidateStockConsumer>();

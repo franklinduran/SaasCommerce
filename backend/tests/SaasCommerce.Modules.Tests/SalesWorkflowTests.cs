@@ -866,6 +866,16 @@ public sealed class SalesWorkflowTests
         movement.BranchId == branchId &&
         movement.PurchaseId == purchaseId));
 
+    public Task<bool> HasSaleReturnMovementAsync(
+      BusinessId businessId,
+      BranchId branchId,
+      Guid saleReturnId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult(Movements.Any(movement =>
+        movement.BusinessId == businessId &&
+        movement.BranchId == branchId &&
+        movement.ReturnId == saleReturnId));
+
     public Task<int> CountStockAsync(
       BusinessId businessId,
       BranchId? branchId,

@@ -216,6 +216,7 @@ public sealed class EfSaleReadRepository(AppDbContext dbContext) : ISaleReadRepo
       select new SaleItemProjection
       {
         SaleId = item.SaleId,
+        SaleItemId = item.Id,
         ProductId = item.ProductId,
         ProductName = product == null ? MissingProductName : product.Name,
         Sku = product == null ? null : product.Sku,
@@ -231,6 +232,7 @@ public sealed class EfSaleReadRepository(AppDbContext dbContext) : ISaleReadRepo
         group => group.Key,
         group => (IReadOnlyCollection<SaleItemResponse>)group
           .Select(item => new SaleItemResponse(
+            item.SaleItemId,
             item.ProductId,
             item.ProductName,
             item.Sku,
@@ -303,6 +305,8 @@ public sealed class EfSaleReadRepository(AppDbContext dbContext) : ISaleReadRepo
   private sealed class SaleItemProjection
   {
     public Guid SaleId { get; init; }
+
+    public Guid SaleItemId { get; init; }
 
     public Guid ProductId { get; init; }
 

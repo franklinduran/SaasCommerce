@@ -82,6 +82,7 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<CustomerPaymentRegisteredRealtimeConsumer>();
     massTransit.AddConsumer<InvoiceGeneratedRealtimeConsumer>();
     massTransit.AddConsumer<InvoiceCancelledRealtimeConsumer>();
+    massTransit.AddConsumer<SaleReturnNotificationConsumer>();
     massTransit.AddConsumer<CashSessionOpenedRealtimeConsumer>();
     massTransit.AddConsumer<CashMovementRegisteredRealtimeConsumer>();
     massTransit.AddConsumer<CashSessionClosedRealtimeConsumer>();
@@ -746,6 +747,62 @@ app.MapGet(
   })
   .RequireAuthorization($"Permission:{SystemPermissions.InvoicesView}")
   .WithTags(invoicesTag);
+
+app.MapPost(
+  "/api/sales/{saleId:guid}/returns",
+  async (
+    Guid saleId,
+    CreateSaleReturnRequest request,
+    IRequestSaleReturnUseCase useCase,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await useCase.ExecuteAsync(
+      new RequestSaleReturnCommand(
+        saleId,
+        request.Reason,
+        request.Items
+          .Select(item => new RequestSaleReturnItemCommand(item.SaleItemId, item.Quantity))
+          .ToArray()),
+      cancellationToken);
+
+    return ApiHelpers.ToApiResult(
+      result,
+      correlationIdProvider,
+      successStatusCode: StatusCodes.Status201Created);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCancel}")
+  .WithTags(salesTag);
+
+app.MapGet(
+  "/api/sales/{saleId:guid}/returns",
+  async (
+    Guid saleId,
+    ListSaleReturnsHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new ListSaleReturnsQuery(saleId), cancellationToken);
+
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesView}")
+  .WithTags(salesTag);
+
+app.MapGet(
+  "/api/sale-returns/{saleReturnId:guid}",
+  async (
+    Guid saleReturnId,
+    GetSaleReturnByIdHandler handler,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    var result = await handler.Handle(new GetSaleReturnByIdQuery(saleReturnId), cancellationToken);
+
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesView}")
+  .WithTags(salesTag);
 
 app.MapPost(
   "/api/sales/{id:guid}/cancel",

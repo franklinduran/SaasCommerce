@@ -165,6 +165,38 @@ public sealed class InvoiceCancelledRealtimeConsumer(
   }
 }
 
+public sealed class SaleReturnNotificationConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<SaleReturnNotificationConsumer> logger)
+  : IdempotentConsumer<CreditNoteGeneratedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<CreditNoteGeneratedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var message = context.Message;
+
+    return realtime.NotifyBusinessAsync(
+      message.BusinessId,
+      SaleRealtimeEvents.ReturnChanged,
+      new SaleReturnChangedNotificationV1(
+        Guid.NewGuid(),
+        message.CorrelationId,
+        message.BusinessId,
+        message.BranchId,
+        message.SaleId,
+        message.SaleReturnId,
+        message.CreditNoteId,
+        "Approved",
+        message.Total,
+        null,
+        message.CreatedAt),
+      context.CancellationToken);
+  }
+}
+
 public sealed class InventoryAdjustedRealtimeConsumer(
   IInboxStore inboxStore,
   IClock clock,

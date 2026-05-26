@@ -241,12 +241,31 @@ public static class ModulesServiceCollectionExtensions
     // Sales
     services.AddScoped<ISaleRepository, EfSaleRepository>();
     services.AddScoped<ISaleReadRepository, EfSaleReadRepository>();
+    services.AddScoped<ISaleReturnRepository, EfSaleReturnRepository>();
+    services.AddScoped<ISaleReturnReadRepository, EfSaleReturnReadRepository>();
     services.AddScoped<SaleHandlerContext>();
+    services.AddScoped(sp => new RequestSaleReturnDependencies
+    {
+      Sales = sp.GetRequiredService<ISaleRepository>(),
+      Returns = sp.GetRequiredService<ISaleReturnRepository>(),
+      ReturnReads = sp.GetRequiredService<ISaleReturnReadRepository>(),
+      CurrentUser = sp.GetRequiredService<ICurrentUserService>(),
+      Outbox = sp.GetRequiredService<IOutboxWriter>(),
+      CorrelationIdProvider = sp.GetRequiredService<ICorrelationIdProvider>(),
+      Clock = sp.GetRequiredService<IClock>(),
+      UnitOfWork = sp.GetRequiredService<IUnitOfWork>()
+    });
     services.AddScoped<ICreateSaleUseCase, CreateSaleUseCase>();
     services.AddScoped<ISaleEventWriter, SaleEventWriter>();
     services.AddScoped<IGetSaleByIdUseCase, GetSaleByIdUseCase>();
     services.AddScoped<IListSalesUseCase, ListSalesUseCase>();
     services.AddScoped<ICancelSaleUseCase, CancelSaleUseCase>();
+    services.AddScoped<IRequestSaleReturnUseCase, RequestSaleReturnHandler>();
+    services.AddScoped<IApproveSaleReturnUseCase, ApproveSaleReturnUseCase>();
+    services.AddScoped<IRestoreInventoryFromSaleReturnUseCase, RestoreInventoryFromSaleReturnUseCase>();
+    services.AddScoped<IGenerateCreditNoteForReturnUseCase, GenerateCreditNoteForReturnUseCase>();
+    services.AddScoped<GetSaleReturnByIdHandler>();
+    services.AddScoped<ListSaleReturnsHandler>();
     services.AddScoped<IValidateSaleStockUseCase, ValidateSaleStockUseCase>();
     services.AddScoped<IDeductSaleInventoryUseCase, DeductSaleInventoryUseCase>();
     services.AddScoped<IRegisterSalePaymentUseCase, RegisterSalePaymentUseCase>();

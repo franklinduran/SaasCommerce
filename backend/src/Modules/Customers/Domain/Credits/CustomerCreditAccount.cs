@@ -140,6 +140,41 @@ public sealed class CustomerCreditAccount
       createdBy);
   }
 
+  public CustomerCreditMovement ApplyCancellation(
+    Guid movementId,
+    Guid saleId,
+    decimal amount,
+    string? note,
+    Guid? createdBy,
+    DateTimeOffset createdAt)
+  {
+    if (saleId == Guid.Empty)
+    {
+      throw new ArgumentException("Sale id is required.", nameof(saleId));
+    }
+
+    EnsurePositiveAmount(amount);
+
+    if (amount > CurrentBalance)
+    {
+      throw new InvalidOperationException("Cancellation amount exceeds the current balance.");
+    }
+
+    var previousBalance = CurrentBalance;
+    var newBalance = previousBalance - amount;
+    CurrentBalance = newBalance;
+    UpdatedAt = createdAt;
+
+    return new CustomerCreditMovement(
+      new CreditMovementIdentifiers(movementId, BusinessId, CustomerId, new CreditMovementSource(SaleId: saleId)),
+      CustomerCreditMovementType.Cancellation,
+      amount,
+      new CreditMovementBalance(previousBalance, newBalance),
+      note,
+      createdAt,
+      createdBy);
+  }
+
   public void Block(DateTimeOffset updatedAt)
   {
     if (Status == CustomerCreditStatus.Closed)

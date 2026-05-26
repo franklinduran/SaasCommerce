@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowRight, Plus, Trash2 } from 'lucide-react'
 import { useEffect } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { useBranches } from '@/modules/branches/hooks/useBranches'
 import { useCreateInventoryTransferMutation } from '@/modules/inventory-transfers/hooks/useInventoryTransfers'
 import {
@@ -72,7 +72,6 @@ export function CreateInventoryTransferDialog({
     reset,
     setError,
     setValue,
-    watch,
   } = useForm<CreateInventoryTransferFormValues>({
     defaultValues,
     resolver: zodResolver(createInventoryTransferSchema),
@@ -80,8 +79,9 @@ export function CreateInventoryTransferDialog({
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
 
-  const sourceBranchId = watch('sourceBranchId')
-  const targetBranchId = watch('targetBranchId')
+  const sourceBranchId = useWatch({ control, name: 'sourceBranchId' })
+  const targetBranchId = useWatch({ control, name: 'targetBranchId' })
+  const watchedItems = useWatch({ control, name: 'items' })
 
   useEffect(() => {
     if (open) {
@@ -208,7 +208,7 @@ export function CreateInventoryTransferDialog({
                 <div className="grid grid-cols-[1fr_120px_40px] items-start gap-2" key={field.id}>
                   <div>
                     <Select
-                      value={watch(`items.${index}.productId`) || '_'}
+                      value={watchedItems?.[index]?.productId || '_'}
                       onValueChange={(v) => {
                         const product = productItems.find((p) => p.id === v)
                         setValue(`items.${index}.productId`, v === '_' ? '' : v)

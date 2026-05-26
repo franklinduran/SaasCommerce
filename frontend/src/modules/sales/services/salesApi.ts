@@ -1,9 +1,11 @@
 import { useAuthStore } from '@/modules/auth/authStore'
 import type {
+  CreateSaleReturnInput,
   SaleDetail,
   SaleDetailItem,
   SaleListItem,
   SaleListResponse,
+  SaleReturn,
   SalesFilters,
   SaleStatus,
 } from '@/modules/sales/types/salesTypes'
@@ -29,6 +31,8 @@ type ApiSale = {
 }
 
 type ApiSaleItem = {
+  saleItemId?: string
+  id?: string
   productId: string
   productName?: string | null
   sku?: string | null
@@ -37,6 +41,8 @@ type ApiSaleItem = {
   subtotal?: number
   lineTotal?: number
 }
+
+type ApiSaleReturn = SaleReturn
 
 export async function getSales(filters: SalesFilters): Promise<SaleListResponse> {
   const params = new URLSearchParams({
@@ -83,6 +89,35 @@ export async function getSaleDetail(saleId: string): Promise<SaleDetail> {
   return mapSaleDetail(response.data!)
 }
 
+export async function getSaleReturns(saleId: string): Promise<SaleReturn[]> {
+  const response = await httpClient<ApiSaleReturn[]>(`/api/sales/${saleId}/returns`, {
+    accessToken: getAccessToken(),
+  })
+
+  return response.data ?? []
+}
+
+export async function getSaleReturn(saleReturnId: string): Promise<SaleReturn> {
+  const response = await httpClient<ApiSaleReturn>(`/api/sale-returns/${saleReturnId}`, {
+    accessToken: getAccessToken(),
+  })
+
+  return response.data!
+}
+
+export async function createSaleReturn(
+  saleId: string,
+  input: CreateSaleReturnInput,
+): Promise<SaleReturn> {
+  const response = await httpClient<ApiSaleReturn>(`/api/sales/${saleId}/returns`, {
+    accessToken: getAccessToken(),
+    body: JSON.stringify(input),
+    method: 'POST',
+  })
+
+  return response.data!
+}
+
 function mapSaleListItem(sale: ApiSale): SaleListItem {
   const id = sale.id ?? sale.saleId
 
@@ -109,6 +144,7 @@ function mapSaleDetail(sale: ApiSale): SaleDetail {
 
 function mapSaleItem(item: ApiSaleItem): SaleDetailItem {
   return {
+    saleItemId: item.saleItemId ?? item.id ?? item.productId,
     productId: item.productId,
     productName: item.productName ?? 'Producto no disponible',
     sku: item.sku ?? null,

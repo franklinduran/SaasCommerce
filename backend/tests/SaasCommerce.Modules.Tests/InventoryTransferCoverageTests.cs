@@ -350,6 +350,9 @@ public sealed class InventoryTransferCoverageTests
     public Task<bool> HasSaleMovementAsync(BusinessId businessId, BranchId branchId, Guid saleId, CancellationToken cancellationToken = default)
       => Task.FromResult(false);
 
+    public Task<bool> HasSaleReturnMovementAsync(BusinessId businessId, BranchId branchId, Guid saleReturnId, CancellationToken cancellationToken = default)
+      => Task.FromResult(false);
+
     public Task<IReadOnlyCollection<InventoryMovement>> ListMovementsAsync(BusinessId businessId, BranchId branchId, InventoryMovementSearchCriteria criteria, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<InventoryMovement>>(Movements);
 

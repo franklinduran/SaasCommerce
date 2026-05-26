@@ -4,9 +4,14 @@ import { useInvoiceBySale } from '@/modules/invoices/hooks/useInvoices'
 import { SaleDetailHeader } from '@/modules/sales/components/SaleDetailHeader'
 import { SaleItemsTable } from '@/modules/sales/components/SaleItemsTable'
 import { SaleReceipt } from '@/modules/sales/components/SaleReceipt'
+import { SaleReturnsPanel } from '@/modules/sales/components/SaleReturnsPanel'
 import { PrintReceiptButton } from '@/modules/sales/components/PrintReceiptButton'
 import { useSaleDetail } from '@/modules/sales/hooks/useSaleDetail'
-import { useSaleStatusInvalidation } from '@/modules/sales/hooks/useSales'
+import {
+  useSaleReturnInvalidation,
+  useSaleReturns,
+  useSaleStatusInvalidation,
+} from '@/modules/sales/hooks/useSales'
 import {
   useBillingSettingsQuery,
   useBusinessSettingsQuery,
@@ -21,8 +26,10 @@ export function SaleDetailPage() {
   const businessSettings = useBusinessSettingsQuery()
   const billingSettings = useBillingSettingsQuery()
   const invoice = useInvoiceBySale(saleId, sale.data?.status === 'Completed')
+  const saleReturns = useSaleReturns(saleId)
 
   useSaleStatusInvalidation(saleId ? [saleId] : [])
+  useSaleReturnInvalidation(saleId)
 
   if (sale.isLoading) {
     return (
@@ -88,6 +95,11 @@ export function SaleDetailPage() {
             </p>
           </div>
           <SaleItemsTable items={sale.data.items} />
+          <SaleReturnsPanel
+            isLoading={saleReturns.isLoading}
+            returns={saleReturns.data ?? []}
+            sale={sale.data}
+          />
         </div>
 
         <div className="xl:sticky xl:top-20 xl:self-start">

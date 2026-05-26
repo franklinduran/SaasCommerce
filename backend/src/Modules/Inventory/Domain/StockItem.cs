@@ -2,7 +2,11 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Inventory.Domain;
 
-public sealed record InventoryMovementSource(Guid? SaleId = null, Guid? PurchaseId = null, string? Note = null);
+public sealed record InventoryMovementSource(
+  Guid? SaleId = null,
+  Guid? PurchaseId = null,
+  Guid? ReturnId = null,
+  string? Note = null);
 
 public sealed class StockItem
 {
@@ -74,6 +78,7 @@ public sealed class StockItem
         reason,
         source?.SaleId,
         source?.PurchaseId,
+        source?.ReturnId,
         Note: source?.Note),
       userId,
       occurredAt);
