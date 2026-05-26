@@ -17,10 +17,10 @@ public sealed class EfDailyClosingDataGatherer(AppDbContext dbContext) : IDailyC
   public async Task<DailyClosingData> GatherAsync(
     BusinessId businessId,
     BranchId branchId,
-    DateOnly date,
+    DateOnly closingDate,
     CancellationToken cancellationToken = default)
   {
-    var dayStart = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+    var dayStart = closingDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
     var dayEnd = dayStart.AddDays(1);
     var dayStartOffset = new DateTimeOffset(dayStart, TimeSpan.Zero);
     var dayEndOffset = new DateTimeOffset(dayEnd, TimeSpan.Zero);
@@ -62,11 +62,11 @@ public sealed class EfDailyClosingDataGatherer(AppDbContext dbContext) : IDailyC
       join item in dbContext.Set<SaleItem>().AsNoTracking() on sale.Id equals item.SaleId
       join product in products on item.ProductId equals product.Id into pg
       from product in pg.DefaultIfEmpty()
+      let fallbackCost = product == null ? 0m : product.CostPrice
+      let unitCost = item.UnitCost ?? fallbackCost
       group new
       {
-        EffectiveCost = item.UnitCost != null
-          ? item.Quantity * item.UnitCost.Value
-          : item.Quantity * (product != null ? product.CostPrice : 0m),
+        EffectiveCost = item.Quantity * unitCost,
         HasMissingCost = item.UnitCost == null && (product == null || product.CostPrice == 0m)
       } by 1
       into g
@@ -94,17 +94,6 @@ public sealed class EfDailyClosingDataGatherer(AppDbContext dbContext) : IDailyC
         s.Status,
       })
       .ToArrayAsync(cancellationToken);
-
-    var sessionIds = sessionHeaders.Select(s => s.Id).ToArray();
-
-    var movementAggregates = sessionIds.Length > 0
-      ? await dbContext.Set<CashMovement>()
-          .AsNoTracking()
-          .Where(m => sessionIds.Contains(m.CashSessionId))
-          .GroupBy(m => new { m.CashSessionId, m.Type })
-          .Select(g => new { g.Key.CashSessionId, g.Key.Type, Total = g.Sum(m => m.Amount) })
-          .ToArrayAsync(cancellationToken)
-      : [];
 
     // Compute opening balance of all sessions opened today
     var totalOpeningBalance = sessionHeaders.Sum(s => s.OpeningBalance);

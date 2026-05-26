@@ -1,3 +1,4 @@
+using System.Globalization;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Catalog.Application.Abstractions;
 using SaasCommerce.SharedKernel;
@@ -37,17 +38,17 @@ public sealed class ExportProductsCsvHandler(
       p.Sku,
       p.Name,
       p.ProductType.ToString(),
-      p.SalePrice.ToString("F2"),
-      p.CostPrice.ToString("F2"),
-      p.WholesalePrice?.ToString("F2"),
-      p.TaxRate.ToString("F2"),
+      p.SalePrice.ToString("F2", CultureInfo.InvariantCulture),
+      p.CostPrice.ToString("F2", CultureInfo.InvariantCulture),
+      p.WholesalePrice?.ToString("F2", CultureInfo.InvariantCulture),
+      p.TaxRate.ToString("F2", CultureInfo.InvariantCulture),
       p.UnitOfMeasure.ToString(),
-      p.ProfitMargin?.ToString("F2"),
+      p.ProfitMargin?.ToString("F2", CultureInfo.InvariantCulture),
       p.TrackInventory ? "Sí" : "No",
-      p.MinimumStock?.ToString("F2"),
-      p.ReorderPoint?.ToString("F2"),
+      p.MinimumStock?.ToString("F2", CultureInfo.InvariantCulture),
+      p.ReorderPoint?.ToString("F2", CultureInfo.InvariantCulture),
       p.IsActive ? "Sí" : "No",
-      p.CreatedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)
+      p.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
     ]);
 
     var csv = CsvBuilder.Build(Headers, rows);

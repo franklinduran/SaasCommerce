@@ -1,5 +1,6 @@
 #pragma warning disable CA1707
 
+using System.Globalization;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
@@ -266,11 +267,31 @@ public sealed class DailyClosingUseCaseTests
   }
 
   private static DailyClosing BuildDomainClosing(Guid id)
-    => DailyClosing.Create(
-      id, BId, BranchId, UserGuid, Today,
-      12_000m, 4_000m, 5_000m, 2_000m, 1_000m, 30,
-      4_800m, 2_000m, 7_200m, 4_800m, 2_800m, 40m, 23.33m,
-      1_000m, 2, 500m, null, Now);
+    => DailyClosing.Create(new DailyClosingDraft
+    {
+      Id = id,
+      BusinessId = BId,
+      BranchId = BranchId,
+      CreatedByUserId = UserGuid,
+      ClosingDate = Today,
+      TotalSales = 12_000m,
+      CashSales = 4_000m,
+      TransferSales = 5_000m,
+      CardSales = 2_000m,
+      CreditSales = 1_000m,
+      SalesCount = 30,
+      CashExpected = 4_800m,
+      TotalExpenses = 2_000m,
+      TotalCost = 7_200m,
+      GrossProfit = 4_800m,
+      EstimatedNetProfit = 2_800m,
+      GrossMarginPercent = 40m,
+      NetMarginPercent = 23.33m,
+      NewCreditsAmount = 1_000m,
+      NewCreditsCount = 2,
+      CreditPaymentsReceived = 500m,
+      CreatedAt = Now
+    });
 
   private static DailyClosingDetailResponse BuildDetailResponse()
     => new(
@@ -278,7 +299,7 @@ public sealed class DailyClosingUseCaseTests
       BusinessId: BusinessGuid,
       BranchId: BranchGuid,
       BranchName: "Sucursal Central",
-      ClosingDate: Today.ToString("yyyy-MM-dd"),
+      ClosingDate: Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
       Status: "Draft",
       TotalSales: 12_000m,
       CashSales: 4_000m,
@@ -346,7 +367,7 @@ public sealed class DailyClosingUseCaseTests
       => Task.FromResult(FoundById?.Id == id ? FoundById : null);
 
     public Task<DailyClosing?> GetByDateAndBranchAsync(
-      BusinessId businessId, BranchId branchId, DateOnly date, CancellationToken cancellationToken = default)
+      BusinessId businessId, BranchId branchId, DateOnly closingDate, CancellationToken cancellationToken = default)
       => Task.FromResult(ExistingByDate);
 
     public Task AddAsync(DailyClosing closing, CancellationToken cancellationToken = default)
@@ -380,7 +401,7 @@ public sealed class DailyClosingUseCaseTests
   private sealed class FakeDataGatherer : IDailyClosingDataGatherer
   {
     public Task<DailyClosingData> GatherAsync(
-      BusinessId businessId, BranchId branchId, DateOnly date, CancellationToken cancellationToken = default)
+      BusinessId businessId, BranchId branchId, DateOnly closingDate, CancellationToken cancellationToken = default)
       => Task.FromResult(new DailyClosingData(
         TotalSales: 12_000m,
         CashSales: 4_000m,

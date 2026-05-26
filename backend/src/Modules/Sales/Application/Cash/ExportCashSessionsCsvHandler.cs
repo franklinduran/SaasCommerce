@@ -1,3 +1,4 @@
+using System.Globalization;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.SharedKernel;
@@ -45,13 +46,13 @@ public sealed class ExportCashSessionsCsvHandler(
 
       return (IReadOnlyCollection<string?>)
       [
-        s.OpenedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture),
-        s.ClosedAt?.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+        s.OpenedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+        s.ClosedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
         s.Status.ToString(),
-        s.OpeningBalance.ToString("F2"),
-        s.SystemBalance.ToString("F2"),
-        s.ClosingBalance?.ToString("F2"),
-        difference?.ToString("F2"),
+        s.OpeningBalance.ToString("F2", CultureInfo.InvariantCulture),
+        s.SystemBalance.ToString("F2", CultureInfo.InvariantCulture),
+        s.ClosingBalance?.ToString("F2", CultureInfo.InvariantCulture),
+        difference?.ToString("F2", CultureInfo.InvariantCulture),
         s.Notes
       ];
     });

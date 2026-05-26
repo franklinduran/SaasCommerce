@@ -2,6 +2,33 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Sales.Domain;
 
+public sealed class DailyClosingDraft
+{
+  public required Guid Id { get; init; }
+  public required BusinessId BusinessId { get; init; }
+  public required BranchId BranchId { get; init; }
+  public required Guid CreatedByUserId { get; init; }
+  public required DateOnly ClosingDate { get; init; }
+  public required decimal TotalSales { get; init; }
+  public required decimal CashSales { get; init; }
+  public required decimal TransferSales { get; init; }
+  public required decimal CardSales { get; init; }
+  public required decimal CreditSales { get; init; }
+  public required int SalesCount { get; init; }
+  public required decimal CashExpected { get; init; }
+  public required decimal TotalExpenses { get; init; }
+  public required decimal TotalCost { get; init; }
+  public required decimal GrossProfit { get; init; }
+  public required decimal EstimatedNetProfit { get; init; }
+  public required decimal GrossMarginPercent { get; init; }
+  public required decimal NetMarginPercent { get; init; }
+  public required decimal NewCreditsAmount { get; init; }
+  public required int NewCreditsCount { get; init; }
+  public required decimal CreditPaymentsReceived { get; init; }
+  public string? Notes { get; init; }
+  public required DateTimeOffset CreatedAt { get; init; }
+}
+
 public sealed class DailyClosing
 {
   private readonly List<DailyClosingAlert> alerts = [];
@@ -10,74 +37,45 @@ public sealed class DailyClosing
   {
   }
 
-  private DailyClosing(
-    Guid id,
-    BusinessId businessId,
-    BranchId branchId,
-    Guid createdByUserId,
-    DateOnly closingDate,
-    // Sales
-    decimal totalSales,
-    decimal cashSales,
-    decimal transferSales,
-    decimal cardSales,
-    decimal creditSales,
-    int salesCount,
-    // Cash
-    decimal cashExpected,
-    // Expenses
-    decimal totalExpenses,
-    // Cost / profitability
-    decimal totalCost,
-    decimal grossProfit,
-    decimal estimatedNetProfit,
-    decimal grossMarginPercent,
-    decimal netMarginPercent,
-    // Credits (business-wide for date)
-    decimal newCreditsAmount,
-    int newCreditsCount,
-    decimal creditPaymentsReceived,
-    // Notes
-    string? notes,
-    DateTimeOffset createdAt)
+  private DailyClosing(DailyClosingDraft draft)
   {
-    if (id == Guid.Empty)
+    if (draft.Id == Guid.Empty)
     {
-      throw new ArgumentException("DailyClosing id is required.", nameof(id));
+      throw new ArgumentException("DailyClosing id is required.", nameof(draft));
     }
 
-    if (createdByUserId == Guid.Empty)
+    if (draft.CreatedByUserId == Guid.Empty)
     {
-      throw new ArgumentException("User id is required.", nameof(createdByUserId));
+      throw new ArgumentException("User id is required.", nameof(draft));
     }
 
-    Id = id;
-    BusinessId = businessId;
-    BranchId = branchId;
-    CreatedByUserId = createdByUserId;
-    ClosingDate = closingDate;
+    Id = draft.Id;
+    BusinessId = draft.BusinessId;
+    BranchId = draft.BranchId;
+    CreatedByUserId = draft.CreatedByUserId;
+    ClosingDate = draft.ClosingDate;
     Status = DailyClosingStatus.Draft;
-    TotalSales = totalSales;
-    CashSales = cashSales;
-    TransferSales = transferSales;
-    CardSales = cardSales;
-    CreditSales = creditSales;
-    SalesCount = salesCount;
-    CashExpected = cashExpected;
+    TotalSales = draft.TotalSales;
+    CashSales = draft.CashSales;
+    TransferSales = draft.TransferSales;
+    CardSales = draft.CardSales;
+    CreditSales = draft.CreditSales;
+    SalesCount = draft.SalesCount;
+    CashExpected = draft.CashExpected;
     CashCounted = null;
     CashDifference = null;
-    TotalExpenses = totalExpenses;
-    TotalCost = totalCost;
-    GrossProfit = grossProfit;
-    EstimatedNetProfit = estimatedNetProfit;
-    GrossMarginPercent = grossMarginPercent;
-    NetMarginPercent = netMarginPercent;
-    NewCreditsAmount = newCreditsAmount;
-    NewCreditsCount = newCreditsCount;
-    CreditPaymentsReceived = creditPaymentsReceived;
-    Notes = notes?.Trim();
-    CreatedAt = createdAt;
-    UpdatedAt = createdAt;
+    TotalExpenses = draft.TotalExpenses;
+    TotalCost = draft.TotalCost;
+    GrossProfit = draft.GrossProfit;
+    EstimatedNetProfit = draft.EstimatedNetProfit;
+    GrossMarginPercent = draft.GrossMarginPercent;
+    NetMarginPercent = draft.NetMarginPercent;
+    NewCreditsAmount = draft.NewCreditsAmount;
+    NewCreditsCount = draft.NewCreditsCount;
+    CreditPaymentsReceived = draft.CreditPaymentsReceived;
+    Notes = draft.Notes?.Trim();
+    CreatedAt = draft.CreatedAt;
+    UpdatedAt = draft.CreatedAt;
   }
 
   public Guid Id { get; private set; }
@@ -148,36 +146,8 @@ public sealed class DailyClosing
 
   // ── Factory ──────────────────────────────────────────────────────────────────
 
-  public static DailyClosing Create(
-    Guid id,
-    BusinessId businessId,
-    BranchId branchId,
-    Guid createdByUserId,
-    DateOnly closingDate,
-    decimal totalSales,
-    decimal cashSales,
-    decimal transferSales,
-    decimal cardSales,
-    decimal creditSales,
-    int salesCount,
-    decimal cashExpected,
-    decimal totalExpenses,
-    decimal totalCost,
-    decimal grossProfit,
-    decimal estimatedNetProfit,
-    decimal grossMarginPercent,
-    decimal netMarginPercent,
-    decimal newCreditsAmount,
-    int newCreditsCount,
-    decimal creditPaymentsReceived,
-    string? notes,
-    DateTimeOffset createdAt)
-    => new(
-      id, businessId, branchId, createdByUserId, closingDate,
-      totalSales, cashSales, transferSales, cardSales, creditSales, salesCount,
-      cashExpected, totalExpenses, totalCost, grossProfit, estimatedNetProfit,
-      grossMarginPercent, netMarginPercent, newCreditsAmount, newCreditsCount,
-      creditPaymentsReceived, notes, createdAt);
+  public static DailyClosing Create(DailyClosingDraft draft)
+    => new(draft);
 
   // ── Behaviour ────────────────────────────────────────────────────────────────
 

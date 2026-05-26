@@ -1,5 +1,5 @@
 import { AlertTriangle, CalendarDays, CheckCircle2, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { useBranches } from '@/modules/branches/hooks/useBranches'
@@ -56,17 +56,15 @@ export function DailyClosingPage() {
   const defaultBranchId = session?.user.branchId ?? ''
 
   const [date, setDate] = useState(todayString())
-  const [branchId, setBranchId] = useState(defaultBranchId)
+  const [selectedBranchId, setSelectedBranchId] = useState(defaultBranchId)
   const [notes, setNotes] = useState('')
 
   const { data: branchesData } = useBranches({ isActive: true })
   const branchList = branchesData?.items ?? []
 
-  useEffect(() => {
-    if (!branchId && branchList.length > 0) {
-      setBranchId(branchList[0].id)
-    }
-  }, [branchId, branchList])
+  // Derive branchId: prefer user selection, fallback to first available branch
+  const defaultListBranchId = branchList[0]?.id ?? ''
+  const branchId = selectedBranchId.length > 0 ? selectedBranchId : defaultListBranchId
 
   const canPreview = Boolean(date) && Boolean(branchId)
 
@@ -85,9 +83,10 @@ export function DailyClosingPage() {
 
   function handleCreate() {
     if (!date || !branchId) return
+    const normalizedNotes = notes.trim()
     createClosing(
-      { date, branchId, notes: notes.trim() || undefined },
-      { onSuccess: (closing) => navigate(`/daily-closing/${closing.id}`) },
+      { date, branchId, notes: normalizedNotes.length > 0 ? normalizedNotes : undefined },
+      { onSuccess: (closing) => { navigate(`/daily-closing/${closing.id}`) } },
     )
   }
 
@@ -124,7 +123,7 @@ export function DailyClosingPage() {
           <div className="space-y-1.5">
             <Label htmlFor="closing-branch">Sucursal</Label>
             {branchList.length > 0 ? (
-              <Select value={branchId} onValueChange={setBranchId}>
+              <Select value={branchId} onValueChange={setSelectedBranchId}>
                 <SelectTrigger id="closing-branch">
                   <SelectValue placeholder="Selecciona sucursal" />
                 </SelectTrigger>

@@ -212,7 +212,7 @@ export function ExpenseDetailPage() {
   )
 }
 
-function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function Row({ label, value, bold }: Readonly<{ label: string; value: string; bold?: boolean }>) {
   return (
     <div className="flex justify-between text-sm">
       <span className="text-stone-500">{label}</span>

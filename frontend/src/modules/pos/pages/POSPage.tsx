@@ -292,48 +292,28 @@ function getValidationMessage(error: z.ZodError<CreateSaleRequest>) {
   return 'Revisa los datos de la venta.'
 }
 
-function getSaleErrorMessage(error: unknown) {
-  if (error instanceof HttpClientError) {
-    if (error.status === 401) {
-      return 'La sesion expiro. Inicia sesion nuevamente.'
-    }
+// Fixed Spanish messages — never overridden by API (predictable UX)
+const SALE_ERROR_MESSAGES: Record<string, string> = {
+  CASH_SESSION_NOT_OPEN: 'No hay caja abierta. Ve a Caja y abre una sesion primero.',
+  NO_OPEN_CASH_SESSION: 'No hay caja abierta. Ve a Caja y abre una sesion primero.',
+  SUBSCRIPTION_EXPIRED: 'Tu suscripcion ha expirado. Renovela para continuar vendiendo.',
+  SUBSCRIPTION_SUSPENDED: 'Tu cuenta esta suspendida. Contacta a soporte.',
+}
 
-    if (error.status === 403) {
-      return 'Sin permiso para esta operacion. Verifica tu suscripcion o permisos.'
-    }
+function getSaleErrorMessage(error: unknown): string {
+  if (!(error instanceof HttpClientError)) return 'No se pudo crear la venta.'
 
-    if (error.status === 404) {
-      return 'Uno de los productos no esta disponible.'
-    }
+  const { status } = error
+  const code = error.error?.code ?? ''
 
-    const code = error.error?.code
+  if (status === 401) return 'La sesion expiro. Inicia sesion nuevamente.'
+  if (status === 403) return 'Sin permiso para esta operacion. Verifica tu suscripcion o permisos.'
+  if (status === 404) return 'Uno de los productos no esta disponible.'
+  if (code in SALE_ERROR_MESSAGES) return SALE_ERROR_MESSAGES[code]
+  if (code === 'SUBSCRIPTION_LIMIT_REACHED') return error.error?.message ?? 'Has alcanzado el limite de tu plan.'
+  if (status === 400 || status === 422) return error.error?.message ?? error.message ?? 'Los datos de la venta no son validos.'
 
-    if (error.status === 409) {
-      if (code === 'CASH_SESSION_NOT_OPEN' || code === 'NO_OPEN_CASH_SESSION') {
-        return 'No hay caja abierta. Ve a Caja y abre una sesion primero.'
-      }
-    }
-
-    if (code === 'SUBSCRIPTION_LIMIT_REACHED') {
-      return error.error?.message || 'Has alcanzado el limite de tu plan. Cambia de plan para continuar.'
-    }
-
-    if (code === 'SUBSCRIPTION_EXPIRED') {
-      return 'Tu suscripcion ha expirado. Renovela para continuar vendiendo.'
-    }
-
-    if (code === 'SUBSCRIPTION_SUSPENDED') {
-      return 'Tu cuenta esta suspendida. Contacta a soporte.'
-    }
-
-    if (error.status === 400 || error.status === 422) {
-      return error.error?.message || error.message || 'Los datos de la venta no son validos.'
-    }
-
-    return error.message || 'No se pudo crear la venta.'
-  }
-
-  return 'No se pudo crear la venta.'
+  return error.message ?? 'No se pudo crear la venta.'
 }
 
 function isTerminalSaleStatus(status: SaleStatus) {

@@ -21,7 +21,7 @@ public sealed class PilotBusinessTests
     new(2026, 5, 24, 12, 0, 0, TimeSpan.Zero);
 
   [Fact]
-  public async Task CreatePilotBusinessHandler_ShouldCreateBusinessBranchAndAdmin_WhenRequestIsValid()
+  public async Task CreatePilotBusinessHandlerShouldCreateBusinessBranchAndAdminWhenRequestIsValid()
   {
     await using var db = CreateDbContext();
     await SeedPlansAsync(db);
@@ -45,7 +45,7 @@ public sealed class PilotBusinessTests
   }
 
   [Fact]
-  public async Task CreatePilotBusinessHandler_ShouldRejectDuplicateEmail_WhenAdminEmailAlreadyExists()
+  public async Task CreatePilotBusinessHandlerShouldRejectDuplicateEmailWhenAdminEmailAlreadyExists()
   {
     await using var db = CreateDbContext();
     await SeedPlansAsync(db);
@@ -62,7 +62,7 @@ public sealed class PilotBusinessTests
   }
 
   [Fact]
-  public async Task CreatePilotBusinessHandler_ShouldRejectDuplicateIdentification_WhenRncAlreadyExists()
+  public async Task CreatePilotBusinessHandlerShouldRejectDuplicateIdentificationWhenRncAlreadyExists()
   {
     await using var db = CreateDbContext();
     await SeedPlansAsync(db);
@@ -76,7 +76,7 @@ public sealed class PilotBusinessTests
   }
 
   [Fact]
-  public async Task CreatePilotBusinessHandler_ShouldFailValidation_WhenRequiredFieldsMissing()
+  public async Task CreatePilotBusinessHandlerShouldFailValidationWhenRequiredFieldsMissing()
   {
     await using var db = CreateDbContext();
     await SeedPlansAsync(db);
@@ -93,7 +93,7 @@ public sealed class PilotBusinessTests
   }
 
   [Fact]
-  public async Task CreatePilotBusinessHandler_ShouldRejectPasswordTooShort()
+  public async Task CreatePilotBusinessHandlerShouldRejectPasswordTooShort()
   {
     await using var db = CreateDbContext();
     await SeedPlansAsync(db);
@@ -106,7 +106,7 @@ public sealed class PilotBusinessTests
   }
 
   [Fact]
-  public async Task CreatePilotBusinessHandler_ShouldRejectInvalidIdentificationType()
+  public async Task CreatePilotBusinessHandlerShouldRejectInvalidIdentificationType()
   {
     await using var db = CreateDbContext();
     await SeedPlansAsync(db);
@@ -145,16 +145,18 @@ public sealed class PilotBusinessTests
     var currentUser = new FakeSaasAdminCurrentUser();
     var auditLogWriter = new NoOpAuditLogWriter();
 
-    return new CreatePilotBusinessHandler(
-      businesses,
-      users,
-      passwordHasher,
-      subscriptionPlans,
-      subscriptions,
-      clock,
-      unitOfWork,
-      auditLogWriter,
-      currentUser);
+    return new CreatePilotBusinessHandler(new CreatePilotBusinessDependencies
+    {
+      Businesses = businesses,
+      Users = users,
+      PasswordHasher = passwordHasher,
+      SubscriptionPlans = subscriptionPlans,
+      Subscriptions = subscriptions,
+      Clock = clock,
+      UnitOfWork = unitOfWork,
+      AuditLogWriter = auditLogWriter,
+      CurrentUser = currentUser
+    });
   }
 
   private static AppDbContext CreateDbContext()

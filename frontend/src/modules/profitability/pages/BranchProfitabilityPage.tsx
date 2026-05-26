@@ -20,6 +20,13 @@ function defaultFilters(): Omit<ProfitabilityFilters, 'branchId'> {
   }
 }
 
+function branchSummaryText(count: number) {
+  if (count === 0) return 'Comparativa de ganancias por sucursal.'
+
+  const suffix = count === 1 ? '' : 'es'
+  return `${count} sucursal${suffix} con ventas en el período`
+}
+
 export function BranchProfitabilityPage() {
   const navigate = useNavigate()
   const [filters] = useState(defaultFilters)
@@ -35,11 +42,7 @@ export function BranchProfitabilityPage() {
         </Button>
         <div>
           <h2 className="text-lg font-semibold text-stone-900">Rentabilidad por sucursal</h2>
-          <p className="text-sm text-stone-500">
-            {branches.length > 0
-              ? `${branches.length} sucursal${branches.length !== 1 ? 'es' : ''} con ventas en el período`
-              : 'Comparativa de ganancias por sucursal.'}
-          </p>
+          <p className="text-sm text-stone-500">{branchSummaryText(branches.length)}</p>
         </div>
       </div>
 

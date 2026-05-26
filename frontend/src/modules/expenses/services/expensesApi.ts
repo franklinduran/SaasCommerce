@@ -48,8 +48,9 @@ export const expensesApi = {
     if (filters?.pageSize) query.set('pageSize', String(filters.pageSize))
 
     const qs = query.toString()
+    const querySuffix = qs ? `?${qs}` : ''
     const response = await httpClient<OperatingExpensesListResult>(
-      `/api/expenses${qs ? `?${qs}` : ''}`,
+      `/api/expenses${querySuffix}`,
       { accessToken: getAccessToken() },
     )
     return response.data!

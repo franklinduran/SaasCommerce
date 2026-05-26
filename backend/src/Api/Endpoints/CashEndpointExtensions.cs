@@ -43,18 +43,19 @@ internal static class CashEndpointExtensions
     app.MapGet(
       "/api/cash-sessions",
       async (
-        Guid? branchId,
-        string? status,
-        DateTimeOffset? dateFrom,
-        DateTimeOffset? dateTo,
-        int? page,
-        int? pageSize,
+        [AsParameters] CashSessionsParameters parameters,
         GetCashSessionsHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
         var result = await handler.Handle(
-          new GetCashSessionsQuery(branchId, status, dateFrom, dateTo, page ?? 1, pageSize ?? 20),
+          new GetCashSessionsQuery(
+            parameters.BranchId,
+            parameters.Status,
+            parameters.DateFrom,
+            parameters.DateTo,
+            parameters.Page ?? 1,
+            parameters.PageSize ?? 20),
           cancellationToken);
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
@@ -111,4 +112,14 @@ internal static class CashEndpointExtensions
 
     return app;
   }
+}
+
+internal sealed class CashSessionsParameters
+{
+  public Guid? BranchId { get; init; }
+  public string? Status { get; init; }
+  public DateTimeOffset? DateFrom { get; init; }
+  public DateTimeOffset? DateTo { get; init; }
+  public int? Page { get; init; }
+  public int? PageSize { get; init; }
 }

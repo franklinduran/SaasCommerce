@@ -11,7 +11,7 @@ interface NotificationDropdownProps {
   onClose?: () => void
 }
 
-export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
+export function NotificationDropdown({ onClose }: Readonly<NotificationDropdownProps>) {
   const navigate = useNavigate()
   const { data, isLoading } = useNotifications({ page: 1, pageSize: 10 })
   const markRead = useMarkNotificationRead()

@@ -1,3 +1,4 @@
+using System.Globalization;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.SharedKernel;
@@ -42,10 +43,10 @@ public sealed class ExportDailyClosingsCsvHandler(
       dc.ClosingDate,
       dc.BranchName,
       dc.Status,
-      dc.TotalSales.ToString("F2"),
-      dc.EstimatedNetProfit.ToString("F2"),
-      dc.NetMarginPercent.ToString("F2"),
-      dc.AlertCount.ToString()
+      dc.TotalSales.ToString("F2", CultureInfo.InvariantCulture),
+      dc.EstimatedNetProfit.ToString("F2", CultureInfo.InvariantCulture),
+      dc.NetMarginPercent.ToString("F2", CultureInfo.InvariantCulture),
+      dc.AlertCount.ToString(CultureInfo.InvariantCulture)
     ]);
 
     var csv = CsvBuilder.Build(Headers, rows);

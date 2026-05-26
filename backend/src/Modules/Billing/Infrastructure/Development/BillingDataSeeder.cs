@@ -34,56 +34,65 @@ public static class BillingDataSeeder
 
     var basicPlan = SubscriptionPlan.Create(
       BasicPlanId,
-      "Basic",
-      SubscriptionPlanCodes.Basic,
-      "Perfect for small businesses just starting out. Includes essential features for managing sales and inventory.",
-      29m,
-      maxBranches: 1,
-      maxUsers: 2,
-      maxProducts: 300,
-      maxSalesPerMonth: 1000,
-      SubscriptionFeature.Sales |
-        SubscriptionFeature.Products |
-        SubscriptionFeature.Branches |
-        SubscriptionFeature.Users |
-        SubscriptionFeature.Purchases |
-        SubscriptionFeature.Invoices |
-        SubscriptionFeature.Payments,
+      new SubscriptionPlanDefinition
+      {
+        Name = "Basic",
+        Code = SubscriptionPlanCodes.Basic,
+        Description = "Perfect for small businesses just starting out. Includes essential features for managing sales and inventory.",
+        MonthlyPrice = 29m,
+        MaxBranches = 1,
+        MaxUsers = 2,
+        MaxProducts = 300,
+        MaxSalesPerMonth = 1000,
+        Features = SubscriptionFeatures.Sales |
+          SubscriptionFeatures.Products |
+          SubscriptionFeatures.Branches |
+          SubscriptionFeatures.Users |
+          SubscriptionFeatures.Purchases |
+          SubscriptionFeatures.Invoices |
+          SubscriptionFeatures.Payments
+      },
       now);
 
     var proPlan = SubscriptionPlan.Create(
       ProPlanId,
-      "Pro",
-      SubscriptionPlanCodes.Pro,
-      "Great for growing businesses. Multiple locations, advanced reporting, and inventory transfers.",
-      99m,
-      maxBranches: 3,
-      maxUsers: 10,
-      maxProducts: 2000,
-      maxSalesPerMonth: 10000,
-      SubscriptionFeature.Sales
-        | SubscriptionFeature.Products
-        | SubscriptionFeature.Branches
-        | SubscriptionFeature.Users
-        | SubscriptionFeature.Purchases
-        | SubscriptionFeature.InventoryTransfers
-        | SubscriptionFeature.Invoices
-        | SubscriptionFeature.Payments
-        | SubscriptionFeature.Reports
-        | SubscriptionFeature.AuditLogs,
+      new SubscriptionPlanDefinition
+      {
+        Name = "Pro",
+        Code = SubscriptionPlanCodes.Pro,
+        Description = "Great for growing businesses. Multiple locations, advanced reporting, and inventory transfers.",
+        MonthlyPrice = 99m,
+        MaxBranches = 3,
+        MaxUsers = 10,
+        MaxProducts = 2000,
+        MaxSalesPerMonth = 10000,
+        Features = SubscriptionFeatures.Sales
+          | SubscriptionFeatures.Products
+          | SubscriptionFeatures.Branches
+          | SubscriptionFeatures.Users
+          | SubscriptionFeatures.Purchases
+          | SubscriptionFeatures.InventoryTransfers
+          | SubscriptionFeatures.Invoices
+          | SubscriptionFeatures.Payments
+          | SubscriptionFeatures.Reports
+          | SubscriptionFeatures.AuditLogs
+      },
       now);
 
     var premiumPlan = SubscriptionPlan.Create(
       PremiumPlanId,
-      "Premium",
-      SubscriptionPlanCodes.Premium,
-      "Enterprise-grade solution with unlimited everything and priority support.",
-      299m,
-      maxBranches: 999,
-      maxUsers: 999,
-      maxProducts: 999999,
-      maxSalesPerMonth: 999999,
-      SubscriptionFeature.All,
+      new SubscriptionPlanDefinition
+      {
+        Name = "Premium",
+        Code = SubscriptionPlanCodes.Premium,
+        Description = "Enterprise-grade solution with unlimited everything and priority support.",
+        MonthlyPrice = 299m,
+        MaxBranches = 999,
+        MaxUsers = 999,
+        MaxProducts = 999999,
+        MaxSalesPerMonth = 999999,
+        Features = SubscriptionFeatures.All
+      },
       now);
 
     await context.Set<SubscriptionPlan>().AddAsync(basicPlan);

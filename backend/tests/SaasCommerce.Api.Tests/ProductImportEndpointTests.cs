@@ -16,7 +16,7 @@ namespace SaasCommerce.Api.Tests;
 public sealed class ProductImportEndpointTests
 {
   [Fact]
-  public async Task GetImportTemplate_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetImportTemplateShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -27,7 +27,7 @@ public sealed class ProductImportEndpointTests
   }
 
   [Fact]
-  public async Task GetImportTemplate_ShouldReturn200_WithCsvContent_WhenAuthenticated()
+  public async Task GetImportTemplateShouldReturn200WithCsvContentWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -42,7 +42,7 @@ public sealed class ProductImportEndpointTests
   }
 
   [Fact]
-  public async Task PostImportProducts_ShouldReturn401_WhenNotAuthenticated()
+  public async Task PostImportProductsShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -54,7 +54,7 @@ public sealed class ProductImportEndpointTests
   }
 
   [Fact]
-  public async Task PostImportProducts_ShouldReturn201_WhenCsvIsValid()
+  public async Task PostImportProductsShouldReturn201WhenCsvIsValid()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -78,7 +78,7 @@ public sealed class ProductImportEndpointTests
   }
 
   [Fact]
-  public async Task PostImportProducts_ShouldReturn400_WhenFileIsEmpty()
+  public async Task PostImportProductsShouldReturn400WhenFileIsEmpty()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -93,7 +93,7 @@ public sealed class ProductImportEndpointTests
   }
 
   [Fact]
-  public async Task PostImportProducts_ShouldReturn201_WithSkippedRows_WhenSomeRowsAreInvalid()
+  public async Task PostImportProductsShouldReturn201WithSkippedRowsWhenSomeRowsAreInvalid()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -116,7 +116,7 @@ public sealed class ProductImportEndpointTests
   }
 
   [Fact]
-  public async Task PostImportProducts_ShouldReturn201_WithSkippedRow_WhenSkuIsDuplicated()
+  public async Task PostImportProductsShouldReturn201WithSkippedRowWhenSkuIsDuplicated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -154,9 +154,10 @@ public sealed class ProductImportEndpointTests
     var fileContent = new ByteArrayContent(bytes);
     fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
 
-    var form = new MultipartFormDataContent();
-    form.Add(fileContent, "file", "products.csv");
-    return form;
+    return new MultipartFormDataContent
+    {
+      { fileContent, "file", "products.csv" }
+    };
   }
 
   private static async Task AuthenticateAsync(HttpClient client)
@@ -176,16 +177,16 @@ public sealed class ProductImportEndpointTests
         builder.UseEnvironment("Development");
         builder.ConfigureAppConfiguration((_, cfg) =>
         {
-          cfg.AddInMemoryCollection(new Dictionary<string, string?>
-          {
-            ["ConnectionStrings:DefaultConnection"] = "",
-            ["Database:InMemoryName"] = Guid.NewGuid().ToString("D"),
-            ["RabbitMq:UseInMemory"] = "true",
-            ["Jwt:Secret"] = "test-secret-with-at-least-32-characters",
-            ["Jwt:Issuer"] = "SaasCommerce.Tests",
-            ["Jwt:Audience"] = "SaasCommerce.Tests",
-            ["Jwt:AccessTokenMinutes"] = "30"
-          });
+          cfg.AddInMemoryCollection(
+          [
+            new("ConnectionStrings:DefaultConnection", ""),
+            new("Database:InMemoryName", Guid.NewGuid().ToString("D")),
+            new("RabbitMq:UseInMemory", "true"),
+            new("Jwt:Secret", "test-secret-with-at-least-32-characters"),
+            new("Jwt:Issuer", "SaasCommerce.Tests"),
+            new("Jwt:Audience", "SaasCommerce.Tests"),
+            new("Jwt:AccessTokenMinutes", "30")
+          ]);
         });
       });
 }

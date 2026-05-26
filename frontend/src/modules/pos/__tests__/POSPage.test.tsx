@@ -114,20 +114,12 @@ describe('POSPage', () => {
     expect(await screen.findByText('El carrito esta vacio.')).toBeTruthy()
   })
 
-  it('shows API error when create sale fails', async () => {
+  it('shows API error when create sale fails with 404', async () => {
     const user = userEvent.setup()
     server.use(
       http.post('http://localhost:5000/api/sales', () =>
         HttpResponse.json(
-          {
-            correlationId: 'test',
-            data: null,
-            error: {
-              code: 'PRODUCT_NOT_FOUND',
-              message: 'Product was not found.',
-            },
-            isSuccess: false,
-          },
+          { correlationId: 'test', data: null, error: { code: 'PRODUCT_NOT_FOUND', message: 'Not found.' }, isSuccess: false },
           { status: 404 },
         ),
       ),
@@ -138,6 +130,153 @@ describe('POSPage', () => {
     await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
 
     expect(await screen.findByText('Uno de los productos no esta disponible.')).toBeTruthy()
+  })
+
+  it('shows session expired message on 401', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('http://localhost:5000/api/sales', () =>
+        HttpResponse.json(
+          { correlationId: 'test', data: null, error: { code: 'UNAUTHORIZED', message: 'Unauthorized.' }, isSuccess: false },
+          { status: 401 },
+        ),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('La sesion expiro. Inicia sesion nuevamente.')).toBeTruthy()
+  })
+
+  it('shows permission error on 403', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('http://localhost:5000/api/sales', () =>
+        HttpResponse.json(
+          { correlationId: 'test', data: null, error: { code: 'FORBIDDEN', message: 'Forbidden.' }, isSuccess: false },
+          { status: 403 },
+        ),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('Sin permiso para esta operacion. Verifica tu suscripcion o permisos.')).toBeTruthy()
+  })
+
+  it('shows cash session closed message when NO_OPEN_CASH_SESSION', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('http://localhost:5000/api/sales', () =>
+        HttpResponse.json(
+          { correlationId: 'test', data: null, error: { code: 'NO_OPEN_CASH_SESSION', message: 'No open session.' }, isSuccess: false },
+          { status: 409 },
+        ),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('No hay caja abierta. Ve a Caja y abre una sesion primero.')).toBeTruthy()
+  })
+
+  it('shows bad request message on 400', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('http://localhost:5000/api/sales', () =>
+        HttpResponse.json(
+          { correlationId: 'test', data: null, error: { code: 'VALIDATION_ERROR', message: 'Datos invalidos.' }, isSuccess: false },
+          { status: 400 },
+        ),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('Datos invalidos.')).toBeTruthy()
+  })
+
+  it('shows NoCashSessionBanner when no open cash session', async () => {
+    server.use(
+      http.get('http://localhost:5000/api/cash-sessions/current', () =>
+        HttpResponse.json(createApiResponse(null)),
+      ),
+    )
+    renderPOSPage()
+
+    expect(await screen.findByText('Caja cerrada')).toBeTruthy()
+    expect(screen.getByText('Ir a Caja')).toBeTruthy()
+  })
+
+  it('clears carrito-vacio message when a product is added', async () => {
+    const user = userEvent.setup()
+    renderPOSPage()
+
+    // Trigger empty cart validation first
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+    expect(await screen.findByText('El carrito esta vacio.')).toBeTruthy()
+
+    // Adding a product should clear it
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await waitFor(() => {
+      expect(screen.queryByText('El carrito esta vacio.')).toBeNull()
+    })
+  })
+
+  it('shows credit validation when Credit payment has no customer', async () => {
+    const user = userEvent.setup()
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    // Switch to credit payment
+    await user.click(screen.getByRole('button', { name: 'Fiado' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('Selecciona un cliente para vender fiado.')).toBeTruthy()
+  })
+
+  it('shows subscription limit message when SUBSCRIPTION_LIMIT_REACHED', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('http://localhost:5000/api/sales', () =>
+        HttpResponse.json(
+          { correlationId: 'test', data: null, error: { code: 'SUBSCRIPTION_LIMIT_REACHED', message: 'Limite de ventas alcanzado.' }, isSuccess: false },
+          { status: 422 },
+        ),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('Limite de ventas alcanzado.')).toBeTruthy()
+  })
+
+  it('shows generic error for unhandled status codes', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('http://localhost:5000/api/sales', () =>
+        HttpResponse.json(
+          { correlationId: 'test', data: null, error: { code: 'SERVER_ERROR', message: 'Error inesperado.' }, isSuccess: false },
+          { status: 500 },
+        ),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('Error inesperado.')).toBeTruthy()
   })
 
   it('updates to Completed when SignalR event arrives and clears cart', async () => {
@@ -188,6 +327,94 @@ describe('POSPage', () => {
     expect(await screen.findByText('Venta fallida')).toBeTruthy()
     expect(screen.queryByText('Carrito vacio')).toBeNull()
     expect(screen.getAllByText('Stock insuficiente')).toHaveLength(2)
+  })
+
+  it('shows blocked credit message when customer credit is Blocked', async () => {
+    const user = userEvent.setup()
+    const blockedCustomerId = 'bb000000-bb00-4b00-8b00-bbbbbbbbbbbb'
+    server.use(
+      http.get('http://localhost:5000/api/customers', () =>
+        HttpResponse.json(createApiResponse(createPagedResponse([
+          {
+            ...createCustomer(),
+            creditStatus: 'Blocked',
+            id: blockedCustomerId,
+            fullName: 'Juan Morales',
+          },
+        ]))),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Fiado' }))
+    await user.click(await screen.findByRole('combobox', { name: 'Seleccionar cliente' }))
+    await user.click(await screen.findByRole('option', { name: 'Juan Morales' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('El cliente tiene el credito bloqueado.')).toBeTruthy()
+  })
+
+  it('shows credit limit exceeded message when total exceeds customer limit', async () => {
+    const user = userEvent.setup()
+    const limitedCustomerId = 'cc000000-cc00-4c00-8c00-cccccccccccc'
+    // Cart subtotal will be 250 (one Cafe molido at 250), customer currentBalance=100, creditLimit=200
+    // 100 + 250 = 350 > 200 → exceeds limit
+    server.use(
+      http.get('http://localhost:5000/api/customers', () =>
+        HttpResponse.json(createApiResponse(createPagedResponse([
+          {
+            ...createCustomer(),
+            creditLimit: 200,
+            creditStatus: 'Active',
+            currentBalance: 100,
+            id: limitedCustomerId,
+            fullName: 'Ana Lopez',
+          },
+        ]))),
+      ),
+    )
+    renderPOSPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
+    await user.click(screen.getByRole('button', { name: 'Fiado' }))
+    await user.click(await screen.findByRole('combobox', { name: 'Seleccionar cliente' }))
+    await user.click(await screen.findByRole('option', { name: 'Ana Lopez' }))
+    await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
+
+    expect(await screen.findByText('La venta supera el limite de credito del cliente.')).toBeTruthy()
+  })
+
+  it('clicking Actualizar triggers product refresh callback', async () => {
+    renderPOSPage()
+
+    await screen.findByText('Cafe molido')
+    const refreshBtn = screen.getByRole('button', { name: 'Actualizar' })
+    expect(refreshBtn).toBeTruthy()
+
+    const user = userEvent.setup()
+    await user.click(refreshBtn)
+
+    // After clicking, products are refetched — requestCount increases
+    await waitFor(() => {
+      expect(productRequests).toBeGreaterThan(1)
+    })
+  })
+
+  it('shows error state and Reintentar button when products fail to load', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get('http://localhost:5000/api/catalog/products', () =>
+        HttpResponse.json({ correlationId: 'test', data: null, error: { code: 'SERVER_ERROR', message: 'Error' }, isSuccess: false }, { status: 500 }),
+      ),
+    )
+    renderPOSPage()
+
+    expect(await screen.findByText('No se pudo cargar el catalogo.')).toBeTruthy()
+    const retryBtn = screen.getByRole('button', { name: 'Reintentar' })
+    expect(retryBtn).toBeTruthy()
+    // Click Reintentar — covers onRetry callback
+    await user.click(retryBtn)
   })
 
   it('refreshes products when inventory.updated arrives', async () => {

@@ -2,5 +2,5 @@ projectKey=comercioflow-saas
 serverUrl=http://localhost:9000
 serverVersion=25.1.0.102122
 dashboardUrl=http://localhost:9000/dashboard?id=comercioflow-saas
-ceTaskId=410f7c01-0abf-471f-928e-53597b1dafae
-ceTaskUrl=http://localhost:9000/api/ce/task?id=410f7c01-0abf-471f-928e-53597b1dafae
+ceTaskId=ba5ae9bc-968a-4658-8dcf-0966dcabc8bd
+ceTaskUrl=http://localhost:9000/api/ce/task?id=ba5ae9bc-968a-4658-8dcf-0966dcabc8bd

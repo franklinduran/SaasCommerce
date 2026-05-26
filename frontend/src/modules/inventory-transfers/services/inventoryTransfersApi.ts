@@ -27,8 +27,9 @@ export async function getInventoryTransfers(
   filters: InventoryTransferFilters,
 ): Promise<InventoryTransferListResponse> {
   const qs = toQueryString(filters as Record<string, boolean | number | string | null | undefined>)
+  const querySuffix = qs ? `?${qs}` : ''
   const response = await httpClient<InventoryTransferListResponse>(
-    `/api/inventory-transfers${qs ? `?${qs}` : ''}`,
+    `/api/inventory-transfers${querySuffix}`,
     { accessToken: getAccessToken() },
   )
 

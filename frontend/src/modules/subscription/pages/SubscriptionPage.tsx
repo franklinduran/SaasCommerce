@@ -438,7 +438,7 @@ function mergeFeatures(plan: SubscriptionPlan, usageFeatures: FeatureStatus[]) {
   const names = new Set([...plan.features, ...usageFeatures.map((feature) => feature.name)])
 
   return Array.from(names)
-    .sort()
+    .sort((a, b) => a.localeCompare(b, 'es-DO'))
     .map((name) => ({
       enabled: usageFeatures.find((feature) => feature.name === name)?.isEnabled ?? plan.features.includes(name),
       name,

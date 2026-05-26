@@ -1,5 +1,6 @@
 import { ArrowDownLeft, ArrowUpRight, Banknote, CheckCircle, Clock, Loader2, Plus, X } from 'lucide-react'
 import { useState } from 'react'
+import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   useCloseCashSession,
@@ -60,7 +61,7 @@ function OpenSessionPanel() {
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  async function handleOpen(e: React.FormEvent) {
+  async function handleOpen(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     const balance = parseFloat(openingBalance)
@@ -209,7 +210,7 @@ function ActiveSessionPanel({ session, onViewHistory }: Readonly<ActiveSessionPa
             </div>
             <Badge className="mt-1" variant="outline">
               <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-green-500" />
-              Abierta
+              {'Abierta'}
             </Badge>
           </CardContent>
         </Card>
@@ -322,7 +323,7 @@ function MovementForm({ sessionId, onClose }: Readonly<MovementFormProps>) {
   const [description, setDescription] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     const parsedAmount = parseFloat(amount)
@@ -437,7 +438,7 @@ function CloseSessionForm({ session, onClose, onSuccess }: Readonly<CloseSession
   const [closingBalance, setClosingBalance] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     const balance = parseFloat(closingBalance)

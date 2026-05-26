@@ -13,15 +13,7 @@ public sealed class SubscriptionPlan
 
   private SubscriptionPlan(
     Guid id,
-    string name,
-    string code,
-    string description,
-    decimal monthlyPrice,
-    int maxBranches,
-    int maxUsers,
-    int maxProducts,
-    int maxSalesPerMonth,
-    SubscriptionFeature features,
+    SubscriptionPlanDefinition definition,
     DateTimeOffset createdAt)
   {
     if (id == Guid.Empty)
@@ -29,51 +21,10 @@ public sealed class SubscriptionPlan
       throw new ArgumentException("Plan id cannot be empty.", nameof(id));
     }
 
-    if (string.IsNullOrWhiteSpace(name))
-    {
-      throw new ArgumentException("Plan name is required.", nameof(name));
-    }
-
-    if (string.IsNullOrWhiteSpace(code))
-    {
-      throw new ArgumentException("Plan code is required.", nameof(code));
-    }
-
-    if (monthlyPrice < 0)
-    {
-      throw new ArgumentOutOfRangeException(nameof(monthlyPrice), "Monthly price cannot be negative.");
-    }
-
-    if (maxBranches < 1)
-    {
-      throw new ArgumentOutOfRangeException(nameof(maxBranches), "Max branches must be at least 1.");
-    }
-
-    if (maxUsers < 1)
-    {
-      throw new ArgumentOutOfRangeException(nameof(maxUsers), "Max users must be at least 1.");
-    }
-
-    if (maxProducts < 1)
-    {
-      throw new ArgumentOutOfRangeException(nameof(maxProducts), "Max products must be at least 1.");
-    }
-
-    if (maxSalesPerMonth < 1)
-    {
-      throw new ArgumentOutOfRangeException(nameof(maxSalesPerMonth), "Max sales per month must be at least 1.");
-    }
+    ValidateDefinition(definition);
 
     Id = id;
-    Name = name.Trim();
-    Code = NormalizeCode(code);
-    Description = description ?? string.Empty;
-    MonthlyPrice = monthlyPrice;
-    MaxBranches = maxBranches;
-    MaxUsers = maxUsers;
-    MaxProducts = maxProducts;
-    MaxSalesPerMonth = maxSalesPerMonth;
-    Features = features;
+    ApplyDefinition(definition);
     IsActive = true;
     CreatedAt = createdAt;
     UpdatedAt = createdAt;
@@ -107,7 +58,7 @@ public sealed class SubscriptionPlan
   public int MaxSalesPerMonth { get; private set; }
 
   /// <summary>Bitmask of enabled features for this plan</summary>
-  public SubscriptionFeature Features { get; private set; }
+  public SubscriptionFeatures Features { get; private set; }
 
   /// <summary>Whether this plan is available for new subscriptions</summary>
   public bool IsActive { get; private set; }
@@ -121,28 +72,12 @@ public sealed class SubscriptionPlan
   /// <summary>Factory method to create a new subscription plan</summary>
   public static SubscriptionPlan Create(
     Guid id,
-    string name,
-    string code,
-    string description,
-    decimal monthlyPrice,
-    int maxBranches,
-    int maxUsers,
-    int maxProducts,
-    int maxSalesPerMonth,
-    SubscriptionFeature features,
+    SubscriptionPlanDefinition definition,
     DateTimeOffset createdAt)
   {
     return new SubscriptionPlan(
       id,
-      name,
-      code,
-      description,
-      monthlyPrice,
-      maxBranches,
-      maxUsers,
-      maxProducts,
-      maxSalesPerMonth,
-      features,
+      definition,
       createdAt);
   }
 
@@ -162,55 +97,74 @@ public sealed class SubscriptionPlan
 
   /// <summary>Update plan details (admin operation)</summary>
   public void Update(
-    string name,
-    string code,
-    string description,
-    decimal monthlyPrice,
-    int maxBranches,
-    int maxUsers,
-    int maxProducts,
-    int maxSalesPerMonth,
-    SubscriptionFeature features,
+    SubscriptionPlanDefinition definition,
     DateTimeOffset now)
   {
-    if (string.IsNullOrWhiteSpace(name))
-    {
-      throw new ArgumentException("Plan name is required.", nameof(name));
-    }
-
-    if (string.IsNullOrWhiteSpace(code))
-    {
-      throw new ArgumentException("Plan code is required.", nameof(code));
-    }
-
-    if (monthlyPrice < 0)
-    {
-      throw new ArgumentOutOfRangeException(nameof(monthlyPrice), "Monthly price cannot be negative.");
-    }
-
-    if (maxBranches < 1 || maxUsers < 1 || maxProducts < 1 || maxSalesPerMonth < 1)
-    {
-      throw new ArgumentOutOfRangeException(nameof(maxBranches), "Plan limits must be at least 1.");
-    }
-
-    Name = name.Trim();
-    Code = NormalizeCode(code);
-    Description = description?.Trim() ?? string.Empty;
-    MonthlyPrice = monthlyPrice;
-    MaxBranches = maxBranches;
-    MaxUsers = maxUsers;
-    MaxProducts = maxProducts;
-    MaxSalesPerMonth = maxSalesPerMonth;
-    Features = features;
+    ValidateDefinition(definition);
+    ApplyDefinition(definition);
     UpdatedAt = now;
   }
 
   /// <summary>Check if this plan has a specific feature enabled</summary>
-  public bool HasFeature(SubscriptionFeature feature)
+  public bool HasFeature(SubscriptionFeatures feature)
   {
     return (Features & feature) != 0;
   }
 
   private static string NormalizeCode(string code)
     => code.Trim().ToUpperInvariant();
+
+  private void ApplyDefinition(SubscriptionPlanDefinition definition)
+  {
+    Name = definition.Name.Trim();
+    Code = NormalizeCode(definition.Code);
+    Description = definition.Description?.Trim() ?? string.Empty;
+    MonthlyPrice = definition.MonthlyPrice;
+    MaxBranches = definition.MaxBranches;
+    MaxUsers = definition.MaxUsers;
+    MaxProducts = definition.MaxProducts;
+    MaxSalesPerMonth = definition.MaxSalesPerMonth;
+    Features = definition.Features;
+  }
+
+  private static void ValidateDefinition(SubscriptionPlanDefinition definition)
+  {
+    ArgumentNullException.ThrowIfNull(definition);
+
+    if (string.IsNullOrWhiteSpace(definition.Name))
+    {
+      throw new ArgumentException("Plan name is required.", nameof(definition));
+    }
+
+    if (string.IsNullOrWhiteSpace(definition.Code))
+    {
+      throw new ArgumentException("Plan code is required.", nameof(definition));
+    }
+
+    if (definition.MonthlyPrice < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(definition), "Monthly price cannot be negative.");
+    }
+
+    if (definition.MaxBranches < 1
+      || definition.MaxUsers < 1
+      || definition.MaxProducts < 1
+      || definition.MaxSalesPerMonth < 1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(definition), "Plan limits must be at least 1.");
+    }
+  }
+}
+
+public sealed class SubscriptionPlanDefinition
+{
+  public required string Name { get; init; }
+  public required string Code { get; init; }
+  public string? Description { get; init; }
+  public required decimal MonthlyPrice { get; init; }
+  public required int MaxBranches { get; init; }
+  public required int MaxUsers { get; init; }
+  public required int MaxProducts { get; init; }
+  public required int MaxSalesPerMonth { get; init; }
+  public required SubscriptionFeatures Features { get; init; }
 }

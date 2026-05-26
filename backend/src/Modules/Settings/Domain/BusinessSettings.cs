@@ -13,34 +13,10 @@ public sealed class BusinessSettings
 
   private BusinessSettings() { }
 
-  public BusinessSettings( // NOSONAR S107 — settings aggregate requires all fields at construction
-    BusinessId businessId,
-    string? commercialName,
-    string? legalName,
-    string? rnc,
-    string? phone,
-    string? email,
-    string? address,
-    string currency,
-    string timezone,
-    string? logoUrl,
-    string? receiptFooterText,
-    Guid updatedBy,
-    DateTimeOffset updatedAt)
+  public BusinessSettings(BusinessSettingsDetails details)
   {
-    BusinessId = businessId;
-    CommercialName = commercialName?.Trim();
-    LegalName = legalName?.Trim();
-    Rnc = rnc?.Trim();
-    Phone = phone?.Trim();
-    Email = email?.Trim();
-    Address = address?.Trim();
-    Currency = string.IsNullOrWhiteSpace(currency) ? DefaultCurrency : currency.Trim().ToUpperInvariant();
-    Timezone = string.IsNullOrWhiteSpace(timezone) ? DefaultTimezone : timezone.Trim();
-    LogoUrl = logoUrl?.Trim();
-    ReceiptFooterText = receiptFooterText?.Trim();
-    UpdatedBy = updatedBy;
-    UpdatedAt = updatedAt;
+    BusinessId = details.BusinessId;
+    Apply(details);
   }
 
   public BusinessId BusinessId { get; private set; }
@@ -57,35 +33,61 @@ public sealed class BusinessSettings
   public Guid UpdatedBy { get; private set; }
   public DateTimeOffset UpdatedAt { get; private set; }
 
-  public void Update( // NOSONAR S107 — settings aggregate requires all fields for update
-    string? commercialName,
-    string? legalName,
-    string? rnc,
-    string? phone,
-    string? email,
-    string? address,
-    string currency,
-    string timezone,
-    string? logoUrl,
-    string? receiptFooterText,
-    Guid updatedBy,
-    DateTimeOffset updatedAt)
+  public void Update(BusinessSettingsDetails details)
+    => Apply(details);
+
+  private void Apply(BusinessSettingsDetails details)
   {
-    CommercialName = commercialName?.Trim();
-    LegalName = legalName?.Trim();
-    Rnc = rnc?.Trim();
-    Phone = phone?.Trim();
-    Email = email?.Trim();
-    Address = address?.Trim();
-    Currency = string.IsNullOrWhiteSpace(currency) ? DefaultCurrency : currency.Trim().ToUpperInvariant();
-    Timezone = string.IsNullOrWhiteSpace(timezone) ? DefaultTimezone : timezone.Trim();
-    LogoUrl = logoUrl?.Trim();
-    ReceiptFooterText = receiptFooterText?.Trim();
-    UpdatedBy = updatedBy;
-    UpdatedAt = updatedAt;
+    CommercialName = details.CommercialName?.Trim();
+    LegalName = details.LegalName?.Trim();
+    Rnc = details.Rnc?.Trim();
+    Phone = details.Phone?.Trim();
+    Email = details.Email?.Trim();
+    Address = details.Address?.Trim();
+    Currency = string.IsNullOrWhiteSpace(details.Currency)
+      ? DefaultCurrency
+      : details.Currency.Trim().ToUpperInvariant();
+    Timezone = string.IsNullOrWhiteSpace(details.Timezone)
+      ? DefaultTimezone
+      : details.Timezone.Trim();
+    LogoUrl = details.LogoUrl?.Trim();
+    ReceiptFooterText = details.ReceiptFooterText?.Trim();
+    UpdatedBy = details.UpdatedBy;
+    UpdatedAt = details.UpdatedAt;
   }
 
   public static BusinessSettings Default(BusinessId businessId, Guid userId, DateTimeOffset now)
-    => new(businessId, null, null, null, null, null, null,
-        DefaultCurrency, DefaultTimezone, null, null, userId, now);
+    => new(new BusinessSettingsDetails
+    {
+      BusinessId = businessId,
+      CommercialName = null,
+      LegalName = null,
+      Rnc = null,
+      Phone = null,
+      Email = null,
+      Address = null,
+      Currency = DefaultCurrency,
+      Timezone = DefaultTimezone,
+      LogoUrl = null,
+      ReceiptFooterText = null,
+      UpdatedBy = userId,
+      UpdatedAt = now
+    });
+}
+
+public sealed class BusinessSettingsDetails
+{
+  public required BusinessId BusinessId { get; init; }
+  public string? CommercialName { get; init; }
+  public string? LegalName { get; init; }
+  public string? Rnc { get; init; }
+  public string? Phone { get; init; }
+  public string? Email { get; init; }
+  public string? Address { get; init; }
+  public required string Currency { get; init; }
+  public required string Timezone { get; init; }
+  public string? LogoUrl { get; init; }
+  public string? ReceiptFooterText { get; init; }
+  public required Guid UpdatedBy { get; init; }
+  public required DateTimeOffset UpdatedAt { get; init; }
 }

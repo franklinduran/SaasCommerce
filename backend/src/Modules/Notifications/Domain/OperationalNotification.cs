@@ -2,6 +2,20 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Notifications.Domain;
 
+public sealed class OperationalNotificationDraft
+{
+  public required Guid Id { get; init; }
+  public required BusinessId BusinessId { get; init; }
+  public Guid? BranchId { get; init; }
+  public required OperationalNotificationType Type { get; init; }
+  public required OperationalNotificationSeverity Severity { get; init; }
+  public required string Title { get; init; }
+  public required string Message { get; init; }
+  public Guid? RelatedEntityId { get; init; }
+  public string? RelatedEntityType { get; init; }
+  public required DateTimeOffset CreatedAt { get; init; }
+}
+
 /// <summary>
 /// Represents a persisted operational alert surfaced to business staff.
 /// Notifications are created by Worker consumers listening to integration events.
@@ -12,31 +26,21 @@ public sealed class OperationalNotification
   {
   }
 
-  private OperationalNotification(
-    Guid id,
-    BusinessId businessId,
-    Guid? branchId,
-    OperationalNotificationType type,
-    OperationalNotificationSeverity severity,
-    string title,
-    string message,
-    Guid? relatedEntityId,
-    string? relatedEntityType,
-    DateTimeOffset createdAt)
+  private OperationalNotification(OperationalNotificationDraft draft)
   {
-    if (id == Guid.Empty) throw new ArgumentException("Id is required.", nameof(id));
+    if (draft.Id == Guid.Empty) throw new ArgumentException("Id is required.", nameof(draft));
 
-    Id = id;
-    BusinessId = businessId;
-    BranchId = branchId;
-    Type = type;
-    Severity = severity;
+    Id = draft.Id;
+    BusinessId = draft.BusinessId;
+    BranchId = draft.BranchId;
+    Type = draft.Type;
+    Severity = draft.Severity;
     Status = OperationalNotificationStatus.Unread;
-    Title = title;
-    Message = message;
-    RelatedEntityId = relatedEntityId;
-    RelatedEntityType = relatedEntityType;
-    CreatedAt = createdAt;
+    Title = draft.Title;
+    Message = draft.Message;
+    RelatedEntityId = draft.RelatedEntityId;
+    RelatedEntityType = draft.RelatedEntityType;
+    CreatedAt = draft.CreatedAt;
     ReadAt = null;
     ReadByUserId = null;
   }
@@ -74,19 +78,8 @@ public sealed class OperationalNotification
 
   // ── Factory ──────────────────────────────────────────────────────────────
 
-  public static OperationalNotification Create(
-    Guid id,
-    BusinessId businessId,
-    Guid? branchId,
-    OperationalNotificationType type,
-    OperationalNotificationSeverity severity,
-    string title,
-    string message,
-    Guid? relatedEntityId,
-    string? relatedEntityType,
-    DateTimeOffset createdAt)
-    => new(id, businessId, branchId, type, severity, title, message,
-           relatedEntityId, relatedEntityType, createdAt);
+  public static OperationalNotification Create(OperationalNotificationDraft draft)
+    => new(draft);
 
   // ── Behaviour ────────────────────────────────────────────────────────────
 

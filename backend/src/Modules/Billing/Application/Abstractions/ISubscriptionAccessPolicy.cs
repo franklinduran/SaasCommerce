@@ -16,7 +16,7 @@ public interface ISubscriptionAccessPolicy
   /// </summary>
   Task<Result> EnsureCanUseFeatureAsync(
     BusinessId businessId,
-    SubscriptionFeature feature,
+    SubscriptionFeatures feature,
     CancellationToken cancellationToken = default);
 
   /// <summary>

@@ -227,16 +227,18 @@ public sealed class AccountRegistrationTests
     var clock = new FixedClock();
     BillingDataSeeder.SeedPlansAsync(dbContext, clock.UtcNow).GetAwaiter().GetResult();
 
-    return new RegisterBusinessHandler(
-      new EfAccountBusinessRepository(dbContext),
-      new EfIdentityUserRepository(dbContext),
-      new PasswordHasher(),
-      new JwtTokenService(CreateConfiguration(), clock),
-      new RefreshTokenGenerator(),
-      new EfSubscriptionPlanRepository(dbContext),
-      new EfBusinessSubscriptionRepository(dbContext),
-      clock,
-      new EfUnitOfWork(dbContext));
+    return new RegisterBusinessHandler(new RegisterBusinessDependencies
+    {
+      Businesses = new EfAccountBusinessRepository(dbContext),
+      Users = new EfIdentityUserRepository(dbContext),
+      PasswordHasher = new PasswordHasher(),
+      JwtTokenService = new JwtTokenService(CreateConfiguration(), clock),
+      RefreshTokenGenerator = new RefreshTokenGenerator(),
+      SubscriptionPlans = new EfSubscriptionPlanRepository(dbContext),
+      Subscriptions = new EfBusinessSubscriptionRepository(dbContext),
+      Clock = clock,
+      UnitOfWork = new EfUnitOfWork(dbContext)
+    });
   }
 
   private static AppDbContext CreateDbContext()

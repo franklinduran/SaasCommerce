@@ -294,7 +294,17 @@ public sealed class CustomerCreditTests
         Now);
 
     public RegisterCustomerPaymentUseCase CreateRegisterPaymentUseCase()
-      => new(Customers, Credits, CurrentUser, Outbox, Correlation, Clock, UnitOfWork, new AllowAllSubscriptionAccessPolicy());
+      => new(new RegisterCustomerPaymentDependencies
+      {
+        Customers = Customers,
+        Credits = Credits,
+        CurrentUser = CurrentUser,
+        Outbox = Outbox,
+        CorrelationIdProvider = Correlation,
+        Clock = Clock,
+        UnitOfWork = UnitOfWork,
+        SubscriptionAccess = new AllowAllSubscriptionAccessPolicy()
+      });
 
     public RegisterCreditSaleUseCase CreateRegisterCreditSaleUseCase()
       => new(Sales, Credits, Outbox, Clock, UnitOfWork);
@@ -341,7 +351,7 @@ public sealed class CustomerCreditTests
   {
     public Task<Result> EnsureCanUseFeatureAsync(
       BusinessId businessId,
-      SubscriptionFeature feature,
+      SubscriptionFeatures feature,
       CancellationToken cancellationToken = default)
       => Task.FromResult(Result.Success());
 

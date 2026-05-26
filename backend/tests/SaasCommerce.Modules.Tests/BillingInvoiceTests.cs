@@ -417,7 +417,7 @@ public sealed class BillingInvoiceTests
   {
     public Task<Result> EnsureCanUseFeatureAsync(
       BusinessId businessId,
-      SubscriptionFeature feature,
+      SubscriptionFeatures feature,
       CancellationToken cancellationToken = default)
       => Task.FromResult(Result.Success());
 

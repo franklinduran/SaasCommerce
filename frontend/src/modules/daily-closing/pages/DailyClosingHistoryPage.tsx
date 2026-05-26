@@ -24,6 +24,13 @@ function formatDate(dateString: string) {
 
 const PAGE_SIZE = 20
 
+function summaryText(total: number) {
+  if (total === 0) return 'Sin cierres registrados aún.'
+
+  const suffix = total === 1 ? '' : 's'
+  return `${total} cierre${suffix} registrado${suffix}`
+}
+
 export function DailyClosingHistoryPage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
@@ -38,11 +45,7 @@ export function DailyClosingHistoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-stone-900">Historial de cierres</h2>
-          <p className="text-sm text-stone-500">
-            {total > 0
-              ? `${total} cierre${total !== 1 ? 's' : ''} registrado${total !== 1 ? 's' : ''}`
-              : 'Sin cierres registrados aún.'}
-          </p>
+          <p className="text-sm text-stone-500">{summaryText(total)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {canExportReports && (

@@ -15,16 +15,29 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Identity.Application.Users;
 
-public sealed class CreateUserHandler(
-  IUserManagementRepository repository,
-  ICurrentUserService currentUser,
-  IPasswordHasher passwordHasher,
-  IClock clock,
-  IUnitOfWork unitOfWork,
-  IAuditLogWriter auditLogWriter,
-  IEventBus eventBus,
-  ISubscriptionLimitChecker limitChecker)
+public sealed class CreateUserDependencies
 {
+  public required IUserManagementRepository Repository { get; init; }
+  public required ICurrentUserService CurrentUser { get; init; }
+  public required IPasswordHasher PasswordHasher { get; init; }
+  public required IClock Clock { get; init; }
+  public required IUnitOfWork UnitOfWork { get; init; }
+  public required IAuditLogWriter AuditLogWriter { get; init; }
+  public required IEventBus EventBus { get; init; }
+  public required ISubscriptionLimitChecker LimitChecker { get; init; }
+}
+
+public sealed class CreateUserHandler(CreateUserDependencies dependencies)
+{
+  private readonly IUserManagementRepository repository = dependencies.Repository;
+  private readonly ICurrentUserService currentUser = dependencies.CurrentUser;
+  private readonly IPasswordHasher passwordHasher = dependencies.PasswordHasher;
+  private readonly IClock clock = dependencies.Clock;
+  private readonly IUnitOfWork unitOfWork = dependencies.UnitOfWork;
+  private readonly IAuditLogWriter auditLogWriter = dependencies.AuditLogWriter;
+  private readonly IEventBus eventBus = dependencies.EventBus;
+  private readonly ISubscriptionLimitChecker limitChecker = dependencies.LimitChecker;
+
   public async Task<Result<Guid>> Handle(
     CreateUserCommand command,
     CancellationToken cancellationToken = default)

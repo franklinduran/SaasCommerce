@@ -61,6 +61,22 @@ function alertConfig(alertType: ProfitabilityAlert['alertType']): AlertConfig {
   }
 }
 
+function alertsSummaryText(count: number) {
+  if (count === 0) return 'Problemas detectados que afectan la rentabilidad.'
+
+  const suffix = count === 1 ? '' : 's'
+  return `${count} alerta${suffix} detectada${suffix} en el período.`
+}
+
+function alertKey(alert: ProfitabilityAlert) {
+  return [
+    alert.alertType,
+    alert.productId ?? 'no-product',
+    alert.branchId ?? 'no-branch',
+    alert.message,
+  ].join(':')
+}
+
 export function ProfitabilityAlertsPage() {
   const navigate = useNavigate()
   const [filters] = useState<ProfitabilityFilters>(defaultFilters)
@@ -76,11 +92,7 @@ export function ProfitabilityAlertsPage() {
         </Button>
         <div>
           <h2 className="text-lg font-semibold text-stone-900">Alertas de rentabilidad</h2>
-          <p className="text-sm text-stone-500">
-            {alerts.length > 0
-              ? `${alerts.length} alerta${alerts.length !== 1 ? 's' : ''} detectada${alerts.length !== 1 ? 's' : ''} en el período.`
-              : 'Problemas detectados que afectan la rentabilidad.'}
-          </p>
+          <p className="text-sm text-stone-500">{alertsSummaryText(alerts.length)}</p>
         </div>
       </div>
 
@@ -112,11 +124,11 @@ export function ProfitabilityAlertsPage() {
       {/* Alert list */}
       {alerts.length > 0 && (
         <div className="space-y-3">
-          {alerts.map((alert, index) => {
+          {alerts.map((alert) => {
             const config = alertConfig(alert.alertType)
             const Icon = config.icon
             return (
-              <Card key={index}>
+              <Card key={alertKey(alert)}>
                 <CardContent className="flex items-start gap-4 p-4">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-stone-100">
                     <Icon size={18} className={config.iconClass} />

@@ -18,9 +18,15 @@ export function CardContent({ className, ...props }: Readonly<HTMLAttributes<HTM
   return <div className={cn('p-4 pt-0 sm:p-5 sm:pt-0', className)} {...props} />
 }
 
-export function CardTitle({ className, ...props }: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
+export function CardTitle({
+  children,
+  className,
+  ...props
+}: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
   return (
-    <h2 className={cn('text-lg font-semibold text-stone-950', className)} {...props} />
+    <h2 className={cn('text-lg font-semibold text-stone-950', className)} {...props}>
+      {children}
+    </h2>
   )
 }
 

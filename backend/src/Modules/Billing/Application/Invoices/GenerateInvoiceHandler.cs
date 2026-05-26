@@ -50,7 +50,7 @@ public sealed class GenerateInvoiceHandler(
     var tenantId = new BusinessId(businessId);
     var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
       tenantId,
-      SubscriptionFeature.Invoices,
+      SubscriptionFeatures.Invoices,
       cancellationToken);
     if (access.IsFailure)
     {

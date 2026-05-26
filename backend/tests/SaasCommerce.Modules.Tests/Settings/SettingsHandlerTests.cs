@@ -36,9 +36,16 @@ public sealed class SettingsHandlerTests
   public async Task GetBusinessSettings_ShouldReturnCurrentBusinessSettings()
   {
     var businessId = new BusinessId(Guid.NewGuid());
-    var settings = new BusinessSettings(
-      businessId, "My Shop", null, null, null, null, null,
-      "USD", "UTC", null, "Thank you!", Guid.NewGuid(), Now);
+    var settings = new BusinessSettings(new BusinessSettingsDetails
+    {
+      BusinessId = businessId,
+      CommercialName = "My Shop",
+      Currency = "USD",
+      Timezone = "UTC",
+      ReceiptFooterText = "Thank you!",
+      UpdatedBy = Guid.NewGuid(),
+      UpdatedAt = Now
+    });
     var repo = new StubBusinessSettingsRepo(settings);
     var handler = new GetBusinessSettingsHandler(repo, MakeCurrentUser(businessId.Value), Clock());
 
@@ -53,9 +60,15 @@ public sealed class SettingsHandlerTests
   public async Task GetBusinessSettings_ShouldNotReturnOtherBusinessSettings()
   {
     var otherBusinessId = new BusinessId(Guid.NewGuid());
-    var settings = new BusinessSettings(
-      otherBusinessId, "Other Shop", null, null, null, null, null,
-      "USD", "UTC", null, null, Guid.NewGuid(), Now);
+    var settings = new BusinessSettings(new BusinessSettingsDetails
+    {
+      BusinessId = otherBusinessId,
+      CommercialName = "Other Shop",
+      Currency = "USD",
+      Timezone = "UTC",
+      UpdatedBy = Guid.NewGuid(),
+      UpdatedAt = Now
+    });
     // Repo returns the "other" settings; handler uses current user's businessId
     var repo = new StubBusinessSettingsRepo(null); // returns null for current business
     var handler = new GetBusinessSettingsHandler(repo, MakeCurrentUser(Guid.NewGuid()), Clock());

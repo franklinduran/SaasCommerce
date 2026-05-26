@@ -7,7 +7,7 @@ type Props = {
   stepNumber: number
 }
 
-export function OnboardingStepCard({ step, stepNumber }: Props) {
+export function OnboardingStepCard({ step, stepNumber }: Readonly<Props>) {
   return (
     <div
       className={`flex items-start gap-4 rounded-lg border p-4 transition-colors ${

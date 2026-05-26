@@ -86,17 +86,16 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
       from sale in salesQuery
       join item in dbContext.Set<SaleItem>().AsNoTracking() on sale.Id equals item.SaleId
       join product in products on item.ProductId equals product.Id
+      let effectiveUnitCost = item.UnitCost ?? product.CostPrice
       select new
       {
         item.ProductId,
         ProductName = product.Name,
         product.Sku,
         product.CategoryId,
-        Quantity = item.Quantity,
+        item.Quantity,
         SaleAmount = item.Quantity * item.UnitPrice,
-        EffectiveCost = item.UnitCost != null
-          ? item.Quantity * item.UnitCost.Value
-          : item.Quantity * product.CostPrice,
+        EffectiveCost = item.Quantity * effectiveUnitCost,
         HasMissingCost = item.UnitCost == null && product.CostPrice == 0m
       })
       .GroupBy(x => new { x.ProductId, x.ProductName, x.Sku, x.CategoryId })
@@ -127,7 +126,7 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
           .Where(c => categoryIds.Contains(c.Id))
           .Select(c => new { c.Id, c.Name })
           .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken)
-      : new Dictionary<Guid, string>();
+      : [];
 
     return rows
       .Select(r =>
@@ -183,9 +182,9 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
       join item in dbContext.Set<SaleItem>().AsNoTracking() on sale.Id equals item.SaleId
       join product in products on item.ProductId equals product.Id into pg
       from product in pg.DefaultIfEmpty()
-      group (item.UnitCost != null
-        ? item.Quantity * item.UnitCost.Value
-        : item.Quantity * (product != null ? product.CostPrice : 0m)) by sale.BranchId.Value
+      let fallbackCost = product == null ? 0m : product.CostPrice
+      let effectiveUnitCost = item.UnitCost ?? fallbackCost
+      group item.Quantity * effectiveUnitCost by sale.BranchId.Value
       into g
       select new { BranchId = g.Key, TotalCost = g.Sum() })
       .ToArrayAsync(cancellationToken);
@@ -290,11 +289,11 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
            join item in dbContext.Set<SaleItem>().AsNoTracking() on sale.Id equals item.SaleId
            join product in products on item.ProductId equals product.Id into pg
            from product in pg.DefaultIfEmpty()
+           let fallbackCost = product == null ? 0m : product.CostPrice
+           let effectiveUnitCost = item.UnitCost ?? fallbackCost
            select new CostRow
            {
-             EffectiveCost = item.UnitCost != null
-               ? item.Quantity * item.UnitCost.Value
-               : item.Quantity * (product != null ? product.CostPrice : 0m),
+             EffectiveCost = item.Quantity * effectiveUnitCost,
              HasMissingCost = item.UnitCost == null && (product == null || product.CostPrice == 0m)
            };
   }

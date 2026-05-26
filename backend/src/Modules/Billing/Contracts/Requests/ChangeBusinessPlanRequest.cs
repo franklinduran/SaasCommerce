@@ -32,13 +32,3 @@ public sealed record UpdateSubscriptionPlanRequest(
   bool AllowInventoryTransfers,
   bool AllowAdvancedReports,
   bool AllowAuditLogs);
-
-/// <summary>
-/// Request to activate a subscription plan (admin only).
-/// </summary>
-public sealed record ActivateSubscriptionPlanRequest;
-
-/// <summary>
-/// Request to deactivate a subscription plan (admin only).
-/// </summary>
-public sealed record DeactivateSubscriptionPlanRequest;

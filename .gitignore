@@ -6,6 +6,7 @@ dist/
 coverage/
 TestResults/
 .sonarqube/
+.sonar-local-config/
 .claude/
 
 

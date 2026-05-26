@@ -65,18 +65,18 @@ public sealed class GetSubscriptionUsageQueryHandler(
     return Result.Success(response);
   }
 
-  private static IReadOnlyList<FeatureStatus> GetFeatureStatuses(SubscriptionFeature features)
+  private static IReadOnlyList<FeatureStatus> GetFeatureStatuses(SubscriptionFeatures features)
     =>
     [
-      new("Ventas", features.HasFlag(SubscriptionFeature.Sales)),
-      new("Productos", features.HasFlag(SubscriptionFeature.Products)),
-      new("Sucursales", features.HasFlag(SubscriptionFeature.Branches)),
-      new("Usuarios", features.HasFlag(SubscriptionFeature.Users)),
-      new("Compras", features.HasFlag(SubscriptionFeature.Purchases)),
-      new("Transferencias de inventario", features.HasFlag(SubscriptionFeature.InventoryTransfers)),
-      new("Facturas", features.HasFlag(SubscriptionFeature.Invoices)),
-      new("Pagos", features.HasFlag(SubscriptionFeature.Payments)),
-      new("Reportes avanzados", features.HasFlag(SubscriptionFeature.Reports)),
-      new("Auditoria", features.HasFlag(SubscriptionFeature.AuditLogs))
+      new("Ventas", features.HasFlag(SubscriptionFeatures.Sales)),
+      new("Productos", features.HasFlag(SubscriptionFeatures.Products)),
+      new("Sucursales", features.HasFlag(SubscriptionFeatures.Branches)),
+      new("Usuarios", features.HasFlag(SubscriptionFeatures.Users)),
+      new("Compras", features.HasFlag(SubscriptionFeatures.Purchases)),
+      new("Transferencias de inventario", features.HasFlag(SubscriptionFeatures.InventoryTransfers)),
+      new("Facturas", features.HasFlag(SubscriptionFeatures.Invoices)),
+      new("Pagos", features.HasFlag(SubscriptionFeatures.Payments)),
+      new("Reportes avanzados", features.HasFlag(SubscriptionFeatures.Reports)),
+      new("Auditoria", features.HasFlag(SubscriptionFeatures.AuditLogs))
     ];
 }

@@ -16,6 +16,9 @@ public sealed class SubscriptionLimitChecker(
   IClock clock,
   ISubscriptionAccessPolicy accessPolicy) : ISubscriptionLimitChecker
 {
+  private const string NoSubscriptionCode = "NO_SUBSCRIPTION";
+  private const string NoSubscriptionMessage = "No active subscription found.";
+
   public async Task<SubscriptionLimitCheckResult> CanCreateBranchAsync(
     BusinessId businessId,
     CancellationToken cancellationToken = default)
@@ -23,10 +26,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, subscription) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null || subscription is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.Branches, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.Branches, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
@@ -54,10 +57,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, subscription) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null || subscription is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.Users, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.Users, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
@@ -85,10 +88,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, subscription) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null || subscription is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.Products, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.Products, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
@@ -116,10 +119,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, subscription) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null || subscription is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.Sales, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.Sales, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
@@ -155,10 +158,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, _) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.InventoryTransfers, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.InventoryTransfers, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
@@ -174,10 +177,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, _) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.Reports, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.Reports, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);
@@ -193,10 +196,10 @@ public sealed class SubscriptionLimitChecker(
     var (plan, _) = await GetPlanAndSubscriptionAsync(businessId, cancellationToken);
     if (plan is null)
     {
-      return new SubscriptionLimitCheckResult(false, "NO_SUBSCRIPTION", "No active subscription found.", 0, 0);
+      return new SubscriptionLimitCheckResult(false, NoSubscriptionCode, NoSubscriptionMessage, 0, 0);
     }
 
-    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeature.AuditLogs, cancellationToken);
+    var accessResult = await accessPolicy.EnsureCanUseFeatureAsync(businessId, SubscriptionFeatures.AuditLogs, cancellationToken);
     if (accessResult.IsFailure)
     {
       return new SubscriptionLimitCheckResult(false, accessResult.Error.Code, accessResult.Error.Message, 0, 0);

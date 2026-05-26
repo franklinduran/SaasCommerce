@@ -16,17 +16,31 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Identity.Application.PilotBusiness;
 
-public sealed class CreatePilotBusinessHandler(
-  IAccountBusinessRepository businesses,
-  IIdentityUserRepository users,
-  IPasswordHasher passwordHasher,
-  ISubscriptionPlanRepository subscriptionPlans,
-  IBusinessSubscriptionRepository subscriptions,
-  IClock clock,
-  IUnitOfWork unitOfWork,
-  IAuditLogWriter auditLogWriter,
-  ICurrentUserService currentUser)
+public sealed class CreatePilotBusinessDependencies
 {
+  public required IAccountBusinessRepository Businesses { get; init; }
+  public required IIdentityUserRepository Users { get; init; }
+  public required IPasswordHasher PasswordHasher { get; init; }
+  public required ISubscriptionPlanRepository SubscriptionPlans { get; init; }
+  public required IBusinessSubscriptionRepository Subscriptions { get; init; }
+  public required IClock Clock { get; init; }
+  public required IUnitOfWork UnitOfWork { get; init; }
+  public required IAuditLogWriter AuditLogWriter { get; init; }
+  public required ICurrentUserService CurrentUser { get; init; }
+}
+
+public sealed class CreatePilotBusinessHandler(CreatePilotBusinessDependencies dependencies)
+{
+  private readonly IAccountBusinessRepository businesses = dependencies.Businesses;
+  private readonly IIdentityUserRepository users = dependencies.Users;
+  private readonly IPasswordHasher passwordHasher = dependencies.PasswordHasher;
+  private readonly ISubscriptionPlanRepository subscriptionPlans = dependencies.SubscriptionPlans;
+  private readonly IBusinessSubscriptionRepository subscriptions = dependencies.Subscriptions;
+  private readonly IClock clock = dependencies.Clock;
+  private readonly IUnitOfWork unitOfWork = dependencies.UnitOfWork;
+  private readonly IAuditLogWriter auditLogWriter = dependencies.AuditLogWriter;
+  private readonly ICurrentUserService currentUser = dependencies.CurrentUser;
+
   public Task<Result<CreatePilotBusinessResponse>> Handle(
     CreatePilotBusinessCommand command,
     CancellationToken cancellationToken = default)

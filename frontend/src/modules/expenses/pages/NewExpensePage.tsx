@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCreateExpense, useExpenseCategories } from '../hooks/useExpenses'
 import { Button } from '@/shared/components/ui/button'
@@ -44,16 +45,13 @@ export function NewExpensePage() {
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
-  useEffect(() => {
-    if ((categories ?? []).length > 0 && !values.categoryId) {
-      setValues((v) => ({ ...v, categoryId: categories![0].id }))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories])
+  // Derive categoryId: prefer explicit selection, fallback to first loaded category
+  const defaultCategoryId = categories?.[0]?.id ?? ''
+  const effectiveCategoryId = values.categoryId.length > 0 ? values.categoryId : defaultCategoryId
 
   function validate(): boolean {
     const next: FormErrors = {}
-    if (!values.categoryId) next.categoryId = 'Selecciona una categoría'
+    if (!effectiveCategoryId) next.categoryId = 'Selecciona una categoría'
     if (!values.description || values.description.length < 3)
       next.description = 'La descripción es requerida (mínimo 3 caracteres)'
     if (!values.amount || isNaN(Number(values.amount)) || Number(values.amount) <= 0)
@@ -63,23 +61,23 @@ export function NewExpensePage() {
     return Object.keys(next).length === 0
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!validate()) return
     setErrorMsg(null)
     mutate(
       {
         branchId: '', // filled server-side from JWT BranchId claim
-        categoryId: values.categoryId,
+        categoryId: effectiveCategoryId,
         description: values.description,
         amount: Number(values.amount),
         paymentMethod: values.paymentMethod as 'Cash' | 'Transfer' | 'Card',
         status: values.status as 'Pending' | 'Paid',
         expenseDate: new Date(values.expenseDate).toISOString(),
-        notes: values.notes || null,
+        notes: values.notes.trim() || null,
       },
       {
-        onSuccess: () => navigate('/expenses'),
+        onSuccess: () => { navigate('/expenses') },
         onError: (err) =>
           setErrorMsg(err instanceof Error ? err.message : 'Error al registrar el gasto.'),
       },
@@ -114,7 +112,7 @@ export function NewExpensePage() {
             {/* Category */}
             <div className="space-y-1.5">
               <Label htmlFor="categoryId">Categoría</Label>
-              <Select value={values.categoryId} onValueChange={setField('categoryId')}>
+              <Select value={effectiveCategoryId} onValueChange={setField('categoryId')}>
                 <SelectTrigger id="categoryId">
                   <SelectValue placeholder="Selecciona una categoría" />
                 </SelectTrigger>

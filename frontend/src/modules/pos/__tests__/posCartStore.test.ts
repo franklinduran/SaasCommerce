@@ -42,6 +42,43 @@ describe('posCartStore', () => {
 
     expect(subtotal).toBe(340)
   })
+
+  it('increases quantity when increaseQuantity is called', () => {
+    act(() => {
+      usePOSCartStore.getState().addItem(createCartItem())
+      usePOSCartStore.getState().increaseQuantity(productId)
+    })
+
+    expect(usePOSCartStore.getState().items).toEqual([
+      expect.objectContaining({ productId, quantity: 2 }),
+    ])
+  })
+
+  it('removes item when removeItem is called', () => {
+    act(() => {
+      usePOSCartStore.getState().addItem(createCartItem())
+      usePOSCartStore.getState().addItem(createCartItem({
+        name: 'Aceite 16 oz',
+        productId: '66666666-6666-6666-6666-666666666666',
+        sku: 'ACE-16',
+        unitPrice: 90,
+      }))
+      usePOSCartStore.getState().removeItem(productId)
+    })
+
+    expect(usePOSCartStore.getState().items).toHaveLength(1)
+    expect(usePOSCartStore.getState().items[0]?.productId).toBe('66666666-6666-6666-6666-666666666666')
+  })
+
+  it('clamps quantity to minimum 1 when addItem quantity is zero', () => {
+    act(() => {
+      usePOSCartStore.getState().addItem(createCartItem({ quantity: 0 }))
+    })
+
+    expect(usePOSCartStore.getState().items).toEqual([
+      expect.objectContaining({ productId, quantity: 1 }),
+    ])
+  })
 })
 
 const productId = '55555555-5555-5555-5555-555555555555'

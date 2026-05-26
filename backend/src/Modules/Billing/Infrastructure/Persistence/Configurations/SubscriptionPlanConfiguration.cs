@@ -67,7 +67,7 @@ public sealed class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Sub
     builder.Property(plan => plan.Features)
       .HasColumnName("features")
       .HasConversion<long>()
-      .HasDefaultValue(SubscriptionFeature.None)
+      .HasDefaultValue(SubscriptionFeatures.None)
       .IsRequired();
 
     builder.Property(plan => plan.IsActive)

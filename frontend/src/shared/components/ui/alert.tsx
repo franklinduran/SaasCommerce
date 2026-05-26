@@ -13,9 +13,15 @@ export function Alert({ className, ...props }: Readonly<HTMLAttributes<HTMLDivEl
   )
 }
 
-export function AlertTitle({ className, ...props }: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
+export function AlertTitle({
+  children,
+  className,
+  ...props
+}: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
   return (
-    <h5 className={cn('mb-1 font-medium leading-tight', className)} {...props} />
+    <h5 className={cn('mb-1 font-medium leading-tight', className)} {...props}>
+      {children}
+    </h5>
   )
 }
 

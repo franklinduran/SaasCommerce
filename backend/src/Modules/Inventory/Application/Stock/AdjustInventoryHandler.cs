@@ -15,16 +15,29 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Inventory.Application.Stock;
 
-public sealed class AdjustInventoryHandler(
-  IInventoryRepository inventory,
-  IProductInventoryPolicyReader productPolicies,
-  ICurrentUserService currentUser,
-  IOutboxWriter outbox,
-  IAuditLogWriter auditLog,
-  IClock clock,
-  IUnitOfWork unitOfWork,
-  ISubscriptionAccessPolicy subscriptionAccess)
+public sealed class AdjustInventoryDependencies
 {
+  public required IInventoryRepository Inventory { get; init; }
+  public required IProductInventoryPolicyReader ProductPolicies { get; init; }
+  public required ICurrentUserService CurrentUser { get; init; }
+  public required IOutboxWriter Outbox { get; init; }
+  public required IAuditLogWriter AuditLog { get; init; }
+  public required IClock Clock { get; init; }
+  public required IUnitOfWork UnitOfWork { get; init; }
+  public required ISubscriptionAccessPolicy SubscriptionAccess { get; init; }
+}
+
+public sealed class AdjustInventoryHandler(AdjustInventoryDependencies dependencies)
+{
+  private readonly IInventoryRepository inventory = dependencies.Inventory;
+  private readonly IProductInventoryPolicyReader productPolicies = dependencies.ProductPolicies;
+  private readonly ICurrentUserService currentUser = dependencies.CurrentUser;
+  private readonly IOutboxWriter outbox = dependencies.Outbox;
+  private readonly IAuditLogWriter auditLog = dependencies.AuditLog;
+  private readonly IClock clock = dependencies.Clock;
+  private readonly IUnitOfWork unitOfWork = dependencies.UnitOfWork;
+  private readonly ISubscriptionAccessPolicy subscriptionAccess = dependencies.SubscriptionAccess;
+
   public Task<Result<InventoryAdjustmentResponse>> Handle(
     AdjustInventoryCommand command,
     CancellationToken cancellationToken = default)
@@ -61,7 +74,7 @@ public sealed class AdjustInventoryHandler(
     var tenantId = new BusinessId(businessId);
     var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
       tenantId,
-      SubscriptionFeature.Products,
+      SubscriptionFeatures.Products,
       cancellationToken);
     if (access.IsFailure)
     {

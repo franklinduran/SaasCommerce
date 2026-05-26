@@ -40,7 +40,23 @@ public sealed class GetProfitabilityAlertsHandler(
 
     var alerts = new List<ProfitabilityAlertResponse>();
 
-    // Alert 1: Products sold without a registered cost
+    AddMissingCostAlerts(products, alerts);
+    AddNegativeMarginAlerts(products, alerts);
+    AddHighVolumeLowMarginAlerts(products, alerts);
+    AddHighExpenseAlerts(branches, alerts);
+
+    var sorted = alerts
+      .OrderBy(a => SortRank(a.AlertType))
+      .ThenByDescending(a => Math.Abs(a.EstimatedImpact ?? 0))
+      .ToArray();
+
+    return Result.Success<IReadOnlyCollection<ProfitabilityAlertResponse>>(sorted);
+  }
+
+  private static void AddMissingCostAlerts(
+    IReadOnlyCollection<ProductProfitabilityResponse> products,
+    List<ProfitabilityAlertResponse> alerts)
+  {
     foreach (var product in products.Where(p => p.HasMissingCost))
     {
       alerts.Add(new ProfitabilityAlertResponse(
@@ -52,8 +68,12 @@ public sealed class GetProfitabilityAlertsHandler(
         ProductName: product.ProductName,
         EstimatedImpact: product.TotalSales));
     }
+  }
 
-    // Alert 2: Products with negative margin
+  private static void AddNegativeMarginAlerts(
+    IReadOnlyCollection<ProductProfitabilityResponse> products,
+    List<ProfitabilityAlertResponse> alerts)
+  {
     foreach (var product in products.Where(p => !p.HasMissingCost && p.MarginPercent < 0))
     {
       alerts.Add(new ProfitabilityAlertResponse(
@@ -65,34 +85,43 @@ public sealed class GetProfitabilityAlertsHandler(
         ProductName: product.ProductName,
         EstimatedImpact: product.GrossProfit)); // negative number
     }
+  }
 
-    // Alert 3: High-volume products with low margin (top 20% by quantity but < LowMarginThreshold)
-    if (products.Count > 0)
+  private static void AddHighVolumeLowMarginAlerts(
+    IReadOnlyCollection<ProductProfitabilityResponse> products,
+    List<ProfitabilityAlertResponse> alerts)
+  {
+    if (products.Count == 0)
     {
-      var sortedByQuantity = products
-        .Where(p => !p.HasMissingCost && p.MarginPercent >= 0)
-        .OrderByDescending(p => p.TotalQuantity)
-        .ToArray();
-
-      var topVolumeCount = Math.Max(1, (int)Math.Ceiling(sortedByQuantity.Length * (1 - HighVolumePercentile)));
-
-      foreach (var product in sortedByQuantity.Take(topVolumeCount))
-      {
-        if (ProfitabilityCalculator.IsLowMargin(product.MarginPercent, LowMarginThreshold))
-        {
-          alerts.Add(new ProfitabilityAlertResponse(
-            AlertType: "HighVolumeLowMargin",
-            Message: $"El producto '{product.ProductName}' tiene alto volumen de ventas pero margen bajo ({product.MarginPercent:F1}%). Considera revisar el precio.",
-            BranchId: null,
-            BranchName: null,
-            ProductId: product.ProductId,
-            ProductName: product.ProductName,
-            EstimatedImpact: product.TotalSales));
-        }
-      }
+      return;
     }
 
-    // Alert 4: Branches where operating expenses exceed gross profit
+    var sortedByQuantity = products
+      .Where(p => !p.HasMissingCost && p.MarginPercent >= 0)
+      .OrderByDescending(p => p.TotalQuantity)
+      .ToArray();
+
+    var topVolumeCount = Math.Max(1, (int)Math.Ceiling(sortedByQuantity.Length * (1 - HighVolumePercentile)));
+
+    foreach (var product in sortedByQuantity
+      .Take(topVolumeCount)
+      .Where(product => ProfitabilityCalculator.IsLowMargin(product.MarginPercent, LowMarginThreshold)))
+    {
+      alerts.Add(new ProfitabilityAlertResponse(
+        AlertType: "HighVolumeLowMargin",
+        Message: $"El producto '{product.ProductName}' tiene alto volumen de ventas pero margen bajo ({product.MarginPercent:F1}%). Considera revisar el precio.",
+        BranchId: null,
+        BranchName: null,
+        ProductId: product.ProductId,
+        ProductName: product.ProductName,
+        EstimatedImpact: product.TotalSales));
+    }
+  }
+
+  private static void AddHighExpenseAlerts(
+    IReadOnlyCollection<BranchProfitabilityResponse> branches,
+    List<ProfitabilityAlertResponse> alerts)
+  {
     foreach (var branch in branches.Where(b => b.OperatingExpenses > b.GrossProfit && b.GrossProfit > 0))
     {
       alerts.Add(new ProfitabilityAlertResponse(
@@ -104,15 +133,13 @@ public sealed class GetProfitabilityAlertsHandler(
         ProductName: null,
         EstimatedImpact: branch.OperatingExpenses - branch.GrossProfit));
     }
-
-    // Sort: negative margin first, then missing cost, then others
-    var sorted = alerts
-      .OrderBy(a => a.AlertType == "NegativeMargin" ? 0 :
-                    a.AlertType == "MissingCost" ? 1 :
-                    a.AlertType == "HighExpenses" ? 2 : 3)
-      .ThenByDescending(a => Math.Abs(a.EstimatedImpact ?? 0))
-      .ToArray();
-
-    return Result.Success<IReadOnlyCollection<ProfitabilityAlertResponse>>(sorted);
   }
+
+  private static int SortRank(string alertType) => alertType switch
+  {
+    "NegativeMargin" => 0,
+    "MissingCost" => 1,
+    "HighExpenses" => 2,
+    _ => 3
+  };
 }

@@ -94,6 +94,21 @@ describe('httpClient', () => {
     expect(replaceSpy).not.toHaveBeenCalled()
   })
 
+  it('throws HttpClientError with "Request failed" when response is not JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      headers: new Headers({ 'content-type': 'text/html' }),
+      json: async () => null,
+      ok: false,
+      status: 503,
+    })))
+
+    const err = await httpClient('/api/test').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(HttpClientError)
+    expect((err as HttpClientError).message).toBe('Request failed')
+    expect((err as HttpClientError).status).toBe(503)
+    expect((err as HttpClientError).error).toBeNull()
+  })
+
   it('sends Authorization header when accessToken is provided', async () => {
     let capturedHeaders: Headers | undefined
 

@@ -41,7 +41,7 @@ public sealed class CreatePurchaseHandler(
 
     var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
       tenantId,
-      SubscriptionFeature.Purchases,
+      SubscriptionFeatures.Purchases,
       cancellationToken);
     if (access.IsFailure)
     {

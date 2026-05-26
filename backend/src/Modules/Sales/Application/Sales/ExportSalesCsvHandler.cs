@@ -1,3 +1,4 @@
+using System.Globalization;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.SharedKernel;
@@ -40,13 +41,13 @@ public sealed class ExportSalesCsvHandler(
     var rows = items.Select(s => (IReadOnlyCollection<string?>)
     [
       s.Code,
-      s.CreatedAt.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+      s.CreatedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
       s.BranchName,
       s.CustomerName,
       s.PaymentMethod,
-      s.Total.ToString("F2"),
+      s.Total.ToString("F2", CultureInfo.InvariantCulture),
       s.Status,
-      s.Items.Count.ToString()
+      s.Items.Count.ToString(CultureInfo.InvariantCulture)
     ]);
 
     var csv = CsvBuilder.Build(Headers, rows);

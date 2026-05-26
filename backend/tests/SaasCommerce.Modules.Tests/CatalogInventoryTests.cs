@@ -289,6 +289,76 @@ public sealed class CatalogInventoryTests
   }
 
   [Fact]
+  public async Task UpdateProductShouldApplyChangesAndDeactivateWhenRequested()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var created = await CreateProductHandler(dbContext, currentUser)
+      .Handle(CreateProductCommand("Cafe", "SKU-001", "123"));
+    var handler = UpdateProductHandler(dbContext, currentUser);
+
+    var result = await handler.Handle(UpdateProductCommand(
+      created.Value.Id,
+      name: "Cafe premium",
+      sku: "sku-002",
+      barcode: "456",
+      isActive: false));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Name.Should().Be("Cafe premium");
+    result.Value.Sku.Should().Be("SKU-002");
+    result.Value.Barcode.Should().Be("456");
+    result.Value.IsActive.Should().BeFalse();
+    result.Value.ProfitMargin.Should().BeGreaterThan(0);
+  }
+
+  [Fact]
+  public async Task UpdateProductShouldRejectDuplicateSkuAndBarcode()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var createHandler = CreateProductHandler(dbContext, currentUser);
+    var first = await createHandler.Handle(CreateProductCommand("Cafe", "SKU-001", "123"));
+    await createHandler.Handle(CreateProductCommand("Te", "SKU-002", "456"));
+    var handler = UpdateProductHandler(dbContext, currentUser);
+
+    var duplicateSku = await handler.Handle(UpdateProductCommand(first.Value.Id, sku: "sku-002"));
+    var duplicateBarcode = await handler.Handle(UpdateProductCommand(first.Value.Id, barcode: "456"));
+
+    duplicateSku.IsFailure.Should().BeTrue();
+    duplicateSku.Error.Should().Be(CatalogErrors.DuplicateSku);
+    duplicateBarcode.IsFailure.Should().BeTrue();
+    duplicateBarcode.Error.Should().Be(CatalogErrors.DuplicateBarcode);
+  }
+
+  [Fact]
+  public async Task UpdateProductShouldRejectMissingContextInvalidValuesAndUnknownProduct()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var created = await CreateProductHandler(dbContext, currentUser)
+      .Handle(CreateProductCommand("Cafe", "SKU-001"));
+
+    var missingContext = await UpdateProductHandler(dbContext, currentUser with { BusinessId = null })
+      .Handle(UpdateProductCommand(created.Value.Id));
+    var invalidEnum = await UpdateProductHandler(dbContext, currentUser)
+      .Handle(UpdateProductCommand(created.Value.Id, productType: "NotAType"));
+    var invalidDomain = await UpdateProductHandler(dbContext, currentUser)
+      .Handle(UpdateProductCommand(created.Value.Id, productType: "Service", unitOfMeasure: "Unit", trackInventory: true));
+    var notFound = await UpdateProductHandler(dbContext, currentUser)
+      .Handle(UpdateProductCommand(Guid.NewGuid()));
+
+    missingContext.IsFailure.Should().BeTrue();
+    missingContext.Error.Should().Be(CatalogErrors.UserContextRequired);
+    invalidEnum.IsFailure.Should().BeTrue();
+    invalidEnum.Error.Should().Be(CatalogErrors.InvalidProduct);
+    invalidDomain.IsFailure.Should().BeTrue();
+    invalidDomain.Error.Should().Be(CatalogErrors.InvalidProduct);
+    notFound.IsFailure.Should().BeTrue();
+    notFound.Error.Should().Be(CatalogErrors.ProductNotFound);
+  }
+
+  [Fact]
   public async Task DeactivateProductShouldNotUpdateOtherTenantProduct()
   {
     await using var dbContext = CreateDbContext();
@@ -450,16 +520,18 @@ public sealed class CatalogInventoryTests
     var currentUser = TestCurrentUser.Create();
     var productId = Guid.NewGuid();
     var outbox = new RecordingOutboxWriter();
-    var handler = new AdjustInventoryHandler(
-      new EfInventoryRepository(dbContext),
-      new TestProductInventoryPolicyReader(
+    var handler = new AdjustInventoryHandler(new AdjustInventoryDependencies
+    {
+      Inventory = new EfInventoryRepository(dbContext),
+      ProductPolicies = new TestProductInventoryPolicyReader(
         ProductInventoryPolicy(productId, currentUser.BusinessId!.Value, minimumStock: 5)),
-      currentUser,
-      outbox,
-      new NoopAuditLogWriter(),
-      new FixedClock(),
-      new EfUnitOfWork(dbContext),
-      new AllowAllSubscriptionAccessPolicy());
+      CurrentUser = currentUser,
+      Outbox = outbox,
+      AuditLog = new NoopAuditLogWriter(),
+      Clock = new FixedClock(),
+      UnitOfWork = new EfUnitOfWork(dbContext),
+      SubscriptionAccess = new AllowAllSubscriptionAccessPolicy()
+    });
 
     var result = await handler.Handle(new AdjustInventoryCommand(productId, 3, "InitialStock"));
 
@@ -893,19 +965,30 @@ public sealed class CatalogInventoryTests
       new FixedClock(),
       new EfUnitOfWork(dbContext));
 
+  private static UpdateProductHandler UpdateProductHandler(
+    AppDbContext dbContext,
+    ICurrentUserService currentUser)
+    => new(
+      new EfCatalogProductRepository(dbContext),
+      currentUser,
+      new FixedClock(),
+      new EfUnitOfWork(dbContext));
+
   private static AdjustInventoryHandler CreateInventoryHandler(
     AppDbContext dbContext,
     ICurrentUserService currentUser,
     ProductInventoryPolicy productPolicy)
-    => new(
-      new EfInventoryRepository(dbContext),
-      new TestProductInventoryPolicyReader(productPolicy),
-      currentUser,
-      new NoopOutboxWriter(),
-      new NoopAuditLogWriter(),
-      new FixedClock(),
-      new EfUnitOfWork(dbContext),
-      new AllowAllSubscriptionAccessPolicy());
+    => new(new AdjustInventoryDependencies
+    {
+      Inventory = new EfInventoryRepository(dbContext),
+      ProductPolicies = new TestProductInventoryPolicyReader(productPolicy),
+      CurrentUser = currentUser,
+      Outbox = new NoopOutboxWriter(),
+      AuditLog = new NoopAuditLogWriter(),
+      Clock = new FixedClock(),
+      UnitOfWork = new EfUnitOfWork(dbContext),
+      SubscriptionAccess = new AllowAllSubscriptionAccessPolicy()
+    });
 
   private static CreateProductCommand CreateProductCommand(
     string name,
@@ -942,6 +1025,45 @@ public sealed class CatalogInventoryTests
       null,
       null,
       null);
+
+  private static UpdateProductCommand UpdateProductCommand(
+    Guid productId,
+    string productType = "Simple",
+    string name = "Cafe actualizado",
+    string sku = "SKU-UPD",
+    string? barcode = null,
+    string unitOfMeasure = "Unit",
+    bool trackInventory = true,
+    bool isActive = true)
+    => new(
+      productId,
+      productType,
+      name,
+      "Producto actualizado",
+      sku,
+      barcode,
+      null,
+      null,
+      unitOfMeasure,
+      300,
+      180,
+      280,
+      250,
+      "Itbis18",
+      18,
+      true,
+      true,
+      trackInventory,
+      2,
+      200,
+      8,
+      false,
+      "INT-1",
+      "SUP-1",
+      null,
+      null,
+      "{\"color\":\"marron\"}",
+      isActive);
 
   private static ProductInventoryPolicy ProductInventoryPolicy(
     Guid productId,
@@ -1062,7 +1184,7 @@ public sealed class CatalogInventoryTests
   {
     public Task<Result> EnsureCanUseFeatureAsync(
       BusinessId businessId,
-      SubscriptionFeature feature,
+      SubscriptionFeatures feature,
       CancellationToken cancellationToken = default)
       => Task.FromResult(Result.Success());
 

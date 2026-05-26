@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -113,6 +113,80 @@ describe('CashPage', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir caja' }))
 
     expect(await screen.findByText('El balance inicial debe ser 0 o mayor.')).toBeTruthy()
+  })
+
+  it('opens a cash session with trimmed notes', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock({ currentSession: null })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderCashPage()
+
+    await user.type(await screen.findByLabelText(/Balance inicial/i), '250')
+    await user.type(screen.getByLabelText(/Notas/i), '  turno manana  ')
+    await user.click(screen.getByRole('button', { name: 'Abrir caja' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/cash-sessions'), expect.objectContaining({
+        method: 'POST',
+      }))
+    })
+  })
+
+  it('validates and submits cash movements', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock({ currentSession: createSession() })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderCashPage()
+
+    await user.click(await screen.findByRole('button', { name: /Registrar movimiento/i }))
+    await user.click(screen.getByRole('button', { name: 'Registrar' }))
+    expect(await screen.findByText('El monto debe ser mayor a 0.')).toBeTruthy()
+
+    await user.type(screen.getByLabelText(/Monto/i), '75')
+    await user.click(screen.getByRole('button', { name: 'Salida' }))
+    await user.click(screen.getByRole('button', { name: 'Registrar' }))
+    expect(await screen.findByText('La descripcion es requerida.')).toBeTruthy()
+
+    await user.type(screen.getByLabelText(/Descripcion/i), 'Compra menor')
+    await user.click(screen.getByRole('button', { name: 'Registrar' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/api/cash-sessions/${SESSION_ID}/movements`), expect.objectContaining({
+        method: 'POST',
+      }))
+    })
+  })
+
+  it('closes a cash session and navigates to history from the result', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock({
+      closeResult: {
+        closingBalance: 1010,
+        difference: 10,
+        openingBalance: 1000,
+        outcome: 'Surplus',
+        systemBalance: 1000,
+      },
+      currentSession: createSession(),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderCashPage()
+
+    await user.click(await screen.findByRole('button', { name: /Cerrar caja/i }))
+    await user.click(screen.getAllByRole('button', { name: 'Cerrar caja' }).at(-1)!)
+    expect(await screen.findByText('El balance de cierre debe ser 0 o mayor.')).toBeTruthy()
+
+    await user.type(screen.getByLabelText(/Balance contado/i), '1010')
+    await user.click(screen.getAllByRole('button', { name: 'Cerrar caja' }).at(-1)!)
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/api/cash-sessions/${SESSION_ID}/close`), expect.objectContaining({
+        method: 'POST',
+      }))
+    })
   })
 })
 
@@ -335,11 +409,13 @@ function createSessionListItem(overrides: Partial<CashSessionListItem> = {}): Ca
 // ── Fetch mock ────────────────────────────────────────────────────────────────
 
 function createFetchMock({
+  closeResult,
   currentSession,
   sessionDetail,
   sessions,
   failSessions = false,
 }: {
+  closeResult?: unknown
   currentSession?: CashSession | null
   sessionDetail?: CashSession
   sessions?: { items: CashSessionListItem[]; page: number; pageSize: number; totalCount: number }
@@ -350,6 +426,20 @@ function createFetchMock({
 
     if (url.includes('/api/cash-sessions/current')) {
       return createJsonResponse(currentSession ?? null)
+    }
+
+    if (url.includes('/close')) {
+      return createJsonResponse(closeResult ?? {
+        closingBalance: 1000,
+        difference: 0,
+        openingBalance: 1000,
+        outcome: 'Balanced',
+        systemBalance: 1000,
+      })
+    }
+
+    if (url.includes('/movements')) {
+      return createJsonResponse(createMovement())
     }
 
     if (url.match(/\/api\/cash-sessions\/[^/]+$/) && !url.includes('movements') && !url.includes('close')) {

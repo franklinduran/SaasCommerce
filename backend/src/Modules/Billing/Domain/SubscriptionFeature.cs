@@ -5,7 +5,7 @@ namespace SaasCommerce.Modules.Billing.Domain;
 /// Used to enforce limits on what businesses can do based on their current plan.
 /// </summary>
 [Flags]
-public enum SubscriptionFeature
+public enum SubscriptionFeatures
 {
   /// <summary>No features enabled</summary>
   None = 0,

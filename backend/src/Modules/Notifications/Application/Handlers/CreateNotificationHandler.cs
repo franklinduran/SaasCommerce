@@ -30,17 +30,19 @@ public sealed class CreateNotificationHandler(
   {
     ArgumentNullException.ThrowIfNull(command);
 
-    var notification = OperationalNotification.Create(
-      id: Guid.NewGuid(),
-      businessId: new BusinessId(command.BusinessId),
-      branchId: command.BranchId,
-      type: command.Type,
-      severity: command.Severity,
-      title: command.Title,
-      message: command.Message,
-      relatedEntityId: command.RelatedEntityId,
-      relatedEntityType: command.RelatedEntityType,
-      createdAt: clock.UtcNow);
+    var notification = OperationalNotification.Create(new OperationalNotificationDraft
+    {
+      Id = Guid.NewGuid(),
+      BusinessId = new BusinessId(command.BusinessId),
+      BranchId = command.BranchId,
+      Type = command.Type,
+      Severity = command.Severity,
+      Title = command.Title,
+      Message = command.Message,
+      RelatedEntityId = command.RelatedEntityId,
+      RelatedEntityType = command.RelatedEntityType,
+      CreatedAt = clock.UtcNow
+    });
 
     await repository.AddAsync(notification, cancellationToken);
     await repository.SaveChangesAsync(cancellationToken);

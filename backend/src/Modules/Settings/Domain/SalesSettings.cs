@@ -9,26 +9,10 @@ public sealed class SalesSettings
 {
   private SalesSettings() { }
 
-  public SalesSettings( // NOSONAR S107 — settings aggregate requires all fields at construction
-    BusinessId businessId,
-    bool allowNegativeStock,
-    bool allowDiscounts,
-    bool requireCustomerForCreditSale,
-    string? defaultPaymentMethod,
-    bool enableReceiptPrintAfterSale,
-    bool enableInvoiceAutoGeneration,
-    Guid updatedBy,
-    DateTimeOffset updatedAt)
+  public SalesSettings(SalesSettingsDetails details)
   {
-    BusinessId = businessId;
-    AllowNegativeStock = allowNegativeStock;
-    AllowDiscounts = allowDiscounts;
-    RequireCustomerForCreditSale = requireCustomerForCreditSale;
-    DefaultPaymentMethod = defaultPaymentMethod?.Trim();
-    EnableReceiptPrintAfterSale = enableReceiptPrintAfterSale;
-    EnableInvoiceAutoGeneration = enableInvoiceAutoGeneration;
-    UpdatedBy = updatedBy;
-    UpdatedAt = updatedAt;
+    BusinessId = details.BusinessId;
+    Apply(details);
   }
 
   public BusinessId BusinessId { get; private set; }
@@ -41,26 +25,45 @@ public sealed class SalesSettings
   public Guid UpdatedBy { get; private set; }
   public DateTimeOffset UpdatedAt { get; private set; }
 
-  public void Update( // NOSONAR S107 — settings aggregate requires all fields for update
-    bool allowNegativeStock,
-    bool allowDiscounts,
-    bool requireCustomerForCreditSale,
-    string? defaultPaymentMethod,
-    bool enableReceiptPrintAfterSale,
-    bool enableInvoiceAutoGeneration,
-    Guid updatedBy,
-    DateTimeOffset updatedAt)
+  public void Update(SalesSettingsDetails details)
+    => Apply(details);
+
+  private void Apply(SalesSettingsDetails details)
   {
-    AllowNegativeStock = allowNegativeStock;
-    AllowDiscounts = allowDiscounts;
-    RequireCustomerForCreditSale = requireCustomerForCreditSale;
-    DefaultPaymentMethod = defaultPaymentMethod?.Trim();
-    EnableReceiptPrintAfterSale = enableReceiptPrintAfterSale;
-    EnableInvoiceAutoGeneration = enableInvoiceAutoGeneration;
-    UpdatedBy = updatedBy;
-    UpdatedAt = updatedAt;
+    AllowNegativeStock = details.AllowNegativeStock;
+    AllowDiscounts = details.AllowDiscounts;
+    RequireCustomerForCreditSale = details.RequireCustomerForCreditSale;
+    DefaultPaymentMethod = details.DefaultPaymentMethod?.Trim();
+    EnableReceiptPrintAfterSale = details.EnableReceiptPrintAfterSale;
+    EnableInvoiceAutoGeneration = details.EnableInvoiceAutoGeneration;
+    UpdatedBy = details.UpdatedBy;
+    UpdatedAt = details.UpdatedAt;
   }
 
   public static SalesSettings Default(BusinessId businessId, Guid userId, DateTimeOffset now)
-    => new(businessId, false, true, true, null, false, true, userId, now);
+    => new(new SalesSettingsDetails
+    {
+      BusinessId = businessId,
+      AllowNegativeStock = false,
+      AllowDiscounts = true,
+      RequireCustomerForCreditSale = true,
+      DefaultPaymentMethod = null,
+      EnableReceiptPrintAfterSale = false,
+      EnableInvoiceAutoGeneration = true,
+      UpdatedBy = userId,
+      UpdatedAt = now
+    });
+}
+
+public sealed class SalesSettingsDetails
+{
+  public required BusinessId BusinessId { get; init; }
+  public required bool AllowNegativeStock { get; init; }
+  public required bool AllowDiscounts { get; init; }
+  public required bool RequireCustomerForCreditSale { get; init; }
+  public string? DefaultPaymentMethod { get; init; }
+  public required bool EnableReceiptPrintAfterSale { get; init; }
+  public required bool EnableInvoiceAutoGeneration { get; init; }
+  public required Guid UpdatedBy { get; init; }
+  public required DateTimeOffset UpdatedAt { get; init; }
 }

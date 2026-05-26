@@ -206,7 +206,6 @@ export function PilotMetricsPage() {
                     </tr>
                   )}
                   {data.recentBusinesses.map((business, index) => (
-                    // eslint-disable-next-line react/no-array-index-key
                     <BusinessRow business={business} key={`${business.businessName}-${index}`} />
                   ))}
                 </tbody>

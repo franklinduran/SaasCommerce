@@ -57,19 +57,11 @@ public sealed class UpdateSalesSettingsHandler(
 
     if (existing is null)
     {
-      existing = new SalesSettings(
-        businessId, command.AllowNegativeStock, command.AllowDiscounts,
-        command.RequireCustomerForCreditSale, command.DefaultPaymentMethod,
-        command.EnableReceiptPrintAfterSale, command.EnableInvoiceAutoGeneration,
-        userId, now);
+      existing = new SalesSettings(ToDetails(command, businessId, userId, now));
     }
     else
     {
-      existing.Update(
-        command.AllowNegativeStock, command.AllowDiscounts,
-        command.RequireCustomerForCreditSale, command.DefaultPaymentMethod,
-        command.EnableReceiptPrintAfterSale, command.EnableInvoiceAutoGeneration,
-        userId, now);
+      existing.Update(ToDetails(command, businessId, userId, now));
     }
 
     await repository.UpsertAsync(existing, cancellationToken);
@@ -89,4 +81,22 @@ public sealed class UpdateSalesSettingsHandler(
         s.RequireCustomerForCreditSale, s.DefaultPaymentMethod,
         s.EnableReceiptPrintAfterSale, s.EnableInvoiceAutoGeneration,
         s.UpdatedBy, s.UpdatedAt);
+
+  private static SalesSettingsDetails ToDetails(
+    UpdateSalesSettingsCommand command,
+    BusinessId businessId,
+    Guid userId,
+    DateTimeOffset now)
+    => new()
+    {
+      BusinessId = businessId,
+      AllowNegativeStock = command.AllowNegativeStock,
+      AllowDiscounts = command.AllowDiscounts,
+      RequireCustomerForCreditSale = command.RequireCustomerForCreditSale,
+      DefaultPaymentMethod = command.DefaultPaymentMethod,
+      EnableReceiptPrintAfterSale = command.EnableReceiptPrintAfterSale,
+      EnableInvoiceAutoGeneration = command.EnableInvoiceAutoGeneration,
+      UpdatedBy = userId,
+      UpdatedAt = now
+    };
 }

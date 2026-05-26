@@ -14,16 +14,29 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Customers.Application.Credits;
 
-public sealed class RegisterCustomerPaymentUseCase(
-  ICustomerRepository customers,
-  ICustomerCreditRepository credits,
-  ICurrentUserService currentUser,
-  IOutboxWriter outbox,
-  ICorrelationIdProvider correlationIdProvider,
-  IClock clock,
-  IUnitOfWork unitOfWork,
-  ISubscriptionAccessPolicy subscriptionAccess) : IRegisterCustomerPaymentUseCase
+public sealed class RegisterCustomerPaymentDependencies
 {
+  public required ICustomerRepository Customers { get; init; }
+  public required ICustomerCreditRepository Credits { get; init; }
+  public required ICurrentUserService CurrentUser { get; init; }
+  public required IOutboxWriter Outbox { get; init; }
+  public required ICorrelationIdProvider CorrelationIdProvider { get; init; }
+  public required IClock Clock { get; init; }
+  public required IUnitOfWork UnitOfWork { get; init; }
+  public required ISubscriptionAccessPolicy SubscriptionAccess { get; init; }
+}
+
+public sealed class RegisterCustomerPaymentUseCase(RegisterCustomerPaymentDependencies dependencies) : IRegisterCustomerPaymentUseCase
+{
+  private readonly ICustomerRepository customers = dependencies.Customers;
+  private readonly ICustomerCreditRepository credits = dependencies.Credits;
+  private readonly ICurrentUserService currentUser = dependencies.CurrentUser;
+  private readonly IOutboxWriter outbox = dependencies.Outbox;
+  private readonly ICorrelationIdProvider correlationIdProvider = dependencies.CorrelationIdProvider;
+  private readonly IClock clock = dependencies.Clock;
+  private readonly IUnitOfWork unitOfWork = dependencies.UnitOfWork;
+  private readonly ISubscriptionAccessPolicy subscriptionAccess = dependencies.SubscriptionAccess;
+
   public async Task<Result<RegisterCustomerPaymentResponse>> ExecuteAsync(
     RegisterCustomerPaymentCommand command,
     CancellationToken cancellationToken = default)
@@ -45,7 +58,7 @@ public sealed class RegisterCustomerPaymentUseCase(
     var tenant = new BusinessId(context.Value.BusinessId);
     var access = await subscriptionAccess.EnsureCanUseFeatureAsync(
       tenant,
-      SubscriptionFeature.Payments,
+      SubscriptionFeatures.Payments,
       cancellationToken);
     if (access.IsFailure)
     {

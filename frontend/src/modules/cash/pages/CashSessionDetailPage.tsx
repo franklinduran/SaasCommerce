@@ -20,6 +20,11 @@ function formatDate(dateString: string) {
   }).format(new Date(dateString))
 }
 
+function differenceClassName(difference: number) {
+  if (difference === 0) return 'text-green-700'
+  return difference > 0 ? 'text-amber-700' : 'text-red-700'
+}
+
 export function CashSessionDetailPage() {
   const { cashSessionId } = useParams<{ cashSessionId: string }>()
   const navigate = useNavigate()
@@ -104,11 +109,7 @@ export function CashSessionDetailPage() {
                 <p
                   className={cn(
                     'mt-1 text-sm font-medium',
-                    difference === 0
-                      ? 'text-green-700'
-                      : difference > 0
-                        ? 'text-amber-700'
-                        : 'text-red-700',
+                    differenceClassName(difference),
                   )}
                 >
                   Diferencia: {difference > 0 ? '+' : ''}{formatCurrency(difference)}

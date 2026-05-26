@@ -1,3 +1,4 @@
+using System.Globalization;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Inventory.Application.Abstractions;
 using SaasCommerce.SharedKernel;
@@ -36,12 +37,12 @@ public sealed class ExportInventoryCsvHandler(
       s.Sku,
       s.ProductName,
       s.BranchName,
-      s.Quantity.ToString("F2"),
+      s.Quantity.ToString("F2", CultureInfo.InvariantCulture),
       s.UnitOfMeasure,
-      s.MinimumStock?.ToString("F2"),
-      s.ReorderPoint?.ToString("F2"),
+      s.MinimumStock?.ToString("F2", CultureInfo.InvariantCulture),
+      s.ReorderPoint?.ToString("F2", CultureInfo.InvariantCulture),
       s.Status,
-      s.LastUpdatedAt?.ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture)
+      s.LastUpdatedAt?.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
     ]);
 
     var csv = CsvBuilder.Build(Headers, rows);

@@ -12,17 +12,31 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Identity.Application.Account;
 
-public sealed class RegisterBusinessHandler(
-  IAccountBusinessRepository businesses,
-  IIdentityUserRepository users,
-  IPasswordHasher passwordHasher,
-  IJwtTokenService jwtTokenService,
-  IRefreshTokenGenerator refreshTokenGenerator,
-  ISubscriptionPlanRepository subscriptionPlans,
-  IBusinessSubscriptionRepository subscriptions,
-  IClock clock,
-  IUnitOfWork unitOfWork)
+public sealed class RegisterBusinessDependencies
 {
+  public required IAccountBusinessRepository Businesses { get; init; }
+  public required IIdentityUserRepository Users { get; init; }
+  public required IPasswordHasher PasswordHasher { get; init; }
+  public required IJwtTokenService JwtTokenService { get; init; }
+  public required IRefreshTokenGenerator RefreshTokenGenerator { get; init; }
+  public required ISubscriptionPlanRepository SubscriptionPlans { get; init; }
+  public required IBusinessSubscriptionRepository Subscriptions { get; init; }
+  public required IClock Clock { get; init; }
+  public required IUnitOfWork UnitOfWork { get; init; }
+}
+
+public sealed class RegisterBusinessHandler(RegisterBusinessDependencies dependencies)
+{
+  private readonly IAccountBusinessRepository businesses = dependencies.Businesses;
+  private readonly IIdentityUserRepository users = dependencies.Users;
+  private readonly IPasswordHasher passwordHasher = dependencies.PasswordHasher;
+  private readonly IJwtTokenService jwtTokenService = dependencies.JwtTokenService;
+  private readonly IRefreshTokenGenerator refreshTokenGenerator = dependencies.RefreshTokenGenerator;
+  private readonly ISubscriptionPlanRepository subscriptionPlans = dependencies.SubscriptionPlans;
+  private readonly IBusinessSubscriptionRepository subscriptions = dependencies.Subscriptions;
+  private readonly IClock clock = dependencies.Clock;
+  private readonly IUnitOfWork unitOfWork = dependencies.UnitOfWork;
+
   public Task<Result<RegisterBusinessResponse>> Handle(
     RegisterBusinessCommand command,
     CancellationToken cancellationToken = default)

@@ -148,7 +148,9 @@ export function PlanComparisonCard({
 }
 
 function getFeatureList(plans: SubscriptionPlanResponse[]): string[] {
-  return Array.from(new Set(plans.flatMap((plan) => plan.features))).sort()
+  return Array.from(new Set(plans.flatMap((plan) => plan.features))).sort((a, b) =>
+    a.localeCompare(b, 'es-DO'),
+  )
 }
 
 function formatMoney(value: number): string {

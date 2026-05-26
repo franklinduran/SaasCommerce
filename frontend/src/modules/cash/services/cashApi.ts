@@ -59,8 +59,9 @@ export const cashApi = {
     if (params?.pageSize) query.set('pageSize', String(params.pageSize))
 
     const qs = query.toString()
+    const querySuffix = qs ? `?${qs}` : ''
     const response = await httpClient<CashSessionsListResult>(
-      `/api/cash-sessions${qs ? `?${qs}` : ''}`,
+      `/api/cash-sessions${querySuffix}`,
       { accessToken: getAccessToken() },
     )
     return response.data!

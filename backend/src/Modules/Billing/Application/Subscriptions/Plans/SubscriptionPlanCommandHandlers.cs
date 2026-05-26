@@ -42,18 +42,21 @@ public sealed class CreateSubscriptionPlanCommandHandler(
     {
       plan = SubscriptionPlan.Create(
         Guid.NewGuid(),
-        command.Name,
-        command.Code,
-        command.Description ?? string.Empty,
-        command.MonthlyPrice,
-        command.MaxBranches,
-        command.MaxUsers,
-        command.MaxProducts,
-        command.MaxSalesPerMonth,
-        BuildFeatures(
-          command.AllowInventoryTransfers,
-          command.AllowAdvancedReports,
-          command.AllowAuditLogs),
+        new SubscriptionPlanDefinition
+        {
+          Name = command.Name,
+          Code = command.Code,
+          Description = command.Description ?? string.Empty,
+          MonthlyPrice = command.MonthlyPrice,
+          MaxBranches = command.MaxBranches,
+          MaxUsers = command.MaxUsers,
+          MaxProducts = command.MaxProducts,
+          MaxSalesPerMonth = command.MaxSalesPerMonth,
+          Features = BuildFeatures(
+            command.AllowInventoryTransfers,
+            command.AllowAdvancedReports,
+            command.AllowAuditLogs)
+        },
         clock.UtcNow);
     }
     catch (ArgumentException)
@@ -67,7 +70,7 @@ public sealed class CreateSubscriptionPlanCommandHandler(
     return Result.Success(SubscriptionPlanResponseMapper.ToResponse(plan));
   }
 
-  private static SubscriptionFeature BuildFeatures(
+  private static SubscriptionFeatures BuildFeatures(
     bool allowInventoryTransfers,
     bool allowAdvancedReports,
     bool allowAuditLogs)
@@ -101,18 +104,21 @@ public sealed class UpdateSubscriptionPlanCommandHandler(
     try
     {
       plan.Update(
-        command.Name,
-        command.Code,
-        command.Description ?? string.Empty,
-        command.MonthlyPrice,
-        command.MaxBranches,
-        command.MaxUsers,
-        command.MaxProducts,
-        command.MaxSalesPerMonth,
-        SubscriptionPlanFeatureBuilder.Build(
-          command.AllowInventoryTransfers,
-          command.AllowAdvancedReports,
-          command.AllowAuditLogs),
+        new SubscriptionPlanDefinition
+        {
+          Name = command.Name,
+          Code = command.Code,
+          Description = command.Description ?? string.Empty,
+          MonthlyPrice = command.MonthlyPrice,
+          MaxBranches = command.MaxBranches,
+          MaxUsers = command.MaxUsers,
+          MaxProducts = command.MaxProducts,
+          MaxSalesPerMonth = command.MaxSalesPerMonth,
+          Features = SubscriptionPlanFeatureBuilder.Build(
+            command.AllowInventoryTransfers,
+            command.AllowAdvancedReports,
+            command.AllowAuditLogs)
+        },
         clock.UtcNow);
     }
     catch (ArgumentException)
@@ -175,32 +181,32 @@ public sealed class DeactivateSubscriptionPlanCommandHandler(
 
 internal static class SubscriptionPlanFeatureBuilder
 {
-  internal static SubscriptionFeature Build(
+  internal static SubscriptionFeatures Build(
     bool allowInventoryTransfers,
     bool allowAdvancedReports,
     bool allowAuditLogs)
   {
-    var features = SubscriptionFeature.Sales |
-      SubscriptionFeature.Products |
-      SubscriptionFeature.Branches |
-      SubscriptionFeature.Users |
-      SubscriptionFeature.Purchases |
-      SubscriptionFeature.Invoices |
-      SubscriptionFeature.Payments;
+    var features = SubscriptionFeatures.Sales |
+      SubscriptionFeatures.Products |
+      SubscriptionFeatures.Branches |
+      SubscriptionFeatures.Users |
+      SubscriptionFeatures.Purchases |
+      SubscriptionFeatures.Invoices |
+      SubscriptionFeatures.Payments;
 
     if (allowInventoryTransfers)
     {
-      features |= SubscriptionFeature.InventoryTransfers;
+      features |= SubscriptionFeatures.InventoryTransfers;
     }
 
     if (allowAdvancedReports)
     {
-      features |= SubscriptionFeature.Reports;
+      features |= SubscriptionFeatures.Reports;
     }
 
     if (allowAuditLogs)
     {
-      features |= SubscriptionFeature.AuditLogs;
+      features |= SubscriptionFeatures.AuditLogs;
     }
 
     return features;

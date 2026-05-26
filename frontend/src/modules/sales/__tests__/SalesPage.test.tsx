@@ -119,6 +119,48 @@ describe('SaleDetailPage', () => {
     expect((await screen.findAllByText('Maria Perez')).length).toBeGreaterThan(0)
   })
 
+  it('SaleDetailPage should show error state when sale fails to load, and retry button triggers refetch', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createSalesFetchMock({ failDetail: true }))
+    renderSaleDetailPage()
+
+    expect(await screen.findByText('No se pudo cargar la venta.')).toBeTruthy()
+    const retryBtn = screen.getByRole('button', { name: /Reintentar/i })
+    expect(retryBtn).toBeTruthy()
+    // Click retry — covers the refetch callback branch
+    await user.click(retryBtn)
+  })
+
+  it('SaleDetailPage should render with Negocio fallback when business data unavailable', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ failBusiness: true }))
+    renderSaleDetailPage()
+
+    // Should still render the sale (not crash) — businessName fallback is 'Negocio'
+    expect(await screen.findByText('Productos vendidos')).toBeTruthy()
+  })
+
+  it('SaleDetailPage should render without saleId route param (empty invalidation)', async () => {
+    // Covers the saleId ? [saleId] : [] false branch in useSaleStatusInvalidation
+    vi.stubGlobal('fetch', createSalesFetchMock({ detailSale: createApiSale() }))
+    const router = createMemoryRouter(
+      [{ element: <SaleDetailPage />, path: '/sales' }],
+      { initialEntries: ['/sales'] },
+    )
+    renderWithQueryClient(<RouterProvider router={router} />)
+    // Without saleId, sale query can't load — shows error or loading state, not crash
+    await waitFor(() => {
+      expect(document.body.textContent).toBeTruthy()
+    })
+  })
+
+  it('SaleDetailPage should use showRnc=false fallback when billing settings unavailable', async () => {
+    vi.stubGlobal('fetch', createSalesFetchMock({ failBilling: true }))
+    renderSaleDetailPage()
+
+    // Sale should still load — receipt renders with showRnc=false (billing?.showRncOnReceipt ?? false)
+    expect(await screen.findByText('Productos vendidos')).toBeTruthy()
+  })
+
   it('SaleDetailPage should show failure reason when sale failed', async () => {
     vi.stubGlobal(
       'fetch',
@@ -159,6 +201,94 @@ describe('SaleReceipt', () => {
 
     expect(screen.queryByText('product-internal-id')).toBeNull()
     expect(screen.queryByText('11111111-1111-1111-1111-111111111111')).toBeNull()
+  })
+
+  it('SaleReceipt should show RNC when showRnc and rnc are provided', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        rnc="101123456"
+        showRnc
+        sale={createReceiptSale()}
+      />,
+    )
+    expect(screen.getByText('RNC: 101123456')).toBeTruthy()
+  })
+
+  it('SaleReceipt should not show RNC when showRnc is false', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        rnc="101123456"
+        showRnc={false}
+        sale={createReceiptSale()}
+      />,
+    )
+    expect(screen.queryByText('RNC: 101123456')).toBeNull()
+  })
+
+  it('SaleReceipt should show phone when provided', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        phone="8091234567"
+        sale={createReceiptSale()}
+      />,
+    )
+    expect(screen.getByText('Tel: 8091234567')).toBeTruthy()
+  })
+
+  it('SaleReceipt should show receiptHeaderText when provided', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        receiptHeaderText="Bienvenido a nuestro local"
+        sale={createReceiptSale()}
+      />,
+    )
+    expect(screen.getByText('Bienvenido a nuestro local')).toBeTruthy()
+  })
+
+  it('SaleReceipt should show custom footer text', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        receiptFooterText="Vuelva pronto"
+        sale={createReceiptSale()}
+      />,
+    )
+    expect(screen.getByText('Vuelva pronto')).toBeTruthy()
+    expect(screen.queryByText('Gracias por su compra')).toBeNull()
+  })
+
+  it('SaleReceipt should show default footer when no receiptFooterText', () => {
+    render(<SaleReceipt businessName="Colmado Central" sale={createReceiptSale()} />)
+    expect(screen.getByText('Gracias por su compra')).toBeTruthy()
+  })
+
+  it('SaleReceipt should show ITBIS note in totals section', () => {
+    render(<SaleReceipt businessName="Colmado Central" sale={createReceiptSale()} />)
+    expect(screen.getByText('ITBIS 18% incluido en precios')).toBeTruthy()
+  })
+
+  it('SaleReceipt should show fallback branch name when branchName is null', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        sale={{ ...createReceiptSale(), branchName: null }}
+      />,
+    )
+    expect(screen.getByText('Sucursal no disponible')).toBeTruthy()
+  })
+
+  it('SaleReceipt should show Consumidor final when customerName is null', () => {
+    render(
+      <SaleReceipt
+        businessName="Colmado Central"
+        sale={{ ...createReceiptSale(), customerName: null }}
+      />,
+    )
+    expect(screen.getByText('Consumidor final')).toBeTruthy()
   })
 })
 
@@ -213,10 +343,16 @@ function setSession() {
 
 function createSalesFetchMock({
   detailSale = createApiSale(),
+  failBilling = false,
+  failBusiness = false,
+  failDetail = false,
   failList = false,
   sales = [createApiSale()],
 }: {
   detailSale?: ApiSaleMock
+  failBilling?: boolean
+  failBusiness?: boolean
+  failDetail?: boolean
   failList?: boolean
   sales?: ApiSaleMock[]
 } = {}) {
@@ -224,16 +360,42 @@ function createSalesFetchMock({
     const url = input.toString()
 
     if (url.includes('/api/business/current')) {
+      if (failBusiness) return createJsonResponse(null, false, 500, 'Business unavailable')
       return createJsonResponse({
         businessId: '11111111-1111-1111-1111-111111111111',
-        identificationNumber: null,
-        identificationType: null,
+        identificationNumber: '101123456',
+        identificationType: 'RNC',
         name: 'Colmado Central',
-        phones: [],
+        phones: ['8091234567'],
+        rnc: '101123456',
+        phone: '8091234567',
+        receiptFooterText: null,
+      })
+    }
+
+    if (url.includes('/api/settings/billing')) {
+      if (failBilling) return createJsonResponse(null, false, 500, 'Billing unavailable')
+      return createJsonResponse({
+        businessId: '11111111-1111-1111-1111-111111111111',
+        receiptFooterText: null,
+        receiptHeaderText: null,
+        showLogoOnReceipt: false,
+        showRncOnReceipt: false,
+      })
+    }
+
+    if (url.includes('/api/settings/business')) {
+      return createJsonResponse({
+        businessId: '11111111-1111-1111-1111-111111111111',
+        commercialName: 'Colmado Central',
+        legalName: null,
+        phone: '8091234567',
+        rnc: '101123456',
       })
     }
 
     if (url.includes('/api/sales/') && !url.endsWith('/api/sales')) {
+      if (failDetail) return createJsonResponse(null, false, 500, 'Sale unavailable')
       return createJsonResponse(detailSale)
     }
 

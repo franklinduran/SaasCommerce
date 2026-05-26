@@ -13,45 +13,54 @@ public sealed class BusinessSubscription
   {
   }
 
-  private BusinessSubscription(
-    Guid id,
-    BusinessId businessId,
-    Guid planId,
-    SubscriptionStatus status,
-    DateTimeOffset startedAt,
-    DateTimeOffset? trialEndsAt,
-    DateTimeOffset? currentPeriodStart,
-    DateTimeOffset? currentPeriodEnd,
-    DateTimeOffset? cancelledAt,
-    DateTimeOffset? suspendedAt,
-    string? cancellationReason,
-    DateTimeOffset createdAt)
+  private BusinessSubscription(BusinessSubscriptionState state)
   {
-    if (id == Guid.Empty)
+    if (state.Id == Guid.Empty)
     {
-      throw new ArgumentException("Subscription id cannot be empty.", nameof(id));
+      throw new ArgumentException("Subscription id cannot be empty.", nameof(state));
     }
 
-    if (planId == Guid.Empty)
+    if (state.PlanId == Guid.Empty)
     {
-      throw new ArgumentException("Plan id cannot be empty.", nameof(planId));
+      throw new ArgumentException("Plan id cannot be empty.", nameof(state));
     }
 
-    ValidateStatusDates(status, trialEndsAt, currentPeriodStart, currentPeriodEnd, cancelledAt);
+    ValidateStatusDates(
+      state.Status,
+      state.TrialEndsAt,
+      state.CurrentPeriodStart,
+      state.CurrentPeriodEnd,
+      state.CancelledAt);
 
-    Id = id;
-    BusinessId = businessId;
-    PlanId = planId;
-    Status = status;
-    StartedAt = startedAt;
-    TrialEndsAt = trialEndsAt;
-    CurrentPeriodStart = currentPeriodStart;
-    CurrentPeriodEnd = currentPeriodEnd;
-    CancelledAt = cancelledAt;
-    SuspendedAt = suspendedAt;
-    CancellationReason = NormalizeOptional(cancellationReason);
-    CreatedAt = createdAt;
-    UpdatedAt = createdAt;
+    Id = state.Id;
+    BusinessId = state.BusinessId;
+    PlanId = state.PlanId;
+    Status = state.Status;
+    StartedAt = state.StartedAt;
+    TrialEndsAt = state.TrialEndsAt;
+    CurrentPeriodStart = state.CurrentPeriodStart;
+    CurrentPeriodEnd = state.CurrentPeriodEnd;
+    CancelledAt = state.CancelledAt;
+    SuspendedAt = state.SuspendedAt;
+    CancellationReason = NormalizeOptional(state.CancellationReason);
+    CreatedAt = state.CreatedAt;
+    UpdatedAt = state.CreatedAt;
+  }
+
+  private sealed class BusinessSubscriptionState
+  {
+    public required Guid Id { get; init; }
+    public required BusinessId BusinessId { get; init; }
+    public required Guid PlanId { get; init; }
+    public required SubscriptionStatus Status { get; init; }
+    public required DateTimeOffset StartedAt { get; init; }
+    public DateTimeOffset? TrialEndsAt { get; init; }
+    public DateTimeOffset? CurrentPeriodStart { get; init; }
+    public DateTimeOffset? CurrentPeriodEnd { get; init; }
+    public DateTimeOffset? CancelledAt;
+    public DateTimeOffset? SuspendedAt;
+    public string? CancellationReason;
+    public required DateTimeOffset CreatedAt { get; init; }
   }
 
   /// <summary>Unique identifier for this subscription</summary>
@@ -101,19 +110,19 @@ public sealed class BusinessSubscription
     DateTimeOffset startedAt,
     DateTimeOffset trialEndsAt)
   {
-    return new BusinessSubscription(
-      id,
-      businessId,
-      planId,
-      SubscriptionStatus.Trial,
-      startedAt,
-      trialEndsAt,
-      null,
-      null,
-      null,
-      null,
-      null,
-      startedAt);
+    return new BusinessSubscription(new BusinessSubscriptionState
+    {
+      Id = id,
+      BusinessId = businessId,
+      PlanId = planId,
+      Status = SubscriptionStatus.Trial,
+      StartedAt = startedAt,
+      TrialEndsAt = trialEndsAt,
+      CancelledAt = null,
+      SuspendedAt = null,
+      CancellationReason = null,
+      CreatedAt = startedAt
+    });
   }
 
   /// <summary>Create an active subscription directly (admin action)</summary>
@@ -124,19 +133,20 @@ public sealed class BusinessSubscription
     DateTimeOffset startedAt,
     DateTimeOffset currentPeriodEnd)
   {
-    return new BusinessSubscription(
-      id,
-      businessId,
-      planId,
-      SubscriptionStatus.Active,
-      startedAt,
-      null,
-      startedAt,
-      currentPeriodEnd,
-      null,
-      null,
-      null,
-      startedAt);
+    return new BusinessSubscription(new BusinessSubscriptionState
+    {
+      Id = id,
+      BusinessId = businessId,
+      PlanId = planId,
+      Status = SubscriptionStatus.Active,
+      StartedAt = startedAt,
+      CurrentPeriodStart = startedAt,
+      CurrentPeriodEnd = currentPeriodEnd,
+      CancelledAt = null,
+      SuspendedAt = null,
+      CancellationReason = null,
+      CreatedAt = startedAt
+    });
   }
 
   /// <summary>Transition from trial to active (when payment is received)</summary>
@@ -212,6 +222,22 @@ public sealed class BusinessSubscription
     UpdatedAt = now;
   }
 
+  /// <summary>Reactivate a cancelled subscription with the same plan</summary>
+  public void Reactivate(DateTimeOffset newPeriodEnd, DateTimeOffset now)
+  {
+    if (Status != SubscriptionStatus.Cancelled)
+    {
+      throw new InvalidOperationException($"Cannot reactivate subscription with status {Status}. Only Cancelled subscriptions can be reactivated.");
+    }
+
+    Status = SubscriptionStatus.Active;
+    CurrentPeriodStart = now;
+    CurrentPeriodEnd = newPeriodEnd;
+    CancelledAt = null;
+    CancellationReason = null;
+    UpdatedAt = now;
+  }
+
   /// <summary>Mark the subscription as expired (trial/period ended)</summary>
   public void MarkExpired(DateTimeOffset now)
   {
@@ -262,22 +288,6 @@ public sealed class BusinessSubscription
     CurrentPeriodEnd = null;
     CancelledAt = null;
     SuspendedAt = null;
-    CancellationReason = null;
-    UpdatedAt = now;
-  }
-
-  /// <summary>Reactivate a cancelled subscription with the same plan</summary>
-  public void Reactivate(DateTimeOffset newPeriodEnd, DateTimeOffset now)
-  {
-    if (Status != SubscriptionStatus.Cancelled)
-    {
-      throw new InvalidOperationException($"Cannot reactivate subscription with status {Status}. Only Cancelled subscriptions can be reactivated.");
-    }
-
-    Status = SubscriptionStatus.Active;
-    CurrentPeriodStart = now;
-    CurrentPeriodEnd = newPeriodEnd;
-    CancelledAt = null;
     CancellationReason = null;
     UpdatedAt = now;
   }

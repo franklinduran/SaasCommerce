@@ -1,3 +1,4 @@
+using System.Globalization;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.SharedKernel;
@@ -49,11 +50,11 @@ public sealed class ExportCustomerCreditsCsvHandler(
       return (IReadOnlyCollection<string?>)
       [
         customerName!,
-        a.HasUnlimitedCredit ? "Ilimitado" : a.CreditLimit.ToString("F2"),
-        a.CurrentBalance.ToString("F2"),
+        a.HasUnlimitedCredit ? "Ilimitado" : a.CreditLimit.ToString("F2", CultureInfo.InvariantCulture),
+        a.CurrentBalance.ToString("F2", CultureInfo.InvariantCulture),
         a.Status.ToString(),
-        a.CreatedAt.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
-        a.UpdatedAt.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+        a.CreatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        a.UpdatedAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
       ];
     });
 

@@ -4,7 +4,7 @@ type Props = {
   result: ImportProductsResponse
 }
 
-export function ProductImportPreviewTable({ result }: Props) {
+export function ProductImportPreviewTable({ result }: Readonly<Props>) {
   return (
     <div className="space-y-4">
       {/* Summary cards */}

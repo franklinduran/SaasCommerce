@@ -14,7 +14,7 @@ namespace SaasCommerce.Api.Tests;
 public sealed class PilotBusinessEndpointTests
 {
   [Fact]
-  public async Task PostPilotBusiness_ShouldReturn401_WhenNotAuthenticated()
+  public async Task PostPilotBusinessShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -27,7 +27,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task PostPilotBusiness_ShouldReturn201_WhenAdminCreatesNewBusiness()
+  public async Task PostPilotBusinessShouldReturn201WhenAdminCreatesNewBusiness()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -47,7 +47,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task PostPilotBusiness_ShouldReturn400_WhenEmailAlreadyExists()
+  public async Task PostPilotBusinessShouldReturn400WhenEmailAlreadyExists()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -67,7 +67,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task PostPilotBusiness_ShouldReturn400_WhenValidationFails()
+  public async Task PostPilotBusinessShouldReturn400WhenValidationFails()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -83,7 +83,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task GetOnboardingStatus_ShouldReturn200_WhenAuthenticated()
+  public async Task GetOnboardingStatusShouldReturn200WhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -100,7 +100,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task GetOnboardingStatus_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetOnboardingStatusShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -111,7 +111,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task PostCompleteOnboardingStep_ShouldReturn200_WhenStepIsValid()
+  public async Task PostCompleteOnboardingStepShouldReturn200WhenStepIsValid()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -125,7 +125,7 @@ public sealed class PilotBusinessEndpointTests
   }
 
   [Fact]
-  public async Task PostCompleteOnboardingStep_ShouldReturn400_WhenStepIsInvalid()
+  public async Task PostCompleteOnboardingStepShouldReturn400WhenStepIsInvalid()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();

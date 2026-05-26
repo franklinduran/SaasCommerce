@@ -71,17 +71,11 @@ public sealed class UpdateBusinessSettingsHandler(
 
     if (existing is null)
     {
-      existing = new BusinessSettings(
-        businessId, command.CommercialName, command.LegalName, command.Rnc,
-        command.Phone, command.Email, command.Address, command.Currency,
-        command.Timezone, command.LogoUrl, command.ReceiptFooterText, userId, now);
+      existing = new BusinessSettings(ToDetails(command, businessId, userId, now));
     }
     else
     {
-      existing.Update(
-        command.CommercialName, command.LegalName, command.Rnc, command.Phone,
-        command.Email, command.Address, command.Currency, command.Timezone,
-        command.LogoUrl, command.ReceiptFooterText, userId, now);
+      existing.Update(ToDetails(command, businessId, userId, now));
     }
 
     await repository.UpsertAsync(existing, cancellationToken);
@@ -98,6 +92,28 @@ public sealed class UpdateBusinessSettingsHandler(
 
   private static bool IsValidCurrency(string? currency)
     => !string.IsNullOrWhiteSpace(currency) && currency.Trim().Length == 3;
+
+  private static BusinessSettingsDetails ToDetails(
+    UpdateBusinessSettingsCommand command,
+    BusinessId businessId,
+    Guid userId,
+    DateTimeOffset now)
+    => new()
+    {
+      BusinessId = businessId,
+      CommercialName = command.CommercialName,
+      LegalName = command.LegalName,
+      Rnc = command.Rnc,
+      Phone = command.Phone,
+      Email = command.Email,
+      Address = command.Address,
+      Currency = command.Currency,
+      Timezone = command.Timezone,
+      LogoUrl = command.LogoUrl,
+      ReceiptFooterText = command.ReceiptFooterText,
+      UpdatedBy = userId,
+      UpdatedAt = now
+    };
 
   private static bool IsValidEmail(string email)
   {

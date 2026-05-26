@@ -22,7 +22,7 @@ public sealed class ImportProductsTests
   private static readonly Guid UserId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldCreateProducts_WhenCsvIsValid()
+  public async Task ImportProductsHandlerShouldCreateProductsWhenCsvIsValid()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -47,7 +47,7 @@ public sealed class ImportProductsTests
   }
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldCreateInitialInventoryMovements_WhenStockIsProvided()
+  public async Task ImportProductsHandlerShouldCreateInitialInventoryMovementsWhenStockIsProvided()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -73,7 +73,7 @@ public sealed class ImportProductsTests
   }
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldRejectInvalidRows_WhenRequiredFieldsAreMissing()
+  public async Task ImportProductsHandlerShouldRejectInvalidRowsWhenRequiredFieldsAreMissing()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -93,7 +93,7 @@ public sealed class ImportProductsTests
   }
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldUseCurrentUserBusinessId_WhenImportingProducts()
+  public async Task ImportProductsHandlerShouldUseCurrentUserBusinessIdWhenImportingProducts()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -114,7 +114,7 @@ public sealed class ImportProductsTests
   }
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldNotDuplicateProducts_WhenSkuAlreadyExists()
+  public async Task ImportProductsHandlerShouldNotDuplicateProductsWhenSkuAlreadyExists()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -134,7 +134,7 @@ public sealed class ImportProductsTests
   }
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldReturnError_WhenFileIsEmpty()
+  public async Task ImportProductsHandlerShouldReturnErrorWhenFileIsEmpty()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -147,7 +147,7 @@ public sealed class ImportProductsTests
   }
 
   [Fact]
-  public async Task ImportProductsHandler_ShouldCreateCategory_WhenCategoryNameIsNew()
+  public async Task ImportProductsHandlerShouldCreateCategoryWhenCategoryNameIsNew()
   {
     await using var db = CreateDbContext();
     var handler = CreateHandler(db);
@@ -194,7 +194,7 @@ public sealed class ImportProductsTests
     return new AppDbContext(options);
   }
 
-  private static Stream ToStream(string content)
+  private static MemoryStream ToStream(string content)
     => new MemoryStream(Encoding.UTF8.GetBytes(content));
 
   // ── Fakes ─────────────────────────────────────────────────────────────────

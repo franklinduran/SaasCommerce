@@ -16,7 +16,7 @@ public sealed class ExportEndpointTests
   // ── Products export ───────────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetProductsExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetProductsExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -27,7 +27,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetProductsExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetProductsExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -45,7 +45,7 @@ public sealed class ExportEndpointTests
   // ── Sales export ──────────────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetSalesExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetSalesExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -56,7 +56,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetSalesExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetSalesExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -73,7 +73,7 @@ public sealed class ExportEndpointTests
   // ── Inventory export ──────────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetInventoryExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetInventoryExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -84,7 +84,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetInventoryExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetInventoryExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -102,7 +102,7 @@ public sealed class ExportEndpointTests
   // ── Customers export ──────────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetCustomersExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetCustomersExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -113,7 +113,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetCustomersExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetCustomersExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -130,7 +130,7 @@ public sealed class ExportEndpointTests
   // ── Customer credits export ───────────────────────────────────────────────
 
   [Fact]
-  public async Task GetCustomerCreditsExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetCustomerCreditsExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -141,7 +141,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetCustomerCreditsExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetCustomerCreditsExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -158,7 +158,7 @@ public sealed class ExportEndpointTests
   // ── Cash registers export ─────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetCashRegistersExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetCashRegistersExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -169,7 +169,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetCashRegistersExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetCashRegistersExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -186,7 +186,7 @@ public sealed class ExportEndpointTests
   // ── Daily closings export ─────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetDailyClosingsExport_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetDailyClosingsExportShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -197,7 +197,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetDailyClosingsExport_ShouldReturn200WithCsv_WhenAuthenticated()
+  public async Task GetDailyClosingsExportShouldReturn200WithCsvWhenAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -214,7 +214,7 @@ public sealed class ExportEndpointTests
   // ── Pilot Metrics ─────────────────────────────────────────────────────────
 
   [Fact]
-  public async Task GetPilotMetrics_ShouldReturn401_WhenNotAuthenticated()
+  public async Task GetPilotMetricsShouldReturn401WhenNotAuthenticated()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -225,7 +225,7 @@ public sealed class ExportEndpointTests
   }
 
   [Fact]
-  public async Task GetPilotMetrics_ShouldReturn200_WhenAuthenticatedAsAdmin()
+  public async Task GetPilotMetricsShouldReturn200WhenAuthenticatedAsAdmin()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();

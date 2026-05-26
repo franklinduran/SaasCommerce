@@ -30,29 +30,29 @@ public static class SubscriptionPlanResponseMapper
       plan.UpdatedAt);
   }
 
-  private static List<string> GetEnabledFeatures(SubscriptionFeature features)
+  private static List<string> GetEnabledFeatures(SubscriptionFeatures features)
   {
     var enabledFeatures = new List<string>();
 
-    if ((features & SubscriptionFeature.Sales) != 0)
+    if ((features & SubscriptionFeatures.Sales) != 0)
       enabledFeatures.Add("Sales");
-    if ((features & SubscriptionFeature.Products) != 0)
+    if ((features & SubscriptionFeatures.Products) != 0)
       enabledFeatures.Add("Products");
-    if ((features & SubscriptionFeature.Branches) != 0)
+    if ((features & SubscriptionFeatures.Branches) != 0)
       enabledFeatures.Add("Branches");
-    if ((features & SubscriptionFeature.Users) != 0)
+    if ((features & SubscriptionFeatures.Users) != 0)
       enabledFeatures.Add("Users");
-    if ((features & SubscriptionFeature.Purchases) != 0)
+    if ((features & SubscriptionFeatures.Purchases) != 0)
       enabledFeatures.Add("Purchases");
-    if ((features & SubscriptionFeature.InventoryTransfers) != 0)
+    if ((features & SubscriptionFeatures.InventoryTransfers) != 0)
       enabledFeatures.Add("InventoryTransfers");
-    if ((features & SubscriptionFeature.Invoices) != 0)
+    if ((features & SubscriptionFeatures.Invoices) != 0)
       enabledFeatures.Add("Invoices");
-    if ((features & SubscriptionFeature.Payments) != 0)
+    if ((features & SubscriptionFeatures.Payments) != 0)
       enabledFeatures.Add("Payments");
-    if ((features & SubscriptionFeature.Reports) != 0)
+    if ((features & SubscriptionFeatures.Reports) != 0)
       enabledFeatures.Add("Reports");
-    if ((features & SubscriptionFeature.AuditLogs) != 0)
+    if ((features & SubscriptionFeatures.AuditLogs) != 0)
       enabledFeatures.Add("AuditLogs");
 
     return enabledFeatures;

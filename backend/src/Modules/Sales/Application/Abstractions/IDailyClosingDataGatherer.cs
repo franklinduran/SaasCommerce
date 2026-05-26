@@ -35,6 +35,6 @@ public interface IDailyClosingDataGatherer
   Task<DailyClosingData> GatherAsync(
     BusinessId businessId,
     BranchId branchId,
-    DateOnly date,
+    DateOnly closingDate,
     CancellationToken cancellationToken = default);
 }

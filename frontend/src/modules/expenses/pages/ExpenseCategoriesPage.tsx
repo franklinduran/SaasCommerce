@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2, Plus, Tag } from 'lucide-react'
 import { useState } from 'react'
+import type { SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCreateExpenseCategory, useExpenseCategories } from '../hooks/useExpenses'
 import { Badge } from '@/shared/components/ui/badge'
@@ -17,8 +18,9 @@ export function ExpenseCategoriesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
+  const categoryList = categories ?? []
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setNameError(null)
     if (!name || name.trim().length < 2) {
@@ -114,12 +116,13 @@ export function ExpenseCategoriesPage() {
         </Card>
       )}
 
-      {/* Categories list */}
-      {isLoading ? (
+      {isLoading && (
         <div className="flex h-40 items-center justify-center">
           <Loader2 className="animate-spin text-stone-400" size={24} />
         </div>
-      ) : (categories ?? []).length === 0 ? (
+      )}
+
+      {!isLoading && categoryList.length === 0 && (
         <Card>
           <CardContent className="flex h-40 flex-col items-center justify-center gap-2">
             <Tag className="text-stone-300" size={32} />
@@ -129,11 +132,13 @@ export function ExpenseCategoriesPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {!isLoading && categoryList.length > 0 && (
         <Card>
           <CardContent className="p-0">
             <div className="divide-y divide-stone-100">
-              {(categories ?? []).map((cat) => (
+              {categoryList.map((cat) => (
                 <div
                   key={cat.id}
                   className="flex items-center justify-between px-4 py-3"

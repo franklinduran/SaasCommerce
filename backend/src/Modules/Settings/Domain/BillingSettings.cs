@@ -12,38 +12,11 @@ public sealed class BillingSettings
 
   private BillingSettings() { }
 
-  public BillingSettings( // NOSONAR S107 — settings aggregate requires all fields at construction
-    BusinessId businessId,
-    string? receiptHeaderText,
-    string? receiptFooterText,
-    bool showLogoOnReceipt,
-    bool showRncOnReceipt,
-    bool enableInvoiceAutoGeneration,
-    string invoicePrefix,
-    int invoiceSequenceStart,
-    Guid updatedBy,
-    DateTimeOffset updatedAt)
+  public BillingSettings(BillingSettingsDetails details)
   {
 
-    if (invoiceSequenceStart < 1)
-    {
-      throw new ArgumentOutOfRangeException(
-        nameof(invoiceSequenceStart),
-        "Invoice sequence start must be >= 1.");
-    }
-
-    BusinessId = businessId;
-    ReceiptHeaderText = receiptHeaderText?.Trim();
-    ReceiptFooterText = receiptFooterText?.Trim();
-    ShowLogoOnReceipt = showLogoOnReceipt;
-    ShowRncOnReceipt = showRncOnReceipt;
-    EnableInvoiceAutoGeneration = enableInvoiceAutoGeneration;
-    InvoicePrefix = string.IsNullOrWhiteSpace(invoicePrefix)
-      ? DefaultInvoicePrefix
-      : invoicePrefix.Trim().ToUpperInvariant();
-    InvoiceSequenceStart = invoiceSequenceStart;
-    UpdatedBy = updatedBy;
-    UpdatedAt = updatedAt;
+    BusinessId = details.BusinessId;
+    Apply(details);
   }
 
   public BusinessId BusinessId { get; private set; }
@@ -57,38 +30,57 @@ public sealed class BillingSettings
   public Guid UpdatedBy { get; private set; }
   public DateTimeOffset UpdatedAt { get; private set; }
 
-  public void Update( // NOSONAR S107 — settings aggregate requires all fields for update
-    string? receiptHeaderText,
-    string? receiptFooterText,
-    bool showLogoOnReceipt,
-    bool showRncOnReceipt,
-    bool enableInvoiceAutoGeneration,
-    string invoicePrefix,
-    int invoiceSequenceStart,
-    Guid updatedBy,
-    DateTimeOffset updatedAt)
+  public void Update(BillingSettingsDetails details)
+    => Apply(details);
+
+  private void Apply(BillingSettingsDetails details)
   {
-    if (invoiceSequenceStart < 1)
+    if (details.InvoiceSequenceStart < 1)
     {
       throw new ArgumentOutOfRangeException(
-        nameof(invoiceSequenceStart),
+        nameof(details),
         "Invoice sequence start must be >= 1.");
     }
 
-    ReceiptHeaderText = receiptHeaderText?.Trim();
-    ReceiptFooterText = receiptFooterText?.Trim();
-    ShowLogoOnReceipt = showLogoOnReceipt;
-    ShowRncOnReceipt = showRncOnReceipt;
-    EnableInvoiceAutoGeneration = enableInvoiceAutoGeneration;
-    InvoicePrefix = string.IsNullOrWhiteSpace(invoicePrefix)
+    ReceiptHeaderText = details.ReceiptHeaderText?.Trim();
+    ReceiptFooterText = details.ReceiptFooterText?.Trim();
+    ShowLogoOnReceipt = details.ShowLogoOnReceipt;
+    ShowRncOnReceipt = details.ShowRncOnReceipt;
+    EnableInvoiceAutoGeneration = details.EnableInvoiceAutoGeneration;
+    InvoicePrefix = string.IsNullOrWhiteSpace(details.InvoicePrefix)
       ? DefaultInvoicePrefix
-      : invoicePrefix.Trim().ToUpperInvariant();
-    InvoiceSequenceStart = invoiceSequenceStart;
-    UpdatedBy = updatedBy;
-    UpdatedAt = updatedAt;
+      : details.InvoicePrefix.Trim().ToUpperInvariant();
+    InvoiceSequenceStart = details.InvoiceSequenceStart;
+    UpdatedBy = details.UpdatedBy;
+    UpdatedAt = details.UpdatedAt;
   }
 
   public static BillingSettings Default(BusinessId businessId, Guid userId, DateTimeOffset now)
-    => new(businessId, null, null, false, false, true,
-        DefaultInvoicePrefix, DefaultInvoiceSequenceStart, userId, now);
+    => new(new BillingSettingsDetails
+    {
+      BusinessId = businessId,
+      ReceiptHeaderText = null,
+      ReceiptFooterText = null,
+      ShowLogoOnReceipt = false,
+      ShowRncOnReceipt = false,
+      EnableInvoiceAutoGeneration = true,
+      InvoicePrefix = DefaultInvoicePrefix,
+      InvoiceSequenceStart = DefaultInvoiceSequenceStart,
+      UpdatedBy = userId,
+      UpdatedAt = now
+    });
+}
+
+public sealed class BillingSettingsDetails
+{
+  public required BusinessId BusinessId { get; init; }
+  public string? ReceiptHeaderText { get; init; }
+  public string? ReceiptFooterText { get; init; }
+  public required bool ShowLogoOnReceipt { get; init; }
+  public required bool ShowRncOnReceipt { get; init; }
+  public required bool EnableInvoiceAutoGeneration { get; init; }
+  public required string InvoicePrefix { get; init; }
+  public required int InvoiceSequenceStart { get; init; }
+  public required Guid UpdatedBy { get; init; }
+  public required DateTimeOffset UpdatedAt { get; init; }
 }

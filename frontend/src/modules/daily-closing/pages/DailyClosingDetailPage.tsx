@@ -52,6 +52,11 @@ function alertTypeLabel(type: DailyClosingAlertType): string {
   }
 }
 
+function cashDifferenceClassName(difference: number) {
+  if (difference === 0) return 'text-green-700'
+  return difference > 0 ? 'text-amber-700' : 'text-red-700'
+}
+
 export function DailyClosingDetailPage() {
   const { closingId } = useParams<{ closingId: string }>()
   const navigate = useNavigate()
@@ -71,8 +76,12 @@ export function DailyClosingDetailPage() {
     }
     setValidationError(null)
     if (!closingId) return
+    const normalizedNotes = closeNotes.trim()
     closeDay(
-      { closingId, params: { cashCounted: amount, notes: closeNotes.trim() || undefined } },
+      {
+        closingId,
+        params: { cashCounted: amount, notes: normalizedNotes.length > 0 ? normalizedNotes : undefined },
+      },
       {
         onSuccess: (updated) => {
           navigate(`/daily-closing/${updated.id}`, { replace: true })
@@ -197,11 +206,7 @@ export function DailyClosingDetailPage() {
                 <p
                   className={cn(
                     'mt-0.5 text-sm font-semibold tabular-nums',
-                    cashDiff === 0
-                      ? 'text-green-700'
-                      : cashDiff > 0
-                        ? 'text-amber-700'
-                        : 'text-red-700',
+                    cashDifferenceClassName(cashDiff),
                   )}
                 >
                   {cashDiff > 0 ? '+' : ''}

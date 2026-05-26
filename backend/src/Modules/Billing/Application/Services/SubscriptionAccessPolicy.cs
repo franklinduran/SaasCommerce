@@ -17,7 +17,7 @@ public sealed class SubscriptionAccessPolicy(
 {
   public async Task<Result> EnsureCanUseFeatureAsync(
     BusinessId businessId,
-    SubscriptionFeature feature,
+    SubscriptionFeatures feature,
     CancellationToken cancellationToken = default)
   {
     var subscription = await subscriptionRepository.GetCurrentByBusinessIdAsync(businessId, cancellationToken);

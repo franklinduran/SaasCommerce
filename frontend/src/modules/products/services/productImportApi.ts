@@ -57,8 +57,9 @@ export const productImportApi = {
 
   getTemplateCsvUrl(): string {
     const accessToken = getAccessToken()
+    const tokenQuery = accessToken ? `?token=${accessToken}` : ''
 
-    return `${apiBaseUrl}/api/products/import/template${accessToken ? `?token=${accessToken}` : ''}`
+    return `${apiBaseUrl}/api/products/import/template${tokenQuery}`
   },
 }
 

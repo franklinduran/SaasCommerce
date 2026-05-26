@@ -55,7 +55,7 @@ public sealed class EfDailyClosingReadRepository(AppDbContext dbContext) : IDail
         dc.TotalSales,
         dc.EstimatedNetProfit,
         dc.NetMarginPercent,
-        AlertCount = dc.Alerts.Count(),
+        AlertCount = dc.Alerts.Count,
         dc.CreatedAt,
         dc.ClosedAt,
       })
@@ -124,7 +124,7 @@ public sealed class EfDailyClosingReadRepository(AppDbContext dbContext) : IDail
         dc.TotalSales,
         dc.EstimatedNetProfit,
         dc.NetMarginPercent,
-        AlertCount = dc.Alerts.Count(),
+        AlertCount = dc.Alerts.Count,
         dc.CreatedAt,
         dc.ClosedAt,
       })

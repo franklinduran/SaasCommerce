@@ -90,13 +90,15 @@ export function CreateInventoryTransferDialog({
   }, [open, reset])
 
   async function onSubmit(values: CreateInventoryTransferFormValues) {
+    const normalizedNote = values.note?.trim() ?? ''
+
     try {
       await createTransfer.mutateAsync({
         items: values.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
-        note: values.note?.trim() || null,
+        note: normalizedNote.length > 0 ? normalizedNote : null,
         sourceBranchId: values.sourceBranchId,
         targetBranchId: values.targetBranchId,
       })

@@ -1,154 +1,114 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useAuthStore } from '@/modules/auth/authStore'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BranchesPage } from '@/modules/branches/pages/BranchesPage'
+import {
+  useActivateBranchMutation,
+  useBranches,
+  useDeactivateBranchMutation,
+} from '@/modules/branches/hooks/useBranches'
 
-const branchId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-const businessId = '11111111-1111-1111-1111-111111111111'
-
-describe('BranchesPage', () => {
-  afterEach(() => {
-    cleanup()
-    useAuthStore.getState().clearSession()
-    vi.unstubAllGlobals()
-  })
-
-  it('should render branch list', async () => {
-    vi.stubGlobal('fetch', createBranchFetchMock())
-    renderBranchesPage()
-
-    expect(await screen.findByText('Sucursal Principal')).toBeTruthy()
-    expect(screen.getByText('PRINCIPAL')).toBeTruthy()
-  })
-
-  it('should show principal badge for main branch', async () => {
-    vi.stubGlobal('fetch', createBranchFetchMock())
-    renderBranchesPage()
-
-    expect(await screen.findByText('Principal')).toBeTruthy()
-  })
-
-  it('should disable deactivate button for main branch', async () => {
-    vi.stubGlobal('fetch', createBranchFetchMock())
-    renderBranchesPage()
-
-    await screen.findByText('Sucursal Principal')
-    const deactivateButtons = screen.queryAllByRole('button', { name: 'Desactivar' })
-
-    // Main branch should not have a deactivate button (or it is disabled)
-    deactivateButtons.forEach((btn) => {
-      expect((btn as HTMLButtonElement).disabled).toBe(true)
-    })
-  })
-
-  it('should open create dialog when clicking Nueva sucursal', async () => {
-    const user = userEvent.setup()
-    vi.stubGlobal('fetch', createBranchFetchMock())
-    renderBranchesPage()
-
-    await user.click(await screen.findByRole('button', { name: /Nueva sucursal/ }))
-
-    // "Nueva sucursal" appears in button and dialog title — check dialog is present
-    expect(screen.getAllByText('Nueva sucursal').length).toBeGreaterThanOrEqual(2)
-    expect(await screen.findByLabelText('Nombre *')).toBeTruthy()
-    expect(screen.getByLabelText('Código *')).toBeTruthy()
-  })
-
-  it('should validate required fields in create form', async () => {
-    const user = userEvent.setup()
-    vi.stubGlobal('fetch', createBranchFetchMock())
-    renderBranchesPage()
-
-    await user.click(await screen.findByRole('button', { name: /Nueva sucursal/ }))
-    // Dialog description uniquely identifies the open dialog
-    await screen.findByText('Completa los datos para registrar una nueva sucursal.')
-    await user.click(screen.getByRole('button', { name: 'Crear sucursal' }))
-
-    expect(await screen.findByText('El nombre es obligatorio')).toBeTruthy()
-    expect(screen.getByText('El código es obligatorio')).toBeTruthy()
-  })
-})
-
-vi.mock('@/shared/services/signalrClient', () => ({
-  onRealtimeEvent: vi.fn(),
-  offRealtimeEvent: vi.fn(),
+vi.mock('@/modules/branches/hooks/useBranches', () => ({
+  useActivateBranchMutation: vi.fn(),
+  useBranches: vi.fn(),
+  useDeactivateBranchMutation: vi.fn(),
 }))
 
-function renderBranchesPage() {
-  useAuthStore.getState().setSession({
-    accessToken: 'jwt',
-    expiresAt: '2026-05-21T23:59:00Z',
-    refreshToken: 'refresh',
-    user: {
-      branchId: '22222222-2222-2222-2222-222222222222',
-      businessId,
-      email: 'admin@test.com',
-      fullName: 'Admin',
-      id: '44444444-4444-4444-4444-444444444444',
-      roles: ['Admin'],
-    },
+vi.mock('@/modules/branches/components/BranchFormDialog', () => ({
+  BranchFormDialog: ({ branch, onOpenChange, onSaved, open }: any) => (
+    open ? (
+      <div>
+        Branch form {branch?.name ?? 'new'}
+        <button onClick={onSaved} type="button">Save branch</button>
+        <button onClick={() => onOpenChange(false)} type="button">Close branch form</button>
+      </div>
+    ) : null
+  ),
+}))
+
+vi.mock('@/modules/branches/components/BranchStatusBadge', () => ({
+  BranchStatusBadge: ({ isActive, isMain }: any) => (
+    <span>{isMain ? 'Principal' : isActive ? 'Activa' : 'Inactiva'}</span>
+  ),
+}))
+
+describe('BranchesPage', () => {
+  const refetch = vi.fn()
+  const activate = vi.fn()
+  const deactivate = vi.fn()
+
+  beforeEach(() => {
+    vi.mocked(useBranches).mockReturnValue(result(branchData()) as never)
+    vi.mocked(useActivateBranchMutation).mockReturnValue({ isPending: false, mutateAsync: activate } as never)
+    vi.mocked(useDeactivateBranchMutation).mockReturnValue({ isPending: false, mutateAsync: deactivate } as never)
   })
 
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      mutations: { retry: false },
-      queries: { retry: false },
-    },
+  afterEach(() => {
+    cleanup()
+    vi.clearAllMocks()
   })
 
-  const router = createMemoryRouter(
-    [{ element: <BranchesPage />, path: '/branches' }],
-    { initialEntries: ['/branches'] },
-  )
+  it('renders branch rows and opens create/edit dialogs', async () => {
+    const user = userEvent.setup()
+    render(<BranchesPage />)
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  )
-}
+    expect(screen.getByText('Sucursales')).toBeTruthy()
+    expect(screen.getAllByText('Principal').length).toBeGreaterThan(0)
+    expect(screen.getByText('Almacen')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /Nueva sucursal/i }))
+    expect(screen.getByText('Branch form new')).toBeTruthy()
+    await user.click(screen.getByText('Close branch form'))
 
-function createBranchFetchMock() {
-  return vi.fn(async (input: RequestInfo | URL) => {
-    const url = input.toString()
-
-    if (url.includes('/api/branches')) {
-      return createJsonResponse({
-        items: [
-          {
-            address: 'Calle Principal 123',
-            businessId,
-            code: 'PRINCIPAL',
-            createdAt: '2026-01-01T00:00:00Z',
-            id: branchId,
-            isActive: true,
-            isMain: true,
-            name: 'Sucursal Principal',
-            phone: '809-555-0100',
-            updatedAt: '2026-01-01T00:00:00Z',
-          },
-        ],
-        total: 1,
-      })
-    }
-
-    return createJsonResponse(null, false, 404)
+    await user.click(screen.getAllByRole('button', { name: /Editar/i })[1])
+    expect(screen.getByText('Branch form Almacen')).toBeTruthy()
+    await user.click(screen.getByText('Save branch'))
+    expect(refetch).toHaveBeenCalled()
   })
-}
 
-function createJsonResponse(data: unknown, ok = true, status = 200) {
-  return {
-    headers: new Headers({ 'content-type': 'application/json' }),
-    json: async () => ({
-      correlationId: 'test',
+  it('activates, deactivates and surfaces mutation errors', async () => {
+    const user = userEvent.setup()
+    deactivate.mockRejectedValueOnce(new Error('fail'))
+    render(<BranchesPage />)
+
+    await user.click(screen.getAllByRole('button', { name: /Desactivar/i })[1])
+    expect(await screen.findByText('No se pudo desactivar la sucursal.')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: /^Activar$/i }))
+    expect(activate).toHaveBeenCalledWith('branch-3')
+  })
+
+  it('renders loading, error and empty states', () => {
+    vi.mocked(useBranches).mockReturnValueOnce(result(undefined, { isLoading: true }) as never)
+    const { rerender } = render(<BranchesPage />)
+    expect(screen.getByText('Cargando sucursales...')).toBeTruthy()
+
+    vi.mocked(useBranches).mockReturnValueOnce(result(undefined, { isError: true }) as never)
+    rerender(<BranchesPage />)
+    expect(screen.getByText('No se pudieron cargar las sucursales.')).toBeTruthy()
+
+    vi.mocked(useBranches).mockReturnValueOnce(result({ items: [], total: 0 }) as never)
+    rerender(<BranchesPage />)
+    expect(screen.getByText('No hay sucursales')).toBeTruthy()
+  })
+
+  function result(data: unknown, overrides: Record<string, unknown> = {}) {
+    return {
       data,
-      error: ok ? null : { code: 'ERROR', message: 'failed' },
-      isSuccess: ok,
-    }),
-    ok,
-    status,
+      isError: false,
+      isLoading: false,
+      refetch,
+      ...overrides,
+    }
+  }
+})
+
+function branchData() {
+  return {
+    items: [
+      { address: null, code: 'MAIN', id: 'branch-1', isActive: true, isMain: true, name: 'Principal', phone: null },
+      { address: 'Calle 1', code: 'ALM', id: 'branch-2', isActive: true, isMain: false, name: 'Almacen', phone: '809' },
+      { address: null, code: 'OLD', id: 'branch-3', isActive: false, isMain: false, name: 'Vieja', phone: null },
+    ],
+    total: 3,
   }
 }

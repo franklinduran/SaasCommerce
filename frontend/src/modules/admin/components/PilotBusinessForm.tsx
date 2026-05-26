@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import type { CreatePilotBusinessRequest } from '@/modules/admin/types'
 
 type Props = {
@@ -20,7 +20,7 @@ export function PilotBusinessForm({
   isSubmitting,
   successMessage,
   errorMessage,
-}: Props) {
+}: Readonly<Props>) {
   const [form, setForm] = useState<CreatePilotBusinessRequest>({
     businessName: '',
     identificationType: 'Rnc',
@@ -54,7 +54,7 @@ export function PilotBusinessForm({
     return Object.keys(newErrors).length === 0
   }
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (validate()) {
       onSubmit(form)

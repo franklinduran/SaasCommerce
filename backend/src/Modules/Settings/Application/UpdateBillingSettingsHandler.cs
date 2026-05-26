@@ -63,19 +63,11 @@ public sealed class UpdateBillingSettingsHandler(
 
     if (existing is null)
     {
-      existing = new BillingSettings(
-        businessId, command.ReceiptHeaderText, command.ReceiptFooterText,
-        command.ShowLogoOnReceipt, command.ShowRncOnReceipt,
-        command.EnableInvoiceAutoGeneration, command.InvoicePrefix,
-        command.InvoiceSequenceStart, userId, now);
+      existing = new BillingSettings(ToDetails(command, businessId, userId, now));
     }
     else
     {
-      existing.Update(
-        command.ReceiptHeaderText, command.ReceiptFooterText,
-        command.ShowLogoOnReceipt, command.ShowRncOnReceipt,
-        command.EnableInvoiceAutoGeneration, command.InvoicePrefix,
-        command.InvoiceSequenceStart, userId, now);
+      existing.Update(ToDetails(command, businessId, userId, now));
     }
 
     await repository.UpsertAsync(existing, cancellationToken);
@@ -94,4 +86,23 @@ public sealed class UpdateBillingSettingsHandler(
     => new(s.BusinessId.Value, s.ReceiptHeaderText, s.ReceiptFooterText,
         s.ShowLogoOnReceipt, s.ShowRncOnReceipt, s.EnableInvoiceAutoGeneration,
         s.InvoicePrefix, s.InvoiceSequenceStart, s.UpdatedBy, s.UpdatedAt);
+
+  private static BillingSettingsDetails ToDetails(
+    UpdateBillingSettingsCommand command,
+    BusinessId businessId,
+    Guid userId,
+    DateTimeOffset now)
+    => new()
+    {
+      BusinessId = businessId,
+      ReceiptHeaderText = command.ReceiptHeaderText,
+      ReceiptFooterText = command.ReceiptFooterText,
+      ShowLogoOnReceipt = command.ShowLogoOnReceipt,
+      ShowRncOnReceipt = command.ShowRncOnReceipt,
+      EnableInvoiceAutoGeneration = command.EnableInvoiceAutoGeneration,
+      InvoicePrefix = command.InvoicePrefix,
+      InvoiceSequenceStart = command.InvoiceSequenceStart,
+      UpdatedBy = userId,
+      UpdatedAt = now
+    };
 }

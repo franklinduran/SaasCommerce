@@ -82,9 +82,7 @@ public sealed class ExpensesDomainTests
   [Fact]
   public void OperatingExpense_CreatePending_ShouldThrow_WhenIdIsEmpty()
   {
-    var act = () => OperatingExpense.CreatePending(
-      Guid.Empty, Biz, Branch, UserId, CategoryId,
-      "Agua", 100m, ExpensePaymentMethod.Cash, Now, null, Now);
+    var act = () => OperatingExpense.CreatePending(ExpenseDraft(id: Guid.Empty, description: "Agua", amount: 100m));
 
     act.Should().Throw<ArgumentException>();
   }
@@ -92,9 +90,7 @@ public sealed class ExpensesDomainTests
   [Fact]
   public void OperatingExpense_CreatePending_ShouldThrow_WhenAmountIsZero()
   {
-    var act = () => OperatingExpense.CreatePending(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "Agua", 0m, ExpensePaymentMethod.Cash, Now, null, Now);
+    var act = () => OperatingExpense.CreatePending(ExpenseDraft(description: "Agua", amount: 0m));
 
     act.Should().Throw<ArgumentException>();
   }
@@ -102,9 +98,7 @@ public sealed class ExpensesDomainTests
   [Fact]
   public void OperatingExpense_CreatePending_ShouldThrow_WhenAmountIsNegative()
   {
-    var act = () => OperatingExpense.CreatePending(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "Agua", -100m, ExpensePaymentMethod.Cash, Now, null, Now);
+    var act = () => OperatingExpense.CreatePending(ExpenseDraft(description: "Agua", amount: -100m));
 
     act.Should().Throw<ArgumentException>();
   }
@@ -112,9 +106,7 @@ public sealed class ExpensesDomainTests
   [Fact]
   public void OperatingExpense_CreatePending_ShouldThrow_WhenDescriptionIsEmpty()
   {
-    var act = () => OperatingExpense.CreatePending(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "  ", 100m, ExpensePaymentMethod.Cash, Now, null, Now);
+    var act = () => OperatingExpense.CreatePending(ExpenseDraft(description: "  ", amount: 100m));
 
     act.Should().Throw<ArgumentException>();
   }
@@ -122,9 +114,7 @@ public sealed class ExpensesDomainTests
   [Fact]
   public void OperatingExpense_CreatePending_ShouldTrimDescription()
   {
-    var expense = OperatingExpense.CreatePending(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "  Agua y luz  ", 100m, ExpensePaymentMethod.Cash, Now, null, Now);
+    var expense = OperatingExpense.CreatePending(ExpenseDraft(description: "  Agua y luz  ", amount: 100m));
 
     expense.Description.Should().Be("Agua y luz");
   }
@@ -136,10 +126,11 @@ public sealed class ExpensesDomainTests
   {
     var cashSessionId = Guid.NewGuid();
     var cashMovementId = Guid.NewGuid();
-    var expense = OperatingExpense.CreatePaid(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "Alquiler", 3000m, ExpensePaymentMethod.Cash,
-      Now, null, cashSessionId, cashMovementId, Now);
+    var expense = OperatingExpense.CreatePaid(ExpenseDraft(
+      description: "Alquiler",
+      amount: 3000m,
+      cashSessionId: cashSessionId,
+      cashMovementId: cashMovementId));
 
     expense.Status.Should().Be(OperatingExpenseStatus.Paid);
     expense.PaidAt.Should().Be(Now);
@@ -151,10 +142,10 @@ public sealed class ExpensesDomainTests
   [Fact]
   public void OperatingExpense_CreatePaid_NonCash_ShouldHaveNullCashFields()
   {
-    var expense = OperatingExpense.CreatePaid(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "Nómina", 50000m, ExpensePaymentMethod.Transfer,
-      Now, null, null, null, Now);
+    var expense = OperatingExpense.CreatePaid(ExpenseDraft(
+      description: "Nómina",
+      amount: 50000m,
+      paymentMethod: ExpensePaymentMethod.Transfer));
 
     expense.Status.Should().Be(OperatingExpenseStatus.Paid);
     expense.CashSessionId.Should().BeNull();
@@ -251,8 +242,28 @@ public sealed class ExpensesDomainTests
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   private static OperatingExpense NewPendingExpense(decimal amount = 500m)
-    => OperatingExpense.CreatePending(
-      Guid.NewGuid(), Biz, Branch, UserId, CategoryId,
-      "Factura de agua", amount, ExpensePaymentMethod.Cash,
-      Now, null, Now);
+    => OperatingExpense.CreatePending(ExpenseDraft(amount: amount));
+
+  private static OperatingExpenseDraft ExpenseDraft(
+    Guid? id = null,
+    string description = "Factura de agua",
+    decimal amount = 500m,
+    ExpensePaymentMethod paymentMethod = ExpensePaymentMethod.Cash,
+    Guid? cashSessionId = null,
+    Guid? cashMovementId = null)
+    => new()
+    {
+      Id = id ?? Guid.NewGuid(),
+      BusinessId = Biz,
+      BranchId = Branch,
+      UserId = UserId,
+      CategoryId = CategoryId,
+      Description = description,
+      Amount = amount,
+      PaymentMethod = paymentMethod,
+      ExpenseDate = Now,
+      CashSessionId = cashSessionId,
+      CashMovementId = cashMovementId,
+      CreatedAt = Now
+    };
 }

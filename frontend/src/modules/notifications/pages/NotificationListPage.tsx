@@ -38,7 +38,7 @@ function typeLabel(type: NotificationType): string {
   return labels[type] ?? type
 }
 
-function SeverityBadge({ severity }: { severity: NotificationSeverity }) {
+function SeverityBadge({ severity }: Readonly<{ severity: NotificationSeverity }>) {
   if (severity === 'Critical')
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-200">
@@ -64,10 +64,10 @@ function SeverityBadge({ severity }: { severity: NotificationSeverity }) {
 function NotificationRow({
   notification,
   onRead,
-}: {
+}: Readonly<{
   notification: NotificationItem
   onRead: (id: string) => void
-}) {
+}>) {
   const isUnread = notification.status === 'Unread'
 
   return (

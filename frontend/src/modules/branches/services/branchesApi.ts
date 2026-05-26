@@ -26,7 +26,8 @@ function toQueryString(filters: Record<string, boolean | number | string | null 
 
 export async function getBranches(filters: BranchFilters): Promise<BranchListResponse> {
   const qs = toQueryString(filters as Record<string, boolean | number | string | null | undefined>)
-  const response = await httpClient<BranchListResponse>(`/api/branches${qs ? `?${qs}` : ''}`, {
+  const querySuffix = qs ? `?${qs}` : ''
+  const response = await httpClient<BranchListResponse>(`/api/branches${querySuffix}`, {
     accessToken: getAccessToken(),
   })
 

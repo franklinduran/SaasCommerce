@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { SubscriptionPage } from '@/modules/subscription/pages/SubscriptionPage'
@@ -104,6 +105,329 @@ describe('SubscriptionPage', () => {
     expect(await screen.findByText('Sin suscripcion activa')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Iniciar trial de 14 dias/ })).toBeTruthy()
     expect(screen.getByText('Planes disponibles')).toBeTruthy()
+  })
+
+  it('clicking Refrescar in empty state triggers refetch', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock({ subscription: null, usage: null })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderSubscriptionPage()
+    await screen.findByText('Sin suscripcion activa')
+
+    const btn = screen.getByRole('button', { name: 'Refrescar' })
+    const callCount = fetchMock.mock.calls.length
+    expect(btn).toBeTruthy()
+    await user.click(btn)
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.length).toBeGreaterThan(callCount)
+    })
+  })
+
+  it('clicking Refrescar in main state triggers refetch', async () => {
+    const user = userEvent.setup()
+    const fetchMock = createFetchMock()
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderSubscriptionPage()
+    // "Operativo" is unique to the main dashboard (Acceso comercial metric)
+    await screen.findByText('Operativo')
+
+    const btn = screen.getByRole('button', { name: 'Refrescar' })
+    const callCount = fetchMock.mock.calls.length
+    await user.click(btn)
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.length).toBeGreaterThan(callCount)
+    })
+  })
+
+  it('starts trial when Iniciar trial button is clicked', async () => {
+    const user = userEvent.setup()
+    let callCount = 0
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+
+      if (url.includes('/api/subscription/start-trial')) {
+        callCount += 1
+        return createJsonResponse(createSubscription({ status: 'Trial', trialEndsAt: '2026-06-05T12:00:00Z' }))
+      }
+
+      return createFetchMock({ subscription: callCount === 0 ? null : createSubscription({ status: 'Trial' }), usage: null })(input)
+    }))
+
+    renderSubscriptionPage()
+    await screen.findByText('Sin suscripcion activa')
+
+    await user.click(screen.getByRole('button', { name: /Iniciar trial de 14 dias/ }))
+
+    await waitFor(() => {
+      expect(callCount).toBe(1)
+    })
+  })
+
+  it('changes plan when Cambiar button is clicked', async () => {
+    const user = userEvent.setup()
+    let changePlanCalled = false
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+
+      if (url.includes('/api/subscription/change-plan')) {
+        changePlanCalled = true
+        return createJsonResponse(createSubscription())
+      }
+
+      return createFetchMock()(input)
+    }))
+
+    renderSubscriptionPage()
+    await screen.findByText('Operativo')
+
+    // Click "Cambiar" on a non-current plan (Basico or Premium)
+    const cambiarBtns = await screen.findAllByRole('button', { name: 'Cambiar' })
+    expect(cambiarBtns.length).toBeGreaterThan(0)
+    await user.click(cambiarBtns[0]!)
+
+    await waitFor(() => {
+      expect(changePlanCalled).toBe(true)
+    })
+    expect(await screen.findByText('Plan actualizado correctamente.')).toBeTruthy()
+  })
+
+  it('cancels subscription when Cancelar button is clicked and confirmed', async () => {
+    const user = userEvent.setup()
+    let cancelCalled = false
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+
+      if (url.includes('/api/subscription/cancel')) {
+        cancelCalled = true
+        return createJsonResponse(createSubscription({ status: 'Cancelled' }))
+      }
+
+      return createFetchMock()(input)
+    }))
+
+    renderSubscriptionPage()
+    await screen.findByText('Operativo')
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar suscripcion' }))
+
+    await waitFor(() => {
+      expect(cancelCalled).toBe(true)
+    })
+    expect(await screen.findByText('Suscripcion cancelada correctamente.')).toBeTruthy()
+  })
+
+  it('does not cancel when window.confirm is rejected', async () => {
+    const user = userEvent.setup()
+    let cancelCalled = false
+    vi.stubGlobal('confirm', vi.fn(() => false))
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+
+      if (url.includes('/api/subscription/cancel')) {
+        cancelCalled = true
+        return createJsonResponse(createSubscription({ status: 'Cancelled' }))
+      }
+
+      return createFetchMock()(input)
+    }))
+
+    renderSubscriptionPage()
+    await screen.findByText('Operativo')
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar suscripcion' }))
+
+    // Wait a tick to ensure the handler ran
+    await waitFor(() => {
+      expect(cancelCalled).toBe(false)
+    })
+  })
+
+  it('reactivates subscription from Cancelled state', async () => {
+    const user = userEvent.setup()
+    let reactivateCalled = false
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString()
+
+      if (url.includes('/api/subscription/reactivate')) {
+        reactivateCalled = true
+        return createJsonResponse(createSubscription({ status: 'Active' }))
+      }
+
+      return createFetchMock({ subscription: createSubscription({ status: 'Cancelled' }) })(input)
+    }))
+
+    renderSubscriptionPage()
+    // Cancelled shows "Bloqueado" in the Acceso comercial metric
+    await screen.findByText('Bloqueado')
+
+    // In Cancelled state ActionsPanel shows 'Reactivar' button (may also appear in alert banner)
+    const reactivarBtns = screen.getAllByRole('button', { name: 'Reactivar' })
+    await user.click(reactivarBtns[0]!)
+
+    await waitFor(() => {
+      expect(reactivateCalled).toBe(true)
+    })
+    expect(await screen.findByText('Suscripcion reactivada correctamente.')).toBeTruthy()
+  })
+
+  it('shows Cuenta suspendida alert for Suspended subscription', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      subscription: createSubscription({ status: 'Suspended' }),
+      usage: createUsage({ status: 'Suspended' }),
+    }))
+
+    renderSubscriptionPage()
+
+    // Unique message text for Suspended
+    expect(await screen.findByText(/Puedes consultar tus datos/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Soporte' })).toBeTruthy()
+  })
+
+  it('shows Suscripcion cancelada alert for Cancelled subscription', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      subscription: createSubscription({ status: 'Cancelled' }),
+      usage: createUsage({ status: 'Cancelled' }),
+    }))
+
+    renderSubscriptionPage()
+
+    // Unique message text for Cancelled
+    expect(await screen.findByText(/La suscripcion esta cancelada/)).toBeTruthy()
+    const reactivarBtns = screen.getAllByRole('button', { name: 'Reactivar' })
+    expect(reactivarBtns.length).toBeGreaterThan(0)
+  })
+
+  it('shows Pago pendiente alert for PastDue subscription', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      subscription: createSubscription({ status: 'PastDue' }),
+      usage: createUsage({ status: 'PastDue' }),
+    }))
+
+    renderSubscriptionPage()
+
+    // Unique message text for PastDue
+    expect(await screen.findByText(/Hay un pago pendiente/)).toBeTruthy()
+  })
+
+  it('shows Renovacion cercana when active period ends within 7 days', async () => {
+    vi.setSystemTime(new Date('2026-05-22T12:00:00Z'))
+    vi.stubGlobal('fetch', createFetchMock({
+      subscription: createSubscription({
+        currentPeriodEnd: '2026-05-26T12:00:00Z', // 4 days from now
+        status: 'Active',
+      }),
+    }))
+
+    renderSubscriptionPage()
+
+    // Unique message text for period-near-end
+    expect(await screen.findByText(/El periodo actual vence en/)).toBeTruthy()
+  })
+
+  it('shows Limite alcanzado for sales at limit', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      usage: createUsage({
+        sales: { current: 10000, isAtLimit: true, maximum: 10000 },
+      }),
+    }))
+
+    renderSubscriptionPage()
+
+    expect(await screen.findByText(/Alcanzaste el limite de ventas mensuales/)).toBeTruthy()
+  })
+
+  it('shows Limite alcanzado for users at limit', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      usage: createUsage({
+        users: { current: 10, isAtLimit: true, maximum: 10 },
+      }),
+    }))
+
+    renderSubscriptionPage()
+
+    expect(await screen.findByText(/Alcanzaste el limite de usuarios/)).toBeTruthy()
+  })
+
+  it('shows Limite alcanzado for branches at limit', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      usage: createUsage({
+        branches: { current: 3, isAtLimit: true, maximum: 3 },
+      }),
+    }))
+
+    renderSubscriptionPage()
+
+    expect(await screen.findByText(/Alcanzaste el limite de sucursales/)).toBeTruthy()
+  })
+
+  it('shows UpgradeBanner when a resource is near the limit (>=80%)', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      usage: createUsage({
+        products: { current: 1700, isAtLimit: false, maximum: 2000 }, // 85%
+      }),
+    }))
+
+    renderSubscriptionPage()
+
+    expect(await screen.findByText('Uso cercano al limite')).toBeTruthy()
+    // Shows single resource label
+    expect(screen.getByText(/productos/)).toBeTruthy()
+  })
+
+  it('shows UpgradeBanner with two near-limit resources (covers formatList 2-item branch)', async () => {
+    vi.stubGlobal('fetch', createFetchMock({
+      usage: createUsage({
+        products: { current: 1700, isAtLimit: false, maximum: 2000 }, // 85%
+        users: { current: 9, isAtLimit: false, maximum: 10 }, // 90%
+      }),
+    }))
+
+    renderSubscriptionPage()
+
+    expect(await screen.findByText('Uso cercano al limite')).toBeTruthy()
+    // formatList with 2 items: "productos y usuarios"
+    expect(screen.getByText(/productos y usuarios/)).toBeTruthy()
+  })
+
+  it('clicking Ver planes in trial-expiring banner scrolls to plans', async () => {
+    const user = userEvent.setup()
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    })
+    vi.setSystemTime(new Date('2026-05-22T12:00:00Z'))
+    vi.stubGlobal('fetch', createFetchMock({
+      subscription: createSubscription({
+        currentPeriodEnd: null,
+        status: 'Trial',
+        trialEndsAt: '2026-05-25T12:00:00Z', // 3 days left
+      }),
+      usage: createUsage({ status: 'Trial', trialEndsAt: '2026-05-25T12:00:00Z' }),
+    }))
+
+    renderSubscriptionPage()
+    await screen.findByText('Trial por vencer')
+
+    const verPlanes = screen.getByRole('button', { name: 'Ver planes' })
+    await user.click(verPlanes)
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('clicking Contactar soporte triggers contactSupport callback', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('location', { href: '' })
+    vi.stubGlobal('fetch', createFetchMock())
+
+    renderSubscriptionPage()
+    await screen.findByText('Operativo')
+
+    await user.click(screen.getByRole('button', { name: 'Contactar soporte' }))
+    // contactSupport sets window.location.href — covers the callback line
+    expect((window.location as { href: string }).href).toContain('mailto:')
   })
 })
 

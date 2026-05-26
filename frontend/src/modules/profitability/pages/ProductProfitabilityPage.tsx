@@ -27,6 +27,13 @@ function marginClass(marginPercent: number, hasMissingCost: boolean) {
   return 'text-green-700 font-semibold'
 }
 
+function productSummaryText(count: number) {
+  if (count === 0) return 'Márgenes y ganancias por producto.'
+
+  const suffix = count === 1 ? '' : 's'
+  return `${count} producto${suffix} con ventas en el período`
+}
+
 export function ProductProfitabilityPage() {
   const navigate = useNavigate()
   const [filters] = useState<ProfitabilityFilters>(defaultFilters)
@@ -42,11 +49,7 @@ export function ProductProfitabilityPage() {
         </Button>
         <div>
           <h2 className="text-lg font-semibold text-stone-900">Rentabilidad por producto</h2>
-          <p className="text-sm text-stone-500">
-            {products.length > 0
-              ? `${products.length} producto${products.length !== 1 ? 's' : ''} con ventas en el período`
-              : 'Márgenes y ganancias por producto.'}
-          </p>
+          <p className="text-sm text-stone-500">{productSummaryText(products.length)}</p>
         </div>
       </div>
 

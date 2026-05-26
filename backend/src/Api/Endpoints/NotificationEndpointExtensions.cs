@@ -15,20 +15,21 @@ internal static class NotificationEndpointExtensions
     app.MapGet(
       "/api/notifications",
       async (
-        Guid? branchId,
-        string? status,
-        string? type,
-        int page,
-        int pageSize,
+        [AsParameters] NotificationListParameters parameters,
         GetNotificationsHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
-        OperationalNotificationStatus? parsedStatus = Enum.TryParse<OperationalNotificationStatus>(status, out var s) ? s : null;
-        OperationalNotificationType? parsedType = Enum.TryParse<OperationalNotificationType>(type, out var t) ? t : null;
+        var parsedStatus = ParseStatus(parameters.Status);
+        var parsedType = ParseType(parameters.Type);
 
         var result = await handler.Handle(
-          new GetNotificationsQuery(branchId, parsedStatus, parsedType, page, pageSize),
+          new GetNotificationsQuery(
+            parameters.BranchId,
+            parsedStatus,
+            parsedType,
+            parameters.Page,
+            parameters.PageSize),
           cancellationToken);
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
@@ -80,4 +81,19 @@ internal static class NotificationEndpointExtensions
 
     return app;
   }
+
+  private static OperationalNotificationStatus? ParseStatus(string? status)
+    => Enum.TryParse<OperationalNotificationStatus>(status, out var parsedStatus) ? parsedStatus : null;
+
+  private static OperationalNotificationType? ParseType(string? type)
+    => Enum.TryParse<OperationalNotificationType>(type, out var parsedType) ? parsedType : null;
+}
+
+internal sealed class NotificationListParameters
+{
+  public Guid? BranchId { get; init; }
+  public string? Status { get; init; }
+  public string? Type { get; init; }
+  public int Page { get; init; }
+  public int PageSize { get; init; }
 }

@@ -22,7 +22,7 @@ function formatRelativeTime(dateString: string): string {
   return new Intl.DateTimeFormat('es-DO', { day: '2-digit', month: 'short' }).format(date)
 }
 
-function SeverityIcon({ severity }: { severity: NotificationItemType['severity'] }) {
+function SeverityIcon({ severity }: Readonly<{ severity: NotificationItemType['severity'] }>) {
   switch (severity) {
     case 'Critical':
       return <AlertTriangle className="shrink-0 text-red-500" size={15} />
@@ -33,7 +33,7 @@ function SeverityIcon({ severity }: { severity: NotificationItemType['severity']
   }
 }
 
-export function NotificationItem({ notification, onRead }: NotificationItemProps) {
+export function NotificationItem({ notification, onRead }: Readonly<NotificationItemProps>) {
   const isUnread = notification.status === 'Unread'
 
   return (

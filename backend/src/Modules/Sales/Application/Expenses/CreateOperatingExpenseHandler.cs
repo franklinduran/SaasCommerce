@@ -97,28 +97,58 @@ public sealed class CreateOperatingExpenseHandler(
       cashSessionId = session.Id;
       cashMovementId = movement.Id;
 
-      expense = OperatingExpense.CreatePaid(
-        Guid.NewGuid(), bId, branchId, userId,
-        command.CategoryId, command.Description, command.Amount,
-        paymentMethod, command.ExpenseDate, command.Notes,
-        cashSessionId, cashMovementId, now);
+      expense = OperatingExpense.CreatePaid(new OperatingExpenseDraft
+      {
+        Id = Guid.NewGuid(),
+        BusinessId = bId,
+        BranchId = branchId,
+        UserId = userId,
+        CategoryId = command.CategoryId,
+        Description = command.Description,
+        Amount = command.Amount,
+        PaymentMethod = paymentMethod,
+        ExpenseDate = command.ExpenseDate,
+        Notes = command.Notes,
+        CashSessionId = cashSessionId,
+        CashMovementId = cashMovementId,
+        CreatedAt = now
+      });
     }
     else if (status == OperatingExpenseStatus.Paid)
     {
       // Non-cash immediate payment (transfer / card)
-      expense = OperatingExpense.CreatePaid(
-        Guid.NewGuid(), bId, branchId, userId,
-        command.CategoryId, command.Description, command.Amount,
-        paymentMethod, command.ExpenseDate, command.Notes,
-        null, null, now);
+      expense = OperatingExpense.CreatePaid(new OperatingExpenseDraft
+      {
+        Id = Guid.NewGuid(),
+        BusinessId = bId,
+        BranchId = branchId,
+        UserId = userId,
+        CategoryId = command.CategoryId,
+        Description = command.Description,
+        Amount = command.Amount,
+        PaymentMethod = paymentMethod,
+        ExpenseDate = command.ExpenseDate,
+        Notes = command.Notes,
+        CreatedAt = now
+      });
     }
     else
     {
       // Pending
-      expense = OperatingExpense.CreatePending(
-        Guid.NewGuid(), bId, branchId, userId,
-        command.CategoryId, command.Description, command.Amount,
-        paymentMethod, command.ExpenseDate, command.Notes, now);
+      expense = OperatingExpense.CreatePending(new OperatingExpenseDraft
+      {
+        Id = Guid.NewGuid(),
+        BusinessId = bId,
+        BranchId = branchId,
+        UserId = userId,
+        CategoryId = command.CategoryId,
+        Description = command.Description,
+        Amount = command.Amount,
+        PaymentMethod = paymentMethod,
+        ExpenseDate = command.ExpenseDate,
+        Notes = command.Notes,
+        CreatedAt = now
+      });
     }
 
     await expenses.AddAsync(expense, cancellationToken);
@@ -134,4 +164,5 @@ public sealed class CreateOperatingExpenseHandler(
 
     return Result.Success(OperatingExpenseResponseMapper.ToResponse(expense, category.Name));
   }
+
 }

@@ -36,6 +36,12 @@ type BranchFormDialogProps = {
   branch: Branch | null
 }
 
+const branchNameLabel = 'Nombre *'
+const branchPhoneLabel = 'Teléfono'
+const branchAddressLabel = 'Dirección'
+const branchCodeLabel = 'Código *'
+const branchCodeHelpText = 'Solo letras mayúsculas y números, máx. 20 caracteres.'
+
 function toCreateDefaults(): CreateBranchFormValues {
   return { address: '', code: '', isMain: false, name: '', phone: '' }
 }
@@ -51,6 +57,11 @@ function toUpdateDefaults(branch: Branch): UpdateBranchFormValues {
 function toNullable(value?: string) {
   const normalized = value?.trim() ?? ''
   return normalized.length > 0 ? normalized : null
+}
+
+function submitButtonLabel(isSubmitting: boolean, isEditing: boolean) {
+  if (isSubmitting) return 'Guardando...'
+  return isEditing ? 'Guardar cambios' : 'Crear sucursal'
 }
 
 export function BranchFormDialog({
@@ -163,7 +174,7 @@ export function BranchFormDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="branch-name">Nombre *</Label>
+              <Label htmlFor="branch-name">{branchNameLabel}</Label>
               <Input disabled={isSubmitting} id="branch-name" {...registerUpdate('name')} />
               {updateErrors.errors.name && (
                 <p className="text-sm font-semibold text-red-700">{updateErrors.errors.name.message}</p>
@@ -172,13 +183,13 @@ export function BranchFormDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="branch-phone">Teléfono</Label>
+                <Label htmlFor="branch-phone">{branchPhoneLabel}</Label>
                 <Input disabled={isSubmitting} id="branch-phone" {...registerUpdate('phone')} />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="branch-address">Dirección</Label>
+              <Label htmlFor="branch-address">{branchAddressLabel}</Label>
               <Input disabled={isSubmitting} id="branch-address" {...registerUpdate('address')} />
             </div>
           </form>
@@ -189,7 +200,7 @@ export function BranchFormDialog({
             onSubmit={handleCreate(onCreateSubmit)}
           >
             <div className="space-y-1.5">
-              <Label htmlFor="branch-name">Nombre *</Label>
+              <Label htmlFor="branch-name">{branchNameLabel}</Label>
               <Input disabled={isSubmitting} id="branch-name" {...registerCreate('name')} />
               {createErrors.errors.name && (
                 <p className="text-sm font-semibold text-red-700">{createErrors.errors.name.message}</p>
@@ -197,7 +208,7 @@ export function BranchFormDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="branch-code">Código *</Label>
+              <Label htmlFor="branch-code">{branchCodeLabel}</Label>
               <Input
                 className="font-mono uppercase"
                 disabled={isSubmitting}
@@ -205,7 +216,9 @@ export function BranchFormDialog({
                 placeholder="SUCURSAL01"
                 {...registerCreate('code')}
               />
-              <p className="text-xs font-medium text-stone-500">Solo letras mayúsculas y números, máx. 20 caracteres.</p>
+              <p className="text-xs font-medium text-stone-500">
+                {branchCodeHelpText}
+              </p>
               {createErrors.errors.code && (
                 <p className="text-sm font-semibold text-red-700">{createErrors.errors.code.message}</p>
               )}
@@ -213,13 +226,13 @@ export function BranchFormDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="branch-phone">Teléfono</Label>
+                <Label htmlFor="branch-phone">{branchPhoneLabel}</Label>
                 <Input disabled={isSubmitting} id="branch-phone" {...registerCreate('phone')} />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="branch-address">Dirección</Label>
+              <Label htmlFor="branch-address">{branchAddressLabel}</Label>
               <Input disabled={isSubmitting} id="branch-address" {...registerCreate('address')} />
             </div>
 
@@ -245,7 +258,7 @@ export function BranchFormDialog({
             Cancelar
           </Button>
           <Button disabled={isSubmitting} form="branch-form" type="submit">
-            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear sucursal'}
+            {submitButtonLabel(isSubmitting, isEditing)}
           </Button>
         </DialogFooter>
       </DialogContent>

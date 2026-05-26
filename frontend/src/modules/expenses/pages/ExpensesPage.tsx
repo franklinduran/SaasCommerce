@@ -61,6 +61,13 @@ function paymentMethodLabel(method: string) {
   }
 }
 
+function expensesSummaryText(total: number) {
+  if (total === 0) return 'Registra los gastos del negocio.'
+
+  const suffix = total === 1 ? '' : 's'
+  return `${total} gasto${suffix} registrado${suffix}`
+}
+
 export function ExpensesPage() {
   const navigate = useNavigate()
   const [filters, setFilters] = useState<ExpenseFilters>({ page: 1, pageSize: 20 })
@@ -76,9 +83,7 @@ export function ExpensesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-stone-900">Gastos operativos</h2>
-          <p className="text-sm text-stone-500">
-            {total > 0 ? `${total} gasto${total !== 1 ? 's' : ''} registrado${total !== 1 ? 's' : ''}` : 'Registra los gastos del negocio.'}
-          </p>
+          <p className="text-sm text-stone-500">{expensesSummaryText(total)}</p>
         </div>
         <div className="flex gap-2">
           <Button

@@ -563,18 +563,19 @@ public sealed class ExpensesUseCaseTests
     => new() { IsAuthenticated = false };
 
   private static OperatingExpense NewPendingExpense()
-    => OperatingExpense.CreatePending(
-      Guid.NewGuid(),
-      new BusinessId(Guid.NewGuid()),
-      new BranchId(Guid.NewGuid()),
-      Guid.NewGuid(),
-      CategoryIdValue,
-      "Factura agua",
-      800m,
-      ExpensePaymentMethod.Transfer,
-      Now,
-      null,
-      Now);
+    => OperatingExpense.CreatePending(new OperatingExpenseDraft
+    {
+      Id = Guid.NewGuid(),
+      BusinessId = new BusinessId(Guid.NewGuid()),
+      BranchId = new BranchId(Guid.NewGuid()),
+      UserId = Guid.NewGuid(),
+      CategoryId = CategoryIdValue,
+      Description = "Factura agua",
+      Amount = 800m,
+      PaymentMethod = ExpensePaymentMethod.Transfer,
+      ExpenseDate = Now,
+      CreatedAt = Now
+    });
 
   private static ExpenseCategory DefaultCategory()
     => ExpenseCategory.Create(CategoryIdValue, new BusinessId(Guid.NewGuid()), "Servicios", Now);

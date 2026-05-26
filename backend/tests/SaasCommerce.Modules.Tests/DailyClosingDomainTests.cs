@@ -146,28 +146,29 @@ public sealed class DailyClosingDomainTests
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   private static DailyClosing BuildClosing(decimal cashExpected = 4_800m)
-    => DailyClosing.Create(
-      Guid.NewGuid(),
-      TestBusinessId,
-      TestBranchId,
-      TestUserId,
-      TestDate,
-      totalSales: 12_000m,
-      cashSales: 4_000m,
-      transferSales: 5_000m,
-      cardSales: 2_000m,
-      creditSales: 1_000m,
-      salesCount: 30,
-      cashExpected: cashExpected,
-      totalExpenses: 2_000m,
-      totalCost: 7_200m,
-      grossProfit: 4_800m,
-      estimatedNetProfit: 2_800m,
-      grossMarginPercent: 40m,
-      netMarginPercent: 23.33m,
-      newCreditsAmount: 1_000m,
-      newCreditsCount: 2,
-      creditPaymentsReceived: 500m,
-      notes: null,
-      createdAt: Now);
+    => DailyClosing.Create(new DailyClosingDraft
+    {
+      Id = Guid.NewGuid(),
+      BusinessId = TestBusinessId,
+      BranchId = TestBranchId,
+      CreatedByUserId = TestUserId,
+      ClosingDate = TestDate,
+      TotalSales = 12_000m,
+      CashSales = 4_000m,
+      TransferSales = 5_000m,
+      CardSales = 2_000m,
+      CreditSales = 1_000m,
+      SalesCount = 30,
+      CashExpected = cashExpected,
+      TotalExpenses = 2_000m,
+      TotalCost = 7_200m,
+      GrossProfit = 4_800m,
+      EstimatedNetProfit = 2_800m,
+      GrossMarginPercent = 40m,
+      NetMarginPercent = 23.33m,
+      NewCreditsAmount = 1_000m,
+      NewCreditsCount = 2,
+      CreditPaymentsReceived = 500m,
+      CreatedAt = Now
+    });
 }

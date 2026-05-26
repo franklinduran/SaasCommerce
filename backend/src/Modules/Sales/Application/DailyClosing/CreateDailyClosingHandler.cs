@@ -69,30 +69,32 @@ public sealed class CreateDailyClosingHandler(
     var netMargin = ProfitabilityCalculator.NetMarginPercent(data.TotalSales, netProfit);
 
     // Create domain entity
-    var closing = DailyClosing.Create(
-      Guid.NewGuid(),
-      bId,
-      branchId,
-      userId,
-      command.Date,
-      data.TotalSales,
-      data.CashSales,
-      data.TransferSales,
-      data.CardSales,
-      data.CreditSales,
-      data.SalesCount,
-      cashExpected,
-      data.TotalExpenses,
-      data.TotalCost,
-      grossProfit,
-      netProfit,
-      grossMargin,
-      netMargin,
-      data.NewCreditsAmount,
-      data.NewCreditsCount,
-      data.CreditPaymentsReceived,
-      command.Notes,
-      clock.UtcNow);
+    var closing = DailyClosing.Create(new DailyClosingDraft
+    {
+      Id = Guid.NewGuid(),
+      BusinessId = bId,
+      BranchId = branchId,
+      CreatedByUserId = userId,
+      ClosingDate = command.Date,
+      TotalSales = data.TotalSales,
+      CashSales = data.CashSales,
+      TransferSales = data.TransferSales,
+      CardSales = data.CardSales,
+      CreditSales = data.CreditSales,
+      SalesCount = data.SalesCount,
+      CashExpected = cashExpected,
+      TotalExpenses = data.TotalExpenses,
+      TotalCost = data.TotalCost,
+      GrossProfit = grossProfit,
+      EstimatedNetProfit = netProfit,
+      GrossMarginPercent = grossMargin,
+      NetMarginPercent = netMargin,
+      NewCreditsAmount = data.NewCreditsAmount,
+      NewCreditsCount = data.NewCreditsCount,
+      CreditPaymentsReceived = data.CreditPaymentsReceived,
+      Notes = command.Notes,
+      CreatedAt = clock.UtcNow
+    });
 
     // Add alerts
     BuildAndAddAlerts(closing, data, netProfit);

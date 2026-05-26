@@ -2,6 +2,18 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Inventory.Domain;
 
+public sealed class InventoryTransferDraft
+{
+  public required Guid Id { get; init; }
+  public required BusinessId BusinessId { get; init; }
+  public required BranchId SourceBranchId { get; init; }
+  public required BranchId TargetBranchId { get; init; }
+  public required Guid CreatedByUserId { get; init; }
+  public required IReadOnlyCollection<InventoryTransferItem> Items { get; init; }
+  public required DateTimeOffset CreatedAt { get; init; }
+  public string? Note { get; init; }
+}
+
 public sealed class InventoryTransfer
 {
   private readonly List<InventoryTransferItem> _items = [];
@@ -10,42 +22,34 @@ public sealed class InventoryTransfer
   {
   }
 
-  public InventoryTransfer(
-    Guid id,
-    BusinessId businessId,
-    BranchId sourceBranchId,
-    BranchId targetBranchId,
-    Guid createdByUserId,
-    IReadOnlyCollection<InventoryTransferItem> items,
-    DateTimeOffset createdAt,
-    string? note)
+  public InventoryTransfer(InventoryTransferDraft draft)
   {
-    if (sourceBranchId == targetBranchId)
+    if (draft.SourceBranchId == draft.TargetBranchId)
     {
       throw new InvalidOperationException("Source and target branches must be different.");
     }
 
-    if (items is null || items.Count == 0)
+    if (draft.Items is null || draft.Items.Count == 0)
     {
       throw new InvalidOperationException("Transfer must contain at least one item.");
     }
 
-    if (items.Any(item => item.Quantity <= 0))
+    if (draft.Items.Any(item => item.Quantity <= 0))
     {
       throw new InvalidOperationException("All transfer items must have a quantity greater than zero.");
     }
 
-    Id = id;
-    BusinessId = businessId;
-    SourceBranchId = sourceBranchId;
-    TargetBranchId = targetBranchId;
-    CreatedByUserId = createdByUserId;
+    Id = draft.Id;
+    BusinessId = draft.BusinessId;
+    SourceBranchId = draft.SourceBranchId;
+    TargetBranchId = draft.TargetBranchId;
+    CreatedByUserId = draft.CreatedByUserId;
     Status = InventoryTransferStatus.Pending;
-    Note = NormalizeNote(note);
-    CreatedAt = createdAt;
-    UpdatedAt = createdAt;
+    Note = NormalizeNote(draft.Note);
+    CreatedAt = draft.CreatedAt;
+    UpdatedAt = draft.CreatedAt;
 
-    _items.AddRange(items);
+    _items.AddRange(draft.Items);
   }
 
   public Guid Id { get; private set; }

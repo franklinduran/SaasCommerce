@@ -67,17 +67,18 @@ internal static class DailyClosingEndpointExtensions
     app.MapGet(
       "/api/daily-closing",
       async (
-        Guid? branchId,
-        DateOnly? dateFrom,
-        DateOnly? dateTo,
-        int page,
-        int pageSize,
+        [AsParameters] DailyClosingListParameters parameters,
         GetDailyClosingsHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
         var result = await handler.Handle(
-          new GetDailyClosingsQuery(branchId, dateFrom, dateTo, page, pageSize),
+          new GetDailyClosingsQuery(
+            parameters.BranchId,
+            parameters.DateFrom,
+            parameters.DateTo,
+            parameters.Page,
+            parameters.PageSize),
           cancellationToken);
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
@@ -108,3 +109,12 @@ internal static class DailyClosingEndpointExtensions
 internal sealed record CreateDailyClosingRequest(DateOnly Date, Guid BranchId, string? Notes);
 
 internal sealed record CloseDailyClosingRequest(decimal CashCounted, string? Notes);
+
+internal sealed class DailyClosingListParameters
+{
+  public Guid? BranchId { get; init; }
+  public DateOnly? DateFrom { get; init; }
+  public DateOnly? DateTo { get; init; }
+  public int Page { get; init; }
+  public int PageSize { get; init; }
+}

@@ -75,15 +75,17 @@ public sealed class CreateInventoryTransferHandler(
 
     try
     {
-      transfer = new InventoryTransfer(
-        transferId,
-        tenantId,
-        sourceBranchId,
-        targetBranchId,
-        userId,
-        items,
-        now,
-        command.Note);
+      transfer = new InventoryTransfer(new InventoryTransferDraft
+      {
+        Id = transferId,
+        BusinessId = tenantId,
+        SourceBranchId = sourceBranchId,
+        TargetBranchId = targetBranchId,
+        CreatedByUserId = userId,
+        Items = items,
+        CreatedAt = now,
+        Note = command.Note
+      });
     }
     catch (InvalidOperationException ex)
     {

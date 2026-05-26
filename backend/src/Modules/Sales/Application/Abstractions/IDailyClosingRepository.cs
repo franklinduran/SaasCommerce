@@ -10,7 +10,7 @@ public interface IDailyClosingRepository
   Task<DailyClosing?> GetByDateAndBranchAsync(
     BusinessId businessId,
     BranchId branchId,
-    DateOnly date,
+    DateOnly closingDate,
     CancellationToken cancellationToken = default);
 
   Task AddAsync(DailyClosing closing, CancellationToken cancellationToken = default);

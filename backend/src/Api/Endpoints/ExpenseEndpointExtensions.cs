@@ -48,22 +48,21 @@ internal static class ExpenseEndpointExtensions
     app.MapGet(
       "/api/expenses",
       async (
-        Guid? branchId,
-        Guid? categoryId,
-        string? status,
-        string? paymentMethod,
-        DateTimeOffset? dateFrom,
-        DateTimeOffset? dateTo,
-        int? page,
-        int? pageSize,
+        [AsParameters] OperatingExpenseParameters parameters,
         GetOperatingExpensesHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
         var result = await handler.Handle(
           new GetOperatingExpensesQuery(
-            branchId, categoryId, status, paymentMethod,
-            dateFrom, dateTo, page ?? 1, pageSize ?? 20),
+            parameters.BranchId,
+            parameters.CategoryId,
+            parameters.Status,
+            parameters.PaymentMethod,
+            parameters.DateFrom,
+            parameters.DateTo,
+            parameters.Page ?? 1,
+            parameters.PageSize ?? 20),
           cancellationToken);
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })
@@ -161,4 +160,16 @@ internal static class ExpenseEndpointExtensions
 
     return app;
   }
+}
+
+internal sealed class OperatingExpenseParameters
+{
+  public Guid? BranchId { get; init; }
+  public Guid? CategoryId { get; init; }
+  public string? Status { get; init; }
+  public string? PaymentMethod { get; init; }
+  public DateTimeOffset? DateFrom { get; init; }
+  public DateTimeOffset? DateTo { get; init; }
+  public int? Page { get; init; }
+  public int? PageSize { get; init; }
 }

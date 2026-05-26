@@ -101,31 +101,13 @@ public sealed class ImportProductsHandler(
         continue;
       }
 
-      // Resolve category
-      Guid? categoryId = null;
-
-      if (!string.IsNullOrWhiteSpace(row.CategoryName))
-      {
-        var normalizedCatName = row.CategoryName.Trim();
-        var catKey = normalizedCatName.ToUpperInvariant();
-
-        if (categoryByName.TryGetValue(catKey, out var existingCatId))
-        {
-          categoryId = existingCatId;
-        }
-        else if (newCategoryIds.TryGetValue(catKey, out var newCatId))
-        {
-          categoryId = newCatId;
-        }
-        else
-        {
-          // Create a new category on the fly
-          var newCategory = new Category(Guid.NewGuid(), businessId, normalizedCatName, null, now);
-          await categories.AddAsync(newCategory, cancellationToken);
-          newCategoryIds[catKey] = newCategory.Id;
-          categoryId = newCategory.Id;
-        }
-      }
+      var categoryId = await ResolveCategoryAsync(
+        row,
+        businessId,
+        categoryByName,
+        newCategoryIds,
+        now,
+        cancellationToken);
 
       // Create product
       var product = new Product(
@@ -139,18 +121,9 @@ public sealed class ImportProductsHandler(
       await products.AddAsync(product, cancellationToken);
 
       // Create initial stock if quantity provided
-      if (command.CreateInitialInventory && row.StockQuantity.HasValue && row.StockQuantity.Value > 0)
+      if (command.CreateInitialInventory)
       {
-        var stockItem = new StockItem(Guid.NewGuid(), businessId, branchId, product.Id, now);
-        var movement = stockItem.ApplyAdjustment(
-          row.StockQuantity.Value,
-          InventoryMovementReason.InitialStock,
-          adminUserId,
-          false,
-          now);
-
-        await inventory.AddStockItemAsync(stockItem, cancellationToken);
-        await inventory.AddMovementAsync(movement, cancellationToken);
+        await AddInitialStockAsync(row, product, businessId, branchId, adminUserId, now, cancellationToken);
       }
 
       importedCount++;
@@ -163,6 +136,64 @@ public sealed class ImportProductsHandler(
       skippedCount,
       rows.Count,
       rowErrors));
+  }
+
+  private async Task<Guid?> ResolveCategoryAsync(
+    ProductImportRow row,
+    BusinessId businessId,
+    Dictionary<string, Guid> categoryByName,
+    Dictionary<string, Guid> newCategoryIds,
+    DateTimeOffset now,
+    CancellationToken cancellationToken)
+  {
+    if (string.IsNullOrWhiteSpace(row.CategoryName))
+    {
+      return null;
+    }
+
+    var normalizedCatName = row.CategoryName.Trim();
+    var catKey = normalizedCatName.ToUpperInvariant();
+
+    if (categoryByName.TryGetValue(catKey, out var existingCatId))
+    {
+      return existingCatId;
+    }
+
+    if (newCategoryIds.TryGetValue(catKey, out var newCatId))
+    {
+      return newCatId;
+    }
+
+    var newCategory = new Category(Guid.NewGuid(), businessId, normalizedCatName, null, now);
+    await categories.AddAsync(newCategory, cancellationToken);
+    newCategoryIds[catKey] = newCategory.Id;
+    return newCategory.Id;
+  }
+
+  private async Task AddInitialStockAsync(
+    ProductImportRow row,
+    Product product,
+    BusinessId businessId,
+    BranchId branchId,
+    Guid adminUserId,
+    DateTimeOffset now,
+    CancellationToken cancellationToken)
+  {
+    if (!row.StockQuantity.HasValue || row.StockQuantity.Value <= 0)
+    {
+      return;
+    }
+
+    var stockItem = new StockItem(Guid.NewGuid(), businessId, branchId, product.Id, now);
+    var movement = stockItem.ApplyAdjustment(
+      row.StockQuantity.Value,
+      InventoryMovementReason.InitialStock,
+      adminUserId,
+      false,
+      now);
+
+    await inventory.AddStockItemAsync(stockItem, cancellationToken);
+    await inventory.AddMovementAsync(movement, cancellationToken);
   }
 
   private static List<string> ValidateRow(ProductImportRow row)
@@ -214,12 +245,12 @@ public sealed class ImportProductsHandler(
 
     // Verify expected columns (case-insensitive)
     var headers = header.Split(',').Select(h => h.Trim().ToUpperInvariant()).ToArray();
-    int nameIdx = Array.IndexOf(headers, "NAME");
-    int skuIdx = Array.IndexOf(headers, "SKU");
-    int catIdx = Array.IndexOf(headers, "CATEGORYNAME");
-    int salePriceIdx = Array.IndexOf(headers, "SALEPRICE");
-    int costPriceIdx = Array.IndexOf(headers, "COSTPRICE");
-    int stockIdx = Array.IndexOf(headers, "STOCKQUANTITY");
+    var nameIdx = Array.IndexOf(headers, "NAME");
+    var skuIdx = Array.IndexOf(headers, "SKU");
+    var catIdx = Array.IndexOf(headers, "CATEGORYNAME");
+    var salePriceIdx = Array.IndexOf(headers, "SALEPRICE");
+    var costPriceIdx = Array.IndexOf(headers, "COSTPRICE");
+    var stockIdx = Array.IndexOf(headers, "STOCKQUANTITY");
 
     if (nameIdx < 0 || skuIdx < 0 || salePriceIdx < 0 || costPriceIdx < 0)
     {
@@ -287,9 +318,14 @@ public sealed class ImportProductsHandler(
   }
 
   private static string? GetCell(string[] cells, int index)
-    => index >= 0 && index < cells.Length
-      ? string.IsNullOrWhiteSpace(cells[index]) ? null : cells[index].Trim()
-      : null;
+  {
+    if (index < 0 || index >= cells.Length)
+    {
+      return null;
+    }
+
+    return string.IsNullOrWhiteSpace(cells[index]) ? null : cells[index].Trim();
+  }
 
   private static decimal? ParseDecimal(string? value)
     => decimal.TryParse(

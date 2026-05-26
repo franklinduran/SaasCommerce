@@ -41,41 +41,6 @@ function Assert-EnvironmentVariable {
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $solutionPath = Join-Path $repoRoot "SaasCommerce.slnx"
-$coverageExclusions = @(
-  "**/Contracts/**",
-  "**/*Request.cs",
-  "**/*Response.cs",
-  "**/*Command.cs",
-  "**/*Query.cs",
-  "**/*Errors.cs",
-  "**/*Marker.cs",
-  "**/*AssemblyReference.cs",
-  "**/Configurations/**",
-  "**/Migrations/**",
-  "**/DependencyInjection.cs",
-  "**/Program.cs",
-  "**/Worker.cs",
-  "**/Endpoints/**",
-  "backend/src/**/Contracts/**",
-  "backend/src/**/*Request.cs",
-  "backend/src/**/*Response.cs",
-  "backend/src/**/*Command.cs",
-  "backend/src/**/*Query.cs",
-  "backend/src/**/*Errors.cs",
-  "backend/src/**/*Marker.cs",
-  "backend/src/**/*AssemblyReference.cs",
-  "backend/src/**/Configurations/**",
-  "backend/src/**/Migrations/**",
-  "backend/src/**/DependencyInjection.cs",
-  "backend/src/**/Program.cs",
-  "backend/src/**/Worker.cs",
-  "backend/src/**/Endpoints/**",
-  "frontend/**"
-) -join ","
-$sourceExclusions = @(
-  "**/Migrations/**",
-  ".claude/**"
-) -join ","
 $issueIgnoreCriteria = @(
   "e1",
   "e2"
@@ -97,16 +62,19 @@ if ([string]::IsNullOrWhiteSpace($env:NUGET_PACKAGES) -and -not [string]::IsNull
   }
 }
 
-Set-Location $repoRoot
+$sonarLocalConfigPath = Join-Path $repoRoot ".sonar-local-config"
+New-Item -ItemType Directory -Force -Path (Join-Path $sonarLocalConfigPath "jgit") | Out-Null
+$env:XDG_CONFIG_HOME = $sonarLocalConfigPath
+$env:GIT_CONFIG_NOSYSTEM = "true"
 
 $beginArgs = @(
   "begin",
   "/k:$sonarProjectKey",
   "/d:sonar.host.url=$sonarHostUrl",
   "/d:sonar.token=$sonarToken",
-  "/d:sonar.exclusions=$sourceExclusions",
+  "/d:sonar.projectBaseDir=$repoRoot",
+  "/d:sonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info",
   "/d:sonar.cs.vscoveragexml.reportsPaths=coverage/dotnet-coverage.xml",
-  "/d:sonar.coverage.exclusions=$coverageExclusions",
   "/d:sonar.typescript.tsconfigPath=frontend/tsconfig.sonar.json",
   "/d:sonar.issue.ignore.multicriteria=$issueIgnoreCriteria",
   "/d:sonar.issue.ignore.multicriteria.e1.ruleKey=typescript:S6747",
@@ -119,30 +87,48 @@ if (-not [string]::IsNullOrWhiteSpace($sonarOrganization)) {
   $beginArgs += "/o:$sonarOrganization"
 }
 
-Invoke-NativeCommand { dotnet-sonarscanner @beginArgs } "Sonar begin"
-Invoke-NativeCommand { dotnet restore $solutionPath } "dotnet restore"
-Invoke-NativeCommand { dotnet build $solutionPath --no-restore -m:1 /nr:false -v minimal } "dotnet build"
+$sonarPropertiesPath = Join-Path $repoRoot "sonar-project.properties"
+$sonarPropertiesBackupPath = Join-Path $repoRoot "sonar-project.properties.codex-tmp"
+$movedSonarProperties = $false
 
-if (-not $SkipTests) {
-  dotnet-coverage collect `
-    -f xml `
-    -o (Join-Path $repoRoot "coverage/dotnet-coverage.xml") `
-    dotnet test $solutionPath --no-build -m:1 /nr:false -v minimal
+try {
+  Set-Location $repoRoot
 
-  $coverageExitCode = $LASTEXITCODE
-
-  # Exit code 1 can occur when an assembly cannot be loaded due to an OS-level
-  # Application Control policy (e.g. Windows WDAC/AppLocker) even though all
-  # test methods themselves pass. Only treat codes > 1 as real failures.
-  if ($coverageExitCode -gt 1) {
-    throw "dotnet test with coverage failed with exit code $coverageExitCode."
+  if ((Test-Path $sonarPropertiesPath) -and -not (Test-Path $sonarPropertiesBackupPath)) {
+    Move-Item -LiteralPath $sonarPropertiesPath -Destination $sonarPropertiesBackupPath
+    $movedSonarProperties = $true
   }
 
-  if ($coverageExitCode -eq 1) {
-    Write-Warning "dotnet test exited with code 1. This may be caused by an assembly blocked by the OS Application Control policy. Verify that all test methods passed above."
+  Invoke-NativeCommand { dotnet-sonarscanner @beginArgs } "Sonar begin"
+  Invoke-NativeCommand { dotnet restore $solutionPath } "dotnet restore"
+  Invoke-NativeCommand { dotnet build $solutionPath --no-restore -m:1 /nr:false -v minimal } "dotnet build"
+
+  if (-not $SkipTests) {
+    dotnet-coverage collect `
+      -f xml `
+      -o (Join-Path $repoRoot "coverage/dotnet-coverage.xml") `
+      dotnet test $solutionPath --no-build -m:1 /nr:false -v minimal
+
+    $coverageExitCode = $LASTEXITCODE
+
+    # Exit code 1 can occur when an assembly cannot be loaded due to an OS-level
+    # Application Control policy (e.g. Windows WDAC/AppLocker) even though all
+    # test methods themselves pass. Only treat codes > 1 as real failures.
+    if ($coverageExitCode -gt 1) {
+      throw "dotnet test with coverage failed with exit code $coverageExitCode."
+    }
+
+    if ($coverageExitCode -eq 1) {
+      Write-Warning "dotnet test exited with code 1. This may be caused by an assembly blocked by the OS Application Control policy. Verify that all test methods passed above."
+    }
+  }
+
+  Invoke-NativeCommand {
+    dotnet-sonarscanner end "/d:sonar.token=$sonarToken"
+  } "Sonar end"
+}
+finally {
+  if ($movedSonarProperties -and (Test-Path $sonarPropertiesBackupPath)) {
+    Move-Item -LiteralPath $sonarPropertiesBackupPath -Destination $sonarPropertiesPath
   }
 }
-
-Invoke-NativeCommand {
-  dotnet-sonarscanner end "/d:sonar.token=$sonarToken"
-} "Sonar end"

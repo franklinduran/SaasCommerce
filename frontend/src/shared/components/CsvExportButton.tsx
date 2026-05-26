@@ -18,7 +18,7 @@ export function CsvExportButton({
   label = 'Exportar CSV',
   className = '',
   queryParams,
-}: CsvExportButtonProps) {
+}: Readonly<CsvExportButtonProps>) {
   const [isExporting, setIsExporting] = useState(false)
   const accessToken = useAuthStore.getState().session?.accessToken
 

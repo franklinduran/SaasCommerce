@@ -49,7 +49,7 @@ public sealed class PreviewDailyClosingHandler(
     var netMargin = ProfitabilityCalculator.NetMarginPercent(data.TotalSales, netProfit);
 
     // Build alerts
-    var alerts = BuildAlerts(data, netProfit, grossMargin);
+    var alerts = BuildAlerts(data, netProfit);
 
     return Result.Success(new DailyClosingPreviewResponse(
       BranchId: query.BranchId,
@@ -74,10 +74,9 @@ public sealed class PreviewDailyClosingHandler(
       Alerts: alerts));
   }
 
-  private static IReadOnlyCollection<DailyClosingAlertResponse> BuildAlerts(
+  private static List<DailyClosingAlertResponse> BuildAlerts(
     DailyClosingData data,
-    decimal netProfit,
-    decimal grossMargin)
+    decimal netProfit)
   {
     var list = new List<DailyClosingAlertResponse>();
 

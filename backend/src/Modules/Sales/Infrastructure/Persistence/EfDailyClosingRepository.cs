@@ -23,7 +23,7 @@ public sealed class EfDailyClosingRepository(AppDbContext dbContext) : IDailyClo
   public async Task<DailyClosing?> GetByDateAndBranchAsync(
     BusinessId businessId,
     BranchId branchId,
-    DateOnly date,
+    DateOnly closingDate,
     CancellationToken cancellationToken = default)
   {
     return await dbContext.Set<DailyClosing>()
@@ -31,7 +31,7 @@ public sealed class EfDailyClosingRepository(AppDbContext dbContext) : IDailyClo
       .FirstOrDefaultAsync(
         dc => dc.BusinessId == businessId
               && dc.BranchId == branchId
-              && dc.ClosingDate == date,
+              && dc.ClosingDate == closingDate,
         cancellationToken);
   }
 

@@ -2,6 +2,11 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Audit;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
 using SaasCommerce.Modules.Billing.Application.Abstractions;
 using SaasCommerce.Modules.Billing.Application.Invoices;
@@ -95,6 +100,17 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();
     services.AddScoped<IInventoryReadRepository, EfInventoryReadRepository>();
     services.AddScoped<IInventoryAvailabilityService, EfInventoryAvailabilityService>();
+    services.AddScoped(sp => new AdjustInventoryDependencies
+    {
+      Inventory = sp.GetRequiredService<IInventoryRepository>(),
+      ProductPolicies = sp.GetRequiredService<IProductInventoryPolicyReader>(),
+      CurrentUser = sp.GetRequiredService<ICurrentUserService>(),
+      Outbox = sp.GetRequiredService<IOutboxWriter>(),
+      AuditLog = sp.GetRequiredService<IAuditLogWriter>(),
+      Clock = sp.GetRequiredService<IClock>(),
+      UnitOfWork = sp.GetRequiredService<IUnitOfWork>(),
+      SubscriptionAccess = sp.GetRequiredService<ISubscriptionAccessPolicy>()
+    });
     services.AddScoped<AdjustInventoryHandler>();
     services.AddScoped<GetInventoryHandler>();
     services.AddScoped<GetInventoryProductDetailHandler>();
@@ -164,6 +180,17 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IDeleteCustomerUseCase, DeleteCustomerUseCase>();
     services.AddScoped<IGetCustomerCreditSummaryUseCase, GetCustomerCreditSummaryUseCase>();
     services.AddScoped<IGetCustomerCreditMovementsUseCase, GetCustomerCreditMovementsUseCase>();
+    services.AddScoped(sp => new RegisterCustomerPaymentDependencies
+    {
+      Customers = sp.GetRequiredService<ICustomerRepository>(),
+      Credits = sp.GetRequiredService<ICustomerCreditRepository>(),
+      CurrentUser = sp.GetRequiredService<ICurrentUserService>(),
+      Outbox = sp.GetRequiredService<IOutboxWriter>(),
+      CorrelationIdProvider = sp.GetRequiredService<ICorrelationIdProvider>(),
+      Clock = sp.GetRequiredService<IClock>(),
+      UnitOfWork = sp.GetRequiredService<IUnitOfWork>(),
+      SubscriptionAccess = sp.GetRequiredService<ISubscriptionAccessPolicy>()
+    });
     services.AddScoped<IRegisterCustomerPaymentUseCase, RegisterCustomerPaymentUseCase>();
     services.AddScoped<IBlockCustomerCreditUseCase, BlockCustomerCreditUseCase>();
     services.AddScoped<IUnblockCustomerCreditUseCase, UnblockCustomerCreditUseCase>();
@@ -250,6 +277,17 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IUserManagementRepository, EfUserManagementRepository>();
     services.AddScoped<GetUsersHandler>();
     services.AddScoped<GetUserByIdHandler>();
+    services.AddScoped(sp => new CreateUserDependencies
+    {
+      Repository = sp.GetRequiredService<IUserManagementRepository>(),
+      CurrentUser = sp.GetRequiredService<ICurrentUserService>(),
+      PasswordHasher = sp.GetRequiredService<IPasswordHasher>(),
+      Clock = sp.GetRequiredService<IClock>(),
+      UnitOfWork = sp.GetRequiredService<IUnitOfWork>(),
+      AuditLogWriter = sp.GetRequiredService<IAuditLogWriter>(),
+      EventBus = sp.GetRequiredService<IEventBus>(),
+      LimitChecker = sp.GetRequiredService<ISubscriptionLimitChecker>()
+    });
     services.AddScoped<CreateUserHandler>();
     services.AddScoped<UpdateUserHandler>();
     services.AddScoped<ActivateUserHandler>();
@@ -258,6 +296,18 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<DisableUserHandler>();
 
     // Identity — pilot business / metrics
+    services.AddScoped(sp => new CreatePilotBusinessDependencies
+    {
+      Businesses = sp.GetRequiredService<IAccountBusinessRepository>(),
+      Users = sp.GetRequiredService<IIdentityUserRepository>(),
+      PasswordHasher = sp.GetRequiredService<IPasswordHasher>(),
+      SubscriptionPlans = sp.GetRequiredService<ISubscriptionPlanRepository>(),
+      Subscriptions = sp.GetRequiredService<IBusinessSubscriptionRepository>(),
+      Clock = sp.GetRequiredService<IClock>(),
+      UnitOfWork = sp.GetRequiredService<IUnitOfWork>(),
+      AuditLogWriter = sp.GetRequiredService<IAuditLogWriter>(),
+      CurrentUser = sp.GetRequiredService<ICurrentUserService>()
+    });
     services.AddScoped<CreatePilotBusinessHandler>();
     services.AddScoped<IPilotMetricsRepository, EfPilotMetricsRepository>();
     services.AddScoped<GetPilotMetricsHandler>();
@@ -272,6 +322,18 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<ExportProductsCsvHandler>();
 
     // Identity — application handlers
+    services.AddScoped(sp => new RegisterBusinessDependencies
+    {
+      Businesses = sp.GetRequiredService<IAccountBusinessRepository>(),
+      Users = sp.GetRequiredService<IIdentityUserRepository>(),
+      PasswordHasher = sp.GetRequiredService<IPasswordHasher>(),
+      JwtTokenService = sp.GetRequiredService<IJwtTokenService>(),
+      RefreshTokenGenerator = sp.GetRequiredService<IRefreshTokenGenerator>(),
+      SubscriptionPlans = sp.GetRequiredService<ISubscriptionPlanRepository>(),
+      Subscriptions = sp.GetRequiredService<IBusinessSubscriptionRepository>(),
+      Clock = sp.GetRequiredService<IClock>(),
+      UnitOfWork = sp.GetRequiredService<IUnitOfWork>()
+    });
     services.AddScoped<RegisterBusinessHandler>();
     services.AddScoped<LoginHandler>();
     services.AddScoped<RefreshTokenHandler>();
