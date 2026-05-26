@@ -12,8 +12,10 @@ import {
   ProductImportRoute,
   BranchProfitabilityRoute,
   CashHistoryRoute,
+  CashRegisterRoute,
   CashRoute,
   CashSessionDetailRoute,
+  DailyCashRegisterSummaryRoute,
   DailyClosingDetailRoute,
   DailyClosingHistoryRoute,
   DailyClosingRoute,
@@ -390,6 +392,22 @@ export const router = createBrowserRouter([
         element: (
           <PermissionRoute permissions={Permission.NotificationsView}>
             {withPageLoading(<NotificationsRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'cash-register',
+        element: (
+          <PermissionRoute permissions={Permission.CashView}>
+            {withPageLoading(<CashRegisterRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'cash-register/daily-summary',
+        element: (
+          <PermissionRoute permissions={Permission.CashRegisterDailySummary}>
+            {withPageLoading(<DailyCashRegisterSummaryRoute />)}
           </PermissionRoute>
         ),
       },

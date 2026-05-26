@@ -12,6 +12,9 @@ using SaasCommerce.Modules.Inventory.Application.Transfers;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
 using SaasCommerce.Modules.Purchasing.Application.Purchases;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
+using SaasCommerce.Modules.Notifications.Application.Handlers;
+using SaasCommerce.Modules.Notifications.Domain;
+using SaasCommerce.Modules.Sales.Application.CashRegisters;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 
@@ -586,6 +589,103 @@ public sealed class OperatingExpenseCancelledRealtimeConsumer(
       context.Message.BranchId,
       "expenses.cancelled",
       context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class CashRegisterOpenedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<CashRegisterOpenedRealtimeConsumer> logger)
+  : IdempotentConsumer<CashRegisterOpenedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<CashRegisterOpenedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "cashRegister.opened",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class CashRegisterMovementRegisteredRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<CashRegisterMovementRegisteredRealtimeConsumer> logger)
+  : IdempotentConsumer<CashRegisterMovementRegisteredEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<CashRegisterMovementRegisteredEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "cashRegister.movementRegistered",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class CashRegisterClosedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<CashRegisterClosedRealtimeConsumer> logger)
+  : IdempotentConsumer<CashRegisterClosedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<CashRegisterClosedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      "cashRegister.closed",
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class CashRegisterDifferenceNotificationConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  CreateNotificationHandler handler,
+  ILogger<CashRegisterDifferenceNotificationConsumer> logger)
+  : IdempotentConsumer<CashRegisterDifferenceDetectedEventV1>(inboxStore, clock, logger)
+{
+  private const decimal SignificantDifferenceThreshold = 50m;
+
+  protected override Task ConsumeMessageAsync(ConsumeContext<CashRegisterDifferenceDetectedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var msg = context.Message;
+    if (Math.Abs(msg.Difference) <= SignificantDifferenceThreshold)
+    {
+      return Task.CompletedTask;
+    }
+
+    var severity = Math.Abs(msg.Difference) > 500m
+      ? OperationalNotificationSeverity.Critical
+      : OperationalNotificationSeverity.Warning;
+
+    var direction = msg.Difference > 0 ? "sobrante" : "faltante";
+    var amount = Math.Abs(msg.Difference);
+
+    return handler.Handle(
+      new CreateNotificationCommand(
+        BusinessId: msg.BusinessId,
+        BranchId: msg.BranchId,
+        Type: OperationalNotificationType.CashDifference,
+        Severity: severity,
+        Title: "Diferencia en arqueo de caja",
+        Message: $"Se detectó un {direction} de RD${amount:N2} al cerrar el arqueo de caja.",
+        RelatedEntityId: msg.CashRegisterId,
+        RelatedEntityType: "CashRegister"),
       context.CancellationToken);
   }
 }

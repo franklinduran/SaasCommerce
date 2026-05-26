@@ -109,6 +109,9 @@ public static class SystemPermissions
   // Product Import
   public const string ProductsImport = "products.import";
 
+  // Cash Register Advanced (Etapa 34)
+  public const string CashRegisterDailySummary = "cashRegister.dailySummary";
+
   // Exports (CSV / data exports)
   public const string ProductsExport = "products.export";
   public const string SalesExport = "sales.export";

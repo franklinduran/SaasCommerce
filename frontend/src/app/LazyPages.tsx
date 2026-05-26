@@ -194,6 +194,16 @@ const NotificationListPage = lazy(() =>
     default: module.NotificationListPage,
   })),
 )
+const CashRegisterPage = lazy(() =>
+  import('@/modules/cash-register/pages/CashRegisterPage').then((module) => ({
+    default: module.CashRegisterPage,
+  })),
+)
+const DailyCashRegisterSummaryPage = lazy(() =>
+  import('@/modules/cash-register/pages/DailyCashRegisterSummaryPage').then((module) => ({
+    default: module.DailyCashRegisterSummaryPage,
+  })),
+)
 
 export function AuthRoute() {
   return <AuthPage />
@@ -345,6 +355,14 @@ export function DailyClosingDetailRoute() {
 
 export function NotificationsRoute() {
   return <NotificationListPage />
+}
+
+export function CashRegisterRoute() {
+  return <CashRegisterPage />
+}
+
+export function DailyCashRegisterSummaryRoute() {
+  return <DailyCashRegisterSummaryPage />
 }
 
 export function OnboardingRoute() {

@@ -62,6 +62,7 @@ export const Permission = {
   CashOpen: 'cash.open',
   CashClose: 'cash.close',
   CashRegisterMovement: 'cash.registerMovement',
+  CashRegisterDailySummary: 'cashRegister.dailySummary',
 
   // Operating Expenses (Gastos Operativos)
   ExpensesView: 'expenses.view',

@@ -89,6 +89,10 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<OperatingExpenseCreatedRealtimeConsumer>();
     massTransit.AddConsumer<OperatingExpensePaidRealtimeConsumer>();
     massTransit.AddConsumer<OperatingExpenseCancelledRealtimeConsumer>();
+    massTransit.AddConsumer<CashRegisterOpenedRealtimeConsumer>();
+    massTransit.AddConsumer<CashRegisterMovementRegisteredRealtimeConsumer>();
+    massTransit.AddConsumer<CashRegisterClosedRealtimeConsumer>();
+    massTransit.AddConsumer<CashRegisterDifferenceNotificationConsumer>();
   });
 builder.Services.AddCors(options =>
   options.AddPolicy(
@@ -1380,6 +1384,10 @@ app.MapSubscriptionEndpoints();
 // ── Cash Register ─────────────────────────────────────────────────────────
 
 app.MapCashEndpoints();
+
+// ── Advanced Cash Register (Etapa 34) ─────────────────────────────────────
+
+app.MapCashRegisterEndpoints();
 
 // ── Operating Expenses (Gastos Operativos) ────────────────────────────────
 

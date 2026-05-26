@@ -98,7 +98,8 @@ public static class RolePermissionMatrix
     SystemPermissions.InventoryExport,
     SystemPermissions.CustomersExport,
     SystemPermissions.CreditsExport,
-    SystemPermissions.CashExport
+    SystemPermissions.CashExport,
+    SystemPermissions.CashRegisterDailySummary
   };
 
   private static readonly IReadOnlySet<string> SupervisorAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -162,7 +163,8 @@ public static class RolePermissionMatrix
 
     SystemPermissions.OnboardingView,
 
-    SystemPermissions.ProductsImport
+    SystemPermissions.ProductsImport,
+    SystemPermissions.CashRegisterDailySummary
   };
 
   private static readonly IReadOnlySet<string> CashierAccess = new HashSet<string>(StringComparer.Ordinal)

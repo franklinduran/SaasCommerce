@@ -56,6 +56,7 @@ using SaasCommerce.Modules.Reporting.Infrastructure.Export;
 using SaasCommerce.Modules.Reporting.Infrastructure.Persistence;
 using SaasCommerce.Modules.Sales.Application.Abstractions;
 using SaasCommerce.Modules.Sales.Application.Cash;
+using SaasCommerce.Modules.Sales.Application.CashRegisters;
 using SaasCommerce.Modules.Sales.Application.Expenses;
 using SaasCommerce.Modules.Sales.Application.DailyClosings;
 using SaasCommerce.Modules.Sales.Application.Profitability;
@@ -197,6 +198,16 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<IRegisterCreditSaleUseCase, RegisterCreditSaleUseCase>();
     services.AddScoped<ExportCustomersCsvHandler>();
     services.AddScoped<ExportCustomerCreditsCsvHandler>();
+
+    // Sales — Advanced Cash Register (Etapa 34)
+    services.AddScoped<ICashRegisterRepository, EfCashRegisterRepository>();
+    services.AddScoped<ICashRegisterCalculator, EfCashRegisterCalculator>();
+    services.AddScoped<OpenCashRegisterHandler>();
+    services.AddScoped<RegisterCashRegisterMovementHandler>();
+    services.AddScoped<CloseCashRegisterHandler>();
+    services.AddScoped<GetActiveCashRegisterHandler>();
+    services.AddScoped<GetCashRegisterDetailHandler>();
+    services.AddScoped<GetDailyCashRegisterSummaryHandler>();
 
     // Sales — Cash Register
     services.AddScoped<ICashSessionRepository, EfCashSessionRepository>();

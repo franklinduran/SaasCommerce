@@ -1,5 +1,6 @@
 import {
   ArrowLeftRight,
+  Banknote,
   BarChart2,
   BarChart3,
   Boxes,
@@ -52,6 +53,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
   { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
   { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
+  { label: 'Arqueo Caja', path: '/cash-register', icon: Banknote, requiredPermission: Permission.CashView },
   { label: 'Cierre Diario', path: '/daily-closing', icon: CalendarCheck, requiredPermission: Permission.DailyClosingView },
   { label: 'Gastos', path: '/expenses', icon: CircleDollarSign, requiredPermission: Permission.ExpensesView },
   { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
@@ -72,14 +74,16 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
 
-const mainNavigation = navigationItems.slice(0, 9)
-const growthTools = navigationItems.slice(9)
+const mainNavigation = navigationItems.slice(0, 10)
+const growthTools = navigationItems.slice(10)
 
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
   '/pos': 'POS',
   '/cash': 'Caja',
   '/cash/history': 'Historial de cajas',
+  '/cash-register': 'Arqueo de caja avanzado',
+  '/cash-register/daily-summary': 'Arqueo diario',
   '/daily-closing': 'Cierre diario',
   '/daily-closing/history': 'Historial de cierres',
   '/notifications': 'Notificaciones',
