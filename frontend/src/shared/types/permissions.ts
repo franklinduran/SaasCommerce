@@ -88,6 +88,11 @@ export const Permission = {
   NotificationsRead: 'notifications.read',
   NotificationsManage: 'notifications.manage',
 
+  // Beta Feedback
+  BetaFeedbackCreate: 'betaFeedback.create',
+  BetaFeedbackView: 'betaFeedback.view',
+  BetaFeedbackManage: 'betaFeedback.manage',
+
   // SaaS Platform Administration
   SaasManageBusinesses: 'saas.manage_businesses',
 

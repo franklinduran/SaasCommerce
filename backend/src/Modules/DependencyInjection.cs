@@ -23,6 +23,9 @@ using SaasCommerce.Modules.Customers.Application.Abstractions;
 using SaasCommerce.Modules.Customers.Application.Credits;
 using SaasCommerce.Modules.Customers.Application.Customers;
 using SaasCommerce.Modules.Customers.Infrastructure.Persistence;
+using SaasCommerce.Modules.Feedback.Application;
+using SaasCommerce.Modules.Feedback.Application.Abstractions;
+using SaasCommerce.Modules.Feedback.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Application.Abstractions;
 using SaasCommerce.Modules.Catalog.Application.Export;
 using SaasCommerce.Modules.Catalog.Application.Import;
@@ -380,6 +383,12 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateCurrentBranchHandler>();
     services.AddScoped<GetCurrentUserPermissionsHandler>();
     services.AddScoped<DevelopmentDataSeeder>();
+
+    // Beta feedback
+    services.AddScoped<IBetaFeedbackRepository, EfBetaFeedbackRepository>();
+    services.AddScoped<CreateBetaFeedbackHandler>();
+    services.AddScoped<GetBetaFeedbackHandler>();
+    services.AddScoped<UpdateBetaFeedbackStatusHandler>();
 
     // Settings
     services.AddScoped<IBusinessSettingsRepository, EfBusinessSettingsRepository>();

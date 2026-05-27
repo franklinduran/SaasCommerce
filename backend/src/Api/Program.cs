@@ -1403,6 +1403,7 @@ app.MapDailyClosingEndpoints();
 // ── Operational Notifications (Notificaciones Operativas) ─────────────────
 
 app.MapNotificationEndpoints();
+app.MapBetaFeedbackEndpoints();
 
 // ── Branches & Inventory Transfers ────────────────────────────────────────
 

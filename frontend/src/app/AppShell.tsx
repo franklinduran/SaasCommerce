@@ -14,6 +14,7 @@ import {
   History,
   LayoutDashboard,
   LogOut,
+  MessageSquareWarning,
   Package,
   PanelLeftClose,
   PanelLeftOpen,
@@ -70,6 +71,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Usuarios', path: '/users', icon: Shield, requiredPermission: Permission.UsersView },
   { label: 'Auditoria', path: '/audit-logs', icon: ClipboardList, requiredPermission: Permission.AuditView },
   { label: 'Suscripcion', path: '/subscription', icon: CreditCard },
+  { label: 'Feedback Beta', path: '/beta-feedback', icon: MessageSquareWarning, requiredPermission: Permission.BetaFeedbackView },
   { label: 'Metricas Piloto', path: '/admin/pilot-metrics', icon: BarChart2, requiredPermission: Permission.SaasPilotMetrics },
   { label: 'Ajustes', path: '/settings', icon: Settings },
 ]
@@ -108,6 +110,7 @@ const pageTitles: Record<string, string> = {
   '/users': 'Usuarios',
   '/audit-logs': 'Auditoria',
   '/subscription': 'Mi Suscripcion',
+  '/beta-feedback': 'Feedback Beta',
   '/admin/pilot-metrics': 'Metricas del Piloto',
   '/settings': 'Ajustes',
   '/forbidden': 'Acceso denegado',

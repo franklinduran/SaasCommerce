@@ -18,6 +18,11 @@ const PilotMetricsPage = lazy(() =>
     default: module.PilotMetricsPage,
   })),
 )
+const BetaFeedbackPage = lazy(() =>
+  import('@/modules/beta-feedback/pages/BetaFeedbackPage').then((module) => ({
+    default: module.BetaFeedbackPage,
+  })),
+)
 const ProductImportPage = lazy(() =>
   import('@/modules/products/pages/ProductImportPage').then((module) => ({
     default: module.ProductImportPage,
@@ -384,6 +389,10 @@ export function PilotBusinessRoute() {
 
 export function PilotMetricsRoute() {
   return <PilotMetricsPage />
+}
+
+export function BetaFeedbackRoute() {
+  return <BetaFeedbackPage />
 }
 
 export function ProductImportRoute() {

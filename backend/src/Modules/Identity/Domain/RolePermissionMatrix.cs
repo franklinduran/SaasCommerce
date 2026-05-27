@@ -84,6 +84,9 @@ public static class RolePermissionMatrix
     SystemPermissions.NotificationsView,
     SystemPermissions.NotificationsRead,
     SystemPermissions.NotificationsManage,
+    SystemPermissions.BetaFeedbackCreate,
+    SystemPermissions.BetaFeedbackView,
+    SystemPermissions.BetaFeedbackManage,
 
     SystemPermissions.SaasManageBusinesses,
     SystemPermissions.SaasPilotMetrics,
@@ -160,6 +163,8 @@ public static class RolePermissionMatrix
 
     SystemPermissions.NotificationsView,
     SystemPermissions.NotificationsRead,
+    SystemPermissions.BetaFeedbackCreate,
+    SystemPermissions.BetaFeedbackView,
 
     SystemPermissions.OnboardingView,
 
@@ -198,7 +203,9 @@ public static class RolePermissionMatrix
     SystemPermissions.DailyClosingClose,
 
     SystemPermissions.NotificationsView,
-    SystemPermissions.NotificationsRead
+    SystemPermissions.NotificationsRead,
+    SystemPermissions.BetaFeedbackCreate,
+    SystemPermissions.BetaFeedbackView
   };
 
   private static readonly IReadOnlySet<string> InventoryManagerAccess = new HashSet<string>(StringComparer.Ordinal)
@@ -216,6 +223,8 @@ public static class RolePermissionMatrix
     SystemPermissions.BranchesView,
 
     SystemPermissions.PurchasesView,
+    SystemPermissions.BetaFeedbackCreate,
+    SystemPermissions.BetaFeedbackView,
 
     SystemPermissions.ReportsView
   };
@@ -232,6 +241,8 @@ public static class RolePermissionMatrix
     SystemPermissions.PurchasesCreate,
     SystemPermissions.PurchasesReceive,
     SystemPermissions.PurchasesCancel,
+    SystemPermissions.BetaFeedbackCreate,
+    SystemPermissions.BetaFeedbackView,
 
     SystemPermissions.ReportsView
   };
@@ -251,6 +262,8 @@ public static class RolePermissionMatrix
     SystemPermissions.AccountsReceivableView,
 
     SystemPermissions.PurchasesView,
+    SystemPermissions.BetaFeedbackCreate,
+    SystemPermissions.BetaFeedbackView,
 
     SystemPermissions.InvoicesView,
 

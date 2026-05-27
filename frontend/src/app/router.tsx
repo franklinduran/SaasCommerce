@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/app/AppShell'
 import {
   AuditLogsRoute,
+  BetaFeedbackRoute,
   AuthRoute,
   BranchesRoute,
   OnboardingRoute,
@@ -353,6 +354,14 @@ export const router = createBrowserRouter([
         element: (
           <PermissionRoute permissions={Permission.SaasPilotMetrics}>
             {withPageLoading(<PilotMetricsRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'beta-feedback',
+        element: (
+          <PermissionRoute permissions={Permission.BetaFeedbackView}>
+            {withPageLoading(<BetaFeedbackRoute />)}
           </PermissionRoute>
         ),
       },

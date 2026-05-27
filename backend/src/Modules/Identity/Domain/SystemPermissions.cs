@@ -122,4 +122,9 @@ public static class SystemPermissions
 
   // Pilot Metrics (SaaS Admin only)
   public const string SaasPilotMetrics = "saas.pilot_metrics";
+
+  // Beta feedback
+  public const string BetaFeedbackCreate = "betaFeedback.create";
+  public const string BetaFeedbackView = "betaFeedback.view";
+  public const string BetaFeedbackManage = "betaFeedback.manage";
 }
