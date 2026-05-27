@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
@@ -31,8 +32,15 @@ public sealed class CloseCashRegisterHandler(
   ICurrentUserService currentUser,
   IOutboxWriter outbox,
   IUnitOfWork unitOfWork,
-  IClock clock)
+  IClock clock,
+  ILogger<CloseCashRegisterHandler> logger)
 {
+  private static readonly Action<ILogger, Guid, Guid, string, Exception?> LogClosed =
+    LoggerMessage.Define<Guid, Guid, string>(
+      LogLevel.Information,
+      new EventId(3101, nameof(LogClosed)),
+      "Cash register closed. CashRegisterId={CashRegisterId} BusinessId={BusinessId} DifferenceType={DifferenceType}");
+
   public async Task<Result<CloseCashRegisterResponse>> Handle(
     CloseCashRegisterCommand command,
     CancellationToken cancellationToken = default)
@@ -109,6 +117,8 @@ public sealed class CloseCashRegisterHandler(
     }
 
     await unitOfWork.SaveChangesAsync(cancellationToken);
+
+    LogClosed(logger, register.Id, rawBusinessId, closing.DifferenceType.ToString(), null);
 
     return Result.Success(new CloseCashRegisterResponse(
       register.Id,

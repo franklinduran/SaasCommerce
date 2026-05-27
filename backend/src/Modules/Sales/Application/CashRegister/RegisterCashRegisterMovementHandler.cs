@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
@@ -33,8 +34,15 @@ public sealed class RegisterCashRegisterMovementHandler(
   ICurrentUserService currentUser,
   IOutboxWriter outbox,
   IUnitOfWork unitOfWork,
-  IClock clock)
+  IClock clock,
+  ILogger<RegisterCashRegisterMovementHandler> logger)
 {
+  private static readonly Action<ILogger, Guid, Guid, Guid, string, decimal, Exception?> LogMovementRegistered =
+    LoggerMessage.Define<Guid, Guid, Guid, string, decimal>(
+      LogLevel.Information,
+      new EventId(3102, nameof(LogMovementRegistered)),
+      "Cash register movement registered. MovementId={MovementId} CashRegisterId={CashRegisterId} BusinessId={BusinessId} MovementType={MovementType} Amount={Amount}");
+
   public async Task<Result<CashRegisterMovementResponse>> Handle(
     RegisterCashRegisterMovementCommand command,
     CancellationToken cancellationToken = default)
@@ -91,6 +99,8 @@ public sealed class RegisterCashRegisterMovementHandler(
       cancellationToken);
 
     await unitOfWork.SaveChangesAsync(cancellationToken);
+
+    LogMovementRegistered(logger, movement.Id, register.Id, rawBusinessId, movement.MovementType.ToString(), movement.Amount, null);
 
     return Result.Success(new CashRegisterMovementResponse(
       movement.Id,

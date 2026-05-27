@@ -245,11 +245,8 @@ app.MapGet("/health/ready", async (
 {
   var databaseReady = await ProgramHelpers.CanConnectToDatabaseAsync(dbContext, cancellationToken);
   var rabbitMqReady = await ProgramHelpers.CanConnectToRabbitMqAsync(configuration, cancellationToken);
-  var response = new HealthReadyResponse(
-    databaseReady && rabbitMqReady ? "Healthy" : "Unhealthy",
-    new HealthDependencyStatus("PostgreSQL", databaseReady ? "Healthy" : "Unhealthy"),
-    new HealthDependencyStatus("RabbitMQ", rabbitMqReady ? "Healthy" : "Unhealthy"));
-
+  var (outboxHealthy, outboxStaleCount) = await ProgramHelpers.CheckOutboxHealthAsync(dbContext, cancellationToken);
+  var response = ProgramHelpers.BuildHealthReadyResponse(databaseReady, rabbitMqReady, outboxHealthy, outboxStaleCount);
   return databaseReady && rabbitMqReady
     ? Results.Ok(ApiResponse.Success(response))
     : Results.Json(

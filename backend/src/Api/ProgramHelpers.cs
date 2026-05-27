@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Contracts.Common;
+using SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
 using SaasCommerce.Modules.Identity.Contracts;
 
@@ -41,6 +42,68 @@ internal static class ProgramHelpers
     {
       return true;
     }
+  }
+
+  internal const string StatusHealthy = "Healthy";
+  internal const string StatusDegraded = "Degraded";
+  internal const string StatusUnhealthy = "Unhealthy";
+
+  internal static async Task<(bool IsHealthy, int StaleCount)> CheckOutboxHealthAsync(
+    AppDbContext dbContext,
+    CancellationToken cancellationToken)
+  {
+    try
+    {
+      var threshold = DateTimeOffset.UtcNow.AddMinutes(-5);
+      var staleCount = await dbContext.OutboxMessages
+        .CountAsync(
+          m => (m.Status == OutboxMessageStatus.Pending || m.Status == OutboxMessageStatus.Failed)
+               && m.CreatedAt < threshold,
+          cancellationToken);
+
+      return (staleCount == 0, staleCount);
+    }
+    catch (InvalidOperationException)
+    {
+      return (true, 0);
+    }
+  }
+
+  internal static HealthReadyResponse BuildHealthReadyResponse(
+    bool databaseReady,
+    bool rabbitMqReady,
+    bool outboxHealthy,
+    int outboxStaleCount)
+  {
+    string outboxStatus;
+    if (outboxHealthy)
+    {
+      outboxStatus = StatusHealthy;
+    }
+    else
+    {
+      outboxStatus = $"{StatusDegraded} ({outboxStaleCount} stale)";
+    }
+
+    string overallStatus;
+    if (!databaseReady || !rabbitMqReady)
+    {
+      overallStatus = StatusUnhealthy;
+    }
+    else if (!outboxHealthy)
+    {
+      overallStatus = StatusDegraded;
+    }
+    else
+    {
+      overallStatus = StatusHealthy;
+    }
+
+    return new HealthReadyResponse(
+      overallStatus,
+      new HealthDependencyStatus("PostgreSQL", databaseReady ? StatusHealthy : StatusUnhealthy),
+      new HealthDependencyStatus("RabbitMQ", rabbitMqReady ? StatusHealthy : StatusUnhealthy),
+      new HealthDependencyStatus("Outbox", outboxStatus));
   }
 
   internal static async Task<bool> CanConnectToRabbitMqAsync(

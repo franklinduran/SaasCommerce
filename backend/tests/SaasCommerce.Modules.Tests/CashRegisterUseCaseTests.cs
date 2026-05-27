@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
@@ -24,7 +25,8 @@ public sealed class CashRegisterUseCaseTests
   public async Task OpenCashRegisterHandler_ShouldFail_WhenNoBusinessContext()
   {
     var handler = new OpenCashRegisterHandler(
-      new FakeCashRegisterRepo(), Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      new FakeCashRegisterRepo(), Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<OpenCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new OpenCashRegisterCommand(Guid.NewGuid(), 500, null));
 
@@ -36,7 +38,8 @@ public sealed class CashRegisterUseCaseTests
   public async Task OpenCashRegisterHandler_ShouldFail_WhenNegativeOpeningAmount()
   {
     var handler = new OpenCashRegisterHandler(
-      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<OpenCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new OpenCashRegisterCommand(Guid.NewGuid(), -1, null));
 
@@ -49,7 +52,8 @@ public sealed class CashRegisterUseCaseTests
   {
     var repo = new FakeCashRegisterRepo { HasOpen = true };
     var handler = new OpenCashRegisterHandler(
-      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<OpenCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new OpenCashRegisterCommand(Guid.NewGuid(), 500, null));
 
@@ -62,7 +66,9 @@ public sealed class CashRegisterUseCaseTests
   {
     var repo = new FakeCashRegisterRepo();
     var outbox = new RecordingOutbox();
-    var handler = new OpenCashRegisterHandler(repo, Authed(), outbox, new NoopUow(), new FixedClock());
+    var handler = new OpenCashRegisterHandler(
+      repo, Authed(), outbox, new NoopUow(), new FixedClock(),
+      NullLogger<OpenCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new OpenCashRegisterCommand(Guid.NewGuid(), 1000, "Notas apertura"));
 
@@ -77,7 +83,8 @@ public sealed class CashRegisterUseCaseTests
   {
     var repo = new FakeCashRegisterRepo();
     var handler = new OpenCashRegisterHandler(
-      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<OpenCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new OpenCashRegisterCommand(Guid.NewGuid(), 0, null));
 
@@ -91,7 +98,8 @@ public sealed class CashRegisterUseCaseTests
   public async Task RegisterMovementHandler_ShouldFail_WhenNoBusinessContext()
   {
     var handler = new RegisterCashRegisterMovementHandler(
-      new FakeCashRegisterRepo(), Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      new FakeCashRegisterRepo(), Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(Guid.NewGuid(), "CashIn", 100, "Test"));
@@ -104,7 +112,8 @@ public sealed class CashRegisterUseCaseTests
   public async Task RegisterMovementHandler_ShouldFail_WhenInvalidMovementType()
   {
     var handler = new RegisterCashRegisterMovementHandler(
-      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(Guid.NewGuid(), "InvalidType", 100, "Test"));
@@ -117,7 +126,8 @@ public sealed class CashRegisterUseCaseTests
   public async Task RegisterMovementHandler_ShouldFail_WhenRegisterNotFound()
   {
     var handler = new RegisterCashRegisterMovementHandler(
-      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(Guid.NewGuid(), "CashIn", 100, "Test"));
@@ -133,7 +143,8 @@ public sealed class CashRegisterUseCaseTests
     var repo = new FakeCashRegisterRepo { Register = register };
     var outbox = new RecordingOutbox();
     var handler = new RegisterCashRegisterMovementHandler(
-      repo, Authed(), outbox, new NoopUow(), new FixedClock());
+      repo, Authed(), outbox, new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(register.Id, "CashIn", 200, "Depósito"));
@@ -150,7 +161,8 @@ public sealed class CashRegisterUseCaseTests
     var register = CreateOpenRegister();
     var repo = new FakeCashRegisterRepo { Register = register };
     var handler = new RegisterCashRegisterMovementHandler(
-      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(register.Id, "cashout", 50, "Retiro"));
@@ -166,7 +178,8 @@ public sealed class CashRegisterUseCaseTests
   {
     var handler = new CloseCashRegisterHandler(
       new FakeCashRegisterRepo(), new FakeCashRegisterCalculator(),
-      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new CloseCashRegisterCommand(Guid.NewGuid(), 500, null));
 
@@ -182,7 +195,8 @@ public sealed class CashRegisterUseCaseTests
     var outbox = new RecordingOutbox();
     var handler = new CloseCashRegisterHandler(
       repo, new FakeCashRegisterCalculator(cashSales: 500),
-      Authed(), outbox, new NoopUow(), new FixedClock());
+      Authed(), outbox, new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     // Expected = 1000 + 500 = 1500; Counted = 1500 → Balanced
     var result = await handler.Handle(new CloseCashRegisterCommand(register.Id, 1500, null));
@@ -199,7 +213,8 @@ public sealed class CashRegisterUseCaseTests
     var outbox = new RecordingOutbox();
     var handler = new CloseCashRegisterHandler(
       repo, new FakeCashRegisterCalculator(),
-      Authed(), outbox, new NoopUow(), new FixedClock());
+      Authed(), outbox, new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     // Expected = 1000; Counted = 900 → Shortage -100
     var result = await handler.Handle(new CloseCashRegisterCommand(register.Id, 900, null));
@@ -217,7 +232,8 @@ public sealed class CashRegisterUseCaseTests
     var outbox = new RecordingOutbox();
     var handler = new CloseCashRegisterHandler(
       repo, new FakeCashRegisterCalculator(),
-      Authed(), outbox, new NoopUow(), new FixedClock());
+      Authed(), outbox, new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     // Expected = 1000; Counted = 1000 → Balanced
     var result = await handler.Handle(new CloseCashRegisterCommand(register.Id, 1000, null));
@@ -233,7 +249,8 @@ public sealed class CashRegisterUseCaseTests
   {
     var handler = new CloseCashRegisterHandler(
       new FakeCashRegisterRepo(), new FakeCashRegisterCalculator(),
-      Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new CloseCashRegisterCommand(Guid.NewGuid(), 500, null));
 
@@ -246,7 +263,8 @@ public sealed class CashRegisterUseCaseTests
   {
     var handler = new CloseCashRegisterHandler(
       new FakeCashRegisterRepo(), new FakeCashRegisterCalculator(),
-      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new CloseCashRegisterCommand(Guid.NewGuid(), -1, null));
 
@@ -262,7 +280,8 @@ public sealed class CashRegisterUseCaseTests
     var repo = new FakeCashRegisterRepo { Register = register };
     var handler = new CloseCashRegisterHandler(
       repo, new FakeCashRegisterCalculator(),
-      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<CloseCashRegisterHandler>.Instance);
 
     var result = await handler.Handle(new CloseCashRegisterCommand(register.Id, 500, null));
 
@@ -276,7 +295,8 @@ public sealed class CashRegisterUseCaseTests
   public async Task RegisterMovementHandler_ShouldFail_WhenAmountIsZero()
   {
     var handler = new RegisterCashRegisterMovementHandler(
-      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(Guid.NewGuid(), "CashIn", 0, "Test"));
@@ -292,7 +312,8 @@ public sealed class CashRegisterUseCaseTests
     register.Close(500, new CashRegisterTotals(0, 0, 0, 0, 0), Now.AddHours(8), null);
     var repo = new FakeCashRegisterRepo { Register = register };
     var handler = new RegisterCashRegisterMovementHandler(
-      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock(),
+      NullLogger<RegisterCashRegisterMovementHandler>.Instance);
 
     var result = await handler.Handle(
       new RegisterCashRegisterMovementCommand(register.Id, "CashIn", 100, "Test"));

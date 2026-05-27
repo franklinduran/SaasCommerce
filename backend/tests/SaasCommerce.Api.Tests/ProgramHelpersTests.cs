@@ -56,7 +56,64 @@ public sealed class ProgramHelpersTests
     permissions.Should().Contain(SystemPermissions.ReportsView);
   }
 
-  // ── CanConnectToRabbitMqAsync ────────────────────────────────────────────
+  // ── BuildHealthReadyResponse ─────────────────────────────────────────────
+
+  [Fact]
+  public void BuildHealthReadyResponse_ShouldReturnHealthy_WhenAllDependenciesOk()
+  {
+    var response = ProgramHelpers.BuildHealthReadyResponse(
+      databaseReady: true,
+      rabbitMqReady: true,
+      outboxHealthy: true,
+      outboxStaleCount: 0);
+
+    response.Status.Should().Be("Healthy");
+    response.PostgreSql.Status.Should().Be("Healthy");
+    response.RabbitMq.Status.Should().Be("Healthy");
+    response.Outbox.Status.Should().Be("Healthy");
+  }
+
+  [Fact]
+  public void BuildHealthReadyResponse_ShouldReturnDegraded_WhenOutboxHasStaleMessages()
+  {
+    var response = ProgramHelpers.BuildHealthReadyResponse(
+      databaseReady: true,
+      rabbitMqReady: true,
+      outboxHealthy: false,
+      outboxStaleCount: 5);
+
+    response.Status.Should().Be("Degraded");
+    response.Outbox.Status.Should().Contain("5 stale");
+  }
+
+  [Fact]
+  public void BuildHealthReadyResponse_ShouldReturnUnhealthy_WhenDatabaseIsDown()
+  {
+    var response = ProgramHelpers.BuildHealthReadyResponse(
+      databaseReady: false,
+      rabbitMqReady: true,
+      outboxHealthy: true,
+      outboxStaleCount: 0);
+
+    response.Status.Should().Be("Unhealthy");
+    response.PostgreSql.Status.Should().Be("Unhealthy");
+    response.RabbitMq.Status.Should().Be("Healthy");
+  }
+
+  [Fact]
+  public void BuildHealthReadyResponse_ShouldReturnUnhealthy_WhenRabbitMqIsDown()
+  {
+    var response = ProgramHelpers.BuildHealthReadyResponse(
+      databaseReady: true,
+      rabbitMqReady: false,
+      outboxHealthy: true,
+      outboxStaleCount: 0);
+
+    response.Status.Should().Be("Unhealthy");
+    response.RabbitMq.Status.Should().Be("Unhealthy");
+  }
+
+  // ── CanConnectToRabbitMqAsync ─────────────────────────────────────────────
 
   [Fact]
   public async Task CanConnectToRabbitMqAsync_ShouldReturnTrue_WhenUseInMemoryIsTrue()

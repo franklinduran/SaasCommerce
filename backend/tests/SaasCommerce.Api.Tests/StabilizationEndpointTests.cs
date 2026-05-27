@@ -21,6 +21,22 @@ namespace SaasCommerce.Api.Tests;
 public sealed class StabilizationEndpointTests
 {
   [Fact]
+  public async Task HealthLiveShouldReturn200WithLiveMessage()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+
+    var response = await client.GetAsync("/health/live");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<string>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeTrue();
+    payload.Data.Should().Be("Live");
+    payload.Error.Should().BeNull();
+  }
+
+  [Fact]
   public async Task HealthReadyShouldReturnStandardHealthyResponse()
   {
     using var factory = CreateFactory();
@@ -33,7 +49,44 @@ public sealed class StabilizationEndpointTests
     payload.Should().NotBeNull();
     payload!.IsSuccess.Should().BeTrue();
     payload.Data.GetProperty("status").GetString().Should().Be("Healthy");
+    payload.Data.GetProperty("postgreSql").GetProperty("status").GetString().Should().Be("Healthy");
+    payload.Data.GetProperty("rabbitMq").GetProperty("status").GetString().Should().Be("Healthy");
+    payload.Data.GetProperty("outbox").GetProperty("status").GetString().Should().Be("Healthy");
     payload.Error.Should().BeNull();
+  }
+
+  [Fact]
+  public async Task HealthReadyShouldReturn503WhenRabbitMqUnavailable()
+  {
+    using var factory = new WebApplicationFactory<Program>()
+      .WithWebHostBuilder(builder =>
+      {
+        builder.UseEnvironment("Development");
+        builder.ConfigureAppConfiguration((_, configuration) =>
+        {
+          configuration.AddInMemoryCollection(new Dictionary<string, string?>
+          {
+            ["ConnectionStrings:DefaultConnection"] = "",
+            ["Database:InMemoryName"] = Guid.NewGuid().ToString("D"),
+            ["RabbitMq:UseInMemory"] = "false",
+            ["RabbitMq:Host"] = "127.0.0.1",
+            ["RabbitMq:Port"] = "65432",
+            ["Jwt:Secret"] = "test-secret-with-at-least-32-characters",
+            ["Jwt:Issuer"] = "SaasCommerce.Tests",
+            ["Jwt:Audience"] = "SaasCommerce.Tests",
+            ["Jwt:AccessTokenMinutes"] = "30"
+          });
+        });
+      });
+    using var client = factory.CreateClient();
+
+    var response = await client.GetAsync("/health/ready");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<JsonElement>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
+    payload.Error!.Code.Should().Be("SERVICE_UNAVAILABLE");
   }
 
   [Fact]

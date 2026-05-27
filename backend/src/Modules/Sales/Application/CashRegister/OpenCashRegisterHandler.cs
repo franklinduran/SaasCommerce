@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Persistence;
@@ -30,8 +31,15 @@ public sealed class OpenCashRegisterHandler(
   ICurrentUserService currentUser,
   IOutboxWriter outbox,
   IUnitOfWork unitOfWork,
-  IClock clock)
+  IClock clock,
+  ILogger<OpenCashRegisterHandler> logger)
 {
+  private static readonly Action<ILogger, Guid, Guid, Guid, Exception?> LogOpened =
+    LoggerMessage.Define<Guid, Guid, Guid>(
+      LogLevel.Information,
+      new EventId(3100, nameof(LogOpened)),
+      "Cash register opened. CashRegisterId={CashRegisterId} BusinessId={BusinessId} UserId={UserId}");
+
   public async Task<Result<OpenCashRegisterResponse>> Handle(
     OpenCashRegisterCommand command,
     CancellationToken cancellationToken = default)
@@ -80,6 +88,8 @@ public sealed class OpenCashRegisterHandler(
       cancellationToken);
 
     await unitOfWork.SaveChangesAsync(cancellationToken);
+
+    LogOpened(logger, register.Id, rawBusinessId, userId, null);
 
     return Result.Success(new OpenCashRegisterResponse(register.Id, register.OpenedAt));
   }
