@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -90,6 +90,99 @@ describe('CashRegisterPage', () => {
 
     expect(await screen.findByText('Caja cerrada')).toBeTruthy()
     expect(screen.getByText('Cuadrado')).toBeTruthy()
+  })
+
+  it('shows validation error when opening amount is not provided', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock({ active: null }))
+
+    renderCashRegisterPage()
+
+    await screen.findByLabelText('Monto inicial (RD$)')
+    await user.click(screen.getByRole('button', { name: /Abrir caja/i }))
+
+    expect(await screen.findByText('El monto inicial debe ser 0 o mayor.')).toBeTruthy()
+  })
+
+  it('opens register when form is submitted with valid opening amount', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock({ active: null }))
+
+    renderCashRegisterPage()
+
+    await user.type(await screen.findByLabelText('Monto inicial (RD$)'), '1000')
+    await user.click(screen.getByRole('button', { name: /Abrir caja/i }))
+
+    // After success the query invalidates → refetch still returns null → form reappears
+    expect(await screen.findByText('Abrir caja avanzada')).toBeTruthy()
+  })
+
+  it('navigates to daily summary when Arqueo diario button is clicked', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock({ active: createActiveRegister() }))
+
+    renderCashRegisterPage()
+
+    await screen.findByRole('button', { name: /Arqueo diario/i })
+    await user.click(screen.getByRole('button', { name: /Arqueo diario/i }))
+
+    expect(await screen.findByText('Daily Summary')).toBeTruthy()
+  })
+
+  it('shows validation error when movement amount is zero', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock({ active: createActiveRegister() }))
+
+    renderCashRegisterPage()
+
+    await screen.findByRole('button', { name: /Registrar movimiento/i })
+    await user.click(screen.getByRole('button', { name: /Registrar movimiento/i }))
+
+    // Submit without filling in the amount
+    await user.click(screen.getByRole('button', { name: /^Registrar$/i }))
+
+    expect(await screen.findByText('El monto debe ser mayor a 0.')).toBeTruthy()
+  })
+
+  it('registers movement when form is submitted with valid data', async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', createFetchMock({ active: createActiveRegister() }))
+
+    renderCashRegisterPage()
+
+    await screen.findByRole('button', { name: /Registrar movimiento/i })
+    await user.click(screen.getByRole('button', { name: /Registrar movimiento/i }))
+
+    await user.type(screen.getByLabelText('Monto (RD$)'), '100')
+    await user.type(screen.getByLabelText('Motivo'), 'Fondo de cambio')
+    await user.click(screen.getByRole('button', { name: /^Registrar$/i }))
+
+    // Form closes on success — 'Nuevo movimiento' heading disappears
+    await waitFor(() => expect(screen.queryByText('Nuevo movimiento')).toBeNull())
+  })
+
+  it('shows movements list when active register has manual movements', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createFetchMock({
+        active: createActiveRegister({
+          movements: [
+            {
+              id: 'mov1',
+              movementType: 'CashIn',
+              amount: 100,
+              reason: 'Fondo de cambio',
+              createdAt: '2026-05-26T09:00:00Z',
+            },
+          ],
+        }),
+      }),
+    )
+
+    renderCashRegisterPage()
+
+    expect(await screen.findByText('Movimientos manuales')).toBeTruthy()
+    expect(screen.getByText('Fondo de cambio')).toBeTruthy()
   })
 })
 

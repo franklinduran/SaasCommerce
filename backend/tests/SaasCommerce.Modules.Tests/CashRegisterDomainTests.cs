@@ -172,6 +172,58 @@ public sealed class CashRegisterDomainTests
 
     act.Should().Throw<InvalidOperationException>();
   }
+
+  // ── CashRegisterMovement guard clauses ────────────────────────────────────
+
+  [Fact]
+  public void CashRegisterMovement_ShouldThrow_WhenIdIsEmpty()
+  {
+    var act = () => CashRegisterMovement.Create(
+      Guid.Empty, Guid.NewGuid(), Guid.NewGuid(),
+      CashMovementType.CashIn, 100, "Test", Now);
+
+    act.Should().Throw<ArgumentException>().WithParameterName("id");
+  }
+
+  [Fact]
+  public void CashRegisterMovement_ShouldThrow_WhenCashRegisterIdIsEmpty()
+  {
+    var act = () => CashRegisterMovement.Create(
+      Guid.NewGuid(), Guid.Empty, Guid.NewGuid(),
+      CashMovementType.CashIn, 100, "Test", Now);
+
+    act.Should().Throw<ArgumentException>().WithParameterName("cashRegisterId");
+  }
+
+  [Fact]
+  public void CashRegisterMovement_ShouldThrow_WhenAmountIsNotPositive()
+  {
+    var act = () => CashRegisterMovement.Create(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+      CashMovementType.CashIn, 0, "Test", Now);
+
+    act.Should().Throw<ArgumentException>().WithParameterName("amount");
+  }
+
+  [Fact]
+  public void CashRegisterMovement_ShouldThrow_WhenReasonIsEmpty()
+  {
+    var act = () => CashRegisterMovement.Create(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+      CashMovementType.CashIn, 100, string.Empty, Now);
+
+    act.Should().Throw<ArgumentException>();
+  }
+
+  [Fact]
+  public void CashRegisterMovement_ShouldThrow_WhenUserIdIsEmpty()
+  {
+    var act = () => CashRegisterMovement.Create(
+      Guid.NewGuid(), Guid.NewGuid(), Guid.Empty,
+      CashMovementType.CashIn, 100, "Test", Now);
+
+    act.Should().Throw<ArgumentException>().WithParameterName("userId");
+  }
 }
 
 #pragma warning restore CA1707

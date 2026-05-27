@@ -226,7 +226,163 @@ public sealed class CashRegisterUseCaseTests
     outbox.Events.OfType<CashRegisterDifferenceDetectedEventV1>().Should().BeEmpty();
   }
 
+  // ── CloseCashRegisterHandler (missing paths) ──────────────────────────────
+
+  [Fact]
+  public async Task CloseCashRegisterHandler_ShouldFail_WhenNoBusinessContext()
+  {
+    var handler = new CloseCashRegisterHandler(
+      new FakeCashRegisterRepo(), new FakeCashRegisterCalculator(),
+      Anonymous(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+
+    var result = await handler.Handle(new CloseCashRegisterCommand(Guid.NewGuid(), 500, null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task CloseCashRegisterHandler_ShouldFail_WhenNegativeCountedAmount()
+  {
+    var handler = new CloseCashRegisterHandler(
+      new FakeCashRegisterRepo(), new FakeCashRegisterCalculator(),
+      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+
+    var result = await handler.Handle(new CloseCashRegisterCommand(Guid.NewGuid(), -1, null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.InvalidCountedAmount);
+  }
+
+  [Fact]
+  public async Task CloseCashRegisterHandler_ShouldFail_WhenRegisterNotOpen()
+  {
+    var register = CreateOpenRegister(openingAmount: 500);
+    register.Close(500, new CashRegisterTotals(0, 0, 0, 0, 0), Now.AddHours(8), null);
+    var repo = new FakeCashRegisterRepo { Register = register };
+    var handler = new CloseCashRegisterHandler(
+      repo, new FakeCashRegisterCalculator(),
+      Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+
+    var result = await handler.Handle(new CloseCashRegisterCommand(register.Id, 500, null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.RegisterNotOpen);
+  }
+
+  // ── RegisterCashRegisterMovementHandler (missing paths) ───────────────────
+
+  [Fact]
+  public async Task RegisterMovementHandler_ShouldFail_WhenAmountIsZero()
+  {
+    var handler = new RegisterCashRegisterMovementHandler(
+      new FakeCashRegisterRepo(), Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+
+    var result = await handler.Handle(
+      new RegisterCashRegisterMovementCommand(Guid.NewGuid(), "CashIn", 0, "Test"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.InvalidMovementAmount);
+  }
+
+  [Fact]
+  public async Task RegisterMovementHandler_ShouldFail_WhenRegisterNotOpen()
+  {
+    var register = CreateOpenRegister(openingAmount: 500);
+    register.Close(500, new CashRegisterTotals(0, 0, 0, 0, 0), Now.AddHours(8), null);
+    var repo = new FakeCashRegisterRepo { Register = register };
+    var handler = new RegisterCashRegisterMovementHandler(
+      repo, Authed(), new RecordingOutbox(), new NoopUow(), new FixedClock());
+
+    var result = await handler.Handle(
+      new RegisterCashRegisterMovementCommand(register.Id, "CashIn", 100, "Test"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.RegisterNotOpen);
+  }
+
+  // ── GetCashRegisterDetailHandler ──────────────────────────────────────────
+
+  [Fact]
+  public async Task GetCashRegisterDetailHandler_ShouldFail_WhenNoBusinessContext()
+  {
+    var handler = new GetCashRegisterDetailHandler(new FakeCashRegisterRepo(), Anonymous());
+
+    var result = await handler.Handle(new GetCashRegisterDetailQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task GetCashRegisterDetailHandler_ShouldFail_WhenRegisterNotFound()
+  {
+    var handler = new GetCashRegisterDetailHandler(new FakeCashRegisterRepo(), Authed());
+
+    var result = await handler.Handle(new GetCashRegisterDetailQuery(Guid.NewGuid()));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.RegisterNotFound);
+  }
+
+  [Fact]
+  public async Task GetCashRegisterDetailHandler_ShouldSucceed_WhenRegisterFound()
+  {
+    var register = CreateOpenRegister(openingAmount: 1500);
+    var repo = new FakeCashRegisterRepo { Register = register };
+    var handler = new GetCashRegisterDetailHandler(repo, Authed());
+
+    var result = await handler.Handle(new GetCashRegisterDetailQuery(register.Id));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.OpeningAmount.Should().Be(1500);
+    result.Value.Status.Should().Be("Open");
+  }
+
+  // ── GetDailyCashRegisterSummaryHandler ────────────────────────────────────
+
+  [Fact]
+  public async Task GetDailyCashRegisterSummaryHandler_ShouldFail_WhenNoBusinessContext()
+  {
+    var handler = new GetDailyCashRegisterSummaryHandler(new FakeCashRegisterRepo(), Anonymous());
+
+    var result = await handler.Handle(
+      new GetDailyCashRegisterSummaryQuery(DateOnly.FromDateTime(Now.Date), null));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task GetDailyCashRegisterSummaryHandler_ShouldReturnAggregatedSummary_WhenRegistersExist()
+  {
+    var open = CreateOpenRegister(openingAmount: 1000);
+    var closed = CreateOpenRegister(openingAmount: 500);
+    closed.Close(500, new CashRegisterTotals(CashSales: 300, 0, 0, 0, 0), Now.AddHours(8), null);
+    var repo = new FakeCashRegisterRepo { DailySummaryData = [open, closed] };
+    var handler = new GetDailyCashRegisterSummaryHandler(repo, Authed());
+
+    var result = await handler.Handle(
+      new GetDailyCashRegisterSummaryQuery(DateOnly.FromDateTime(Now.Date), null));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.OpenRegisters.Should().Be(1);
+    result.Value.ClosedRegisters.Should().Be(1);
+    result.Value.Registers.Should().HaveCount(2);
+  }
+
   // ── GetActiveCashRegisterHandler ──────────────────────────────────────────
+
+  [Fact]
+  public async Task GetActiveCashRegisterHandler_ShouldFail_WhenNoBusinessContext()
+  {
+    var handler = new GetActiveCashRegisterHandler(new FakeCashRegisterRepo(), Anonymous());
+
+    var result = await handler.Handle();
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.UserContextRequired);
+  }
 
   [Fact]
   public async Task GetActiveCashRegisterHandler_ShouldReturnNull_WhenNoOpenRegister()
@@ -332,6 +488,7 @@ public sealed class CashRegisterUseCaseTests
     public CashRegister? OpenRegister { get; set; }
     public CashRegister? Added { get; private set; }
     public BusinessId LastQueriedBusinessId { get; private set; }
+    public IReadOnlyCollection<CashRegister> DailySummaryData { get; set; } = [];
 
     public Task<CashRegister?> GetAsync(BusinessId businessId, Guid cashRegisterId, CancellationToken ct)
     {
@@ -367,7 +524,7 @@ public sealed class CashRegisterUseCaseTests
 
     public Task<IReadOnlyCollection<CashRegister>> GetDailySummaryAsync(
       BusinessId businessId, Guid? branchId, DateOnly summaryDate, CancellationToken ct)
-      => Task.FromResult<IReadOnlyCollection<CashRegister>>([]);
+      => Task.FromResult(DailySummaryData);
   }
 
   private sealed class FakeCashRegisterCalculator : ICashRegisterCalculator

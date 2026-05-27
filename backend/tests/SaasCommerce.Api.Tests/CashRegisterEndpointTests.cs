@@ -93,6 +93,19 @@ public sealed class CashRegisterEndpointTests
   }
 
   [Fact]
+  public async Task RegisterMovement_ShouldReturn401_WhenUnauthenticated()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+
+    var response = await client.PostAsJsonAsync(
+      $"/api/cash-registers/{Guid.NewGuid()}/movements",
+      new RegisterCashRegisterMovementRequest("CashIn", 200, "Fondo de cambio"));
+
+    response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+  }
+
+  [Fact]
   public async Task GetDailySummary_ShouldReturn200_WhenAuthenticated()
   {
     using var factory = CreateFactory();

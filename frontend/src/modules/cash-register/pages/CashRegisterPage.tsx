@@ -79,8 +79,7 @@ function OpenRegisterPanel() {
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  async function handleOpen(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleOpen() {
     setError(null)
     const amount = parseFloat(openingAmount)
     if (isNaN(amount) || amount < 0) {
@@ -122,7 +121,7 @@ function OpenRegisterPanel() {
 
         <Card>
           <CardContent className="pt-6">
-            <form className="space-y-4" onSubmit={(e) => void handleOpen(e)}>
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleOpen() }}>
               <div className="space-y-2">
                 <Label htmlFor="opening-amount">Monto inicial (RD$)</Label>
                 <Input
@@ -235,8 +234,7 @@ function ActiveRegisterPanel({ register, onViewSummary }: Readonly<ActiveRegiste
               <p className="text-sm font-medium text-stone-700">{formatDate(register.openedAt)}</p>
             </div>
             <Badge className="mt-1" variant="outline">
-              <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-green-500" />
-              Abierta
+              <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-green-500" />{' '}Abierta
             </Badge>
           </CardContent>
         </Card>
@@ -364,8 +362,7 @@ function MovementForm({
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleSubmit() {
     setError(null)
     const parsedAmount = parseFloat(amount)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -397,7 +394,7 @@ function MovementForm({
         <CardTitle className="text-sm font-semibold">Nuevo movimiento</CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
           <div className="grid grid-cols-2 gap-2">
             <button
               className={cn(
@@ -469,6 +466,7 @@ function MovementForm({
             </Button>
           </div>
         </form>
+
       </CardContent>
     </Card>
   )
@@ -497,8 +495,7 @@ function CloseRegisterForm({ register, onClose, onSuccess }: Readonly<CloseRegis
     register.manualCashIn -
     register.manualCashOut
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function handleSubmit() {
     setError(null)
     const amount = parseFloat(countedAmount)
     if (isNaN(amount) || amount < 0) {
@@ -530,7 +527,7 @@ function CloseRegisterForm({ register, onClose, onSuccess }: Readonly<CloseRegis
           Efectivo esperado:{' '}
           <strong>{formatCurrency(expectedCash)}</strong>. Ingresa el monto contado en físico.
         </p>
-        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
           <div className="space-y-2">
             <Label htmlFor="counted-amount">Monto contado (RD$)</Label>
             <Input

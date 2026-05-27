@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/modules/auth/authStore'
@@ -79,6 +79,64 @@ describe('DailyCashRegisterSummaryPage', () => {
     renderSummaryPage()
 
     expect(await screen.findByText(/Error al cargar el arqueo/i)).toBeTruthy()
+  })
+
+  it('shows Sobrante badge for surplus register', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createFetchMock({
+        summary: createSummary({
+          registers: [createRegisterItem({ differenceType: 'Surplus', difference: 50 })],
+        }),
+      }),
+    )
+
+    renderSummaryPage()
+
+    expect(await screen.findByText('Sobrante')).toBeTruthy()
+  })
+
+  it('shows Faltante badge for shortage register', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createFetchMock({
+        summary: createSummary({
+          registers: [createRegisterItem({ differenceType: 'Shortage', difference: -100 })],
+        }),
+      }),
+    )
+
+    renderSummaryPage()
+
+    expect(await screen.findByText('Faltante')).toBeTruthy()
+  })
+
+  it('updates date filter when date input changes', async () => {
+    vi.stubGlobal('fetch', createFetchMock({ summary: createSummary() }))
+
+    renderSummaryPage()
+
+    const dateInput = await screen.findByLabelText('Fecha')
+    fireEvent.change(dateInput, { target: { value: '2026-05-25' } })
+
+    expect((dateInput as HTMLInputElement).value).toBe('2026-05-25')
+  })
+
+  it('renders branch select (not loading text) when branches are available', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createFetchMock({
+        summary: createSummary(),
+        branches: [{ id: BRANCH_ID, name: 'Sucursal Central', isActive: true }],
+      }),
+    )
+
+    renderSummaryPage()
+
+    // Fecha input renders first — then wait for branch query to settle
+    await screen.findByLabelText('Fecha')
+    // When branches load the "loading" fallback text disappears
+    await waitFor(() => expect(screen.queryByText('Cargando sucursales...')).toBeNull())
   })
 })
 
@@ -169,9 +227,11 @@ function createRegisterItem(
 function createFetchMock({
   summary,
   failSummary = false,
+  branches = [],
 }: {
   summary?: DailyCashRegisterSummary
   failSummary?: boolean
+  branches?: Array<{ id: string; name: string; isActive: boolean }>
 } = {}) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = input.toString()
@@ -184,7 +244,7 @@ function createFetchMock({
     }
 
     if (url.includes('/api/branches')) {
-      return createJsonResponse({ items: [], total: 0 })
+      return createJsonResponse({ items: branches, total: branches.length })
     }
 
     return createJsonResponse(null, false, 404, 'NOT_FOUND', 'Not found.')

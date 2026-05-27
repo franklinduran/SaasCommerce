@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useBranches } from '@/modules/branches/hooks/useBranches'
 import { useDailyCashRegisterSummary } from '@/modules/cash-register/hooks/useCashRegister'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
 import {
@@ -92,12 +91,15 @@ export function DailyCashRegisterSummaryPage() {
           <div className="space-y-1.5">
             <Label htmlFor="summary-branch">Sucursal</Label>
             {branchList.length > 0 ? (
-              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+              <Select
+                value={selectedBranchId || 'all'}
+                onValueChange={(val) => setSelectedBranchId(val === 'all' ? '' : val)}
+              >
                 <SelectTrigger id="summary-branch">
                   <SelectValue placeholder="Todas las sucursales" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las sucursales</SelectItem>
+                  <SelectItem value="all">Todas las sucursales</SelectItem>
                   {branchList.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
