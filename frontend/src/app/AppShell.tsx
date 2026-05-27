@@ -29,7 +29,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { logout as serverLogout } from '@/modules/auth/services/authService'
@@ -130,6 +130,12 @@ export function AppShell() {
   const navigate = useNavigate()
   const pageTitle = getPageTitle(location.pathname)
   const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const userName = session?.user.fullName ?? 'Admin'
+  const userInitial = userName.trim().slice(0, 1).toUpperCase() || 'A'
+  const userRoleLabel = formatRoleLabel(session?.user.roles?.[0])
+  const canManageUsers = userPermissions.includes(Permission.UsersView)
 
   // Banner descartable — se resetea al cerrar sesión (sessionStorage)
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(
@@ -150,7 +156,36 @@ export function AppShell() {
     }
   }, [session?.user.mustChangePassword, navigate, location.pathname])
 
+  useEffect(() => {
+    if (!userMenuOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [userMenuOpen])
+
+  function navigateFromUserMenu(path: string) {
+    setUserMenuOpen(false)
+    navigate(path)
+  }
+
   async function handleLogout() {
+    setUserMenuOpen(false)
     if (session) {
       try {
         await serverLogout(session.accessToken, session.refreshToken)
@@ -256,31 +291,74 @@ export function AppShell() {
           </nav>
 
           <div className={cn('hidden shrink-0 border-t border-stone-200/60 p-3 lg:block', sidebarCollapsed && 'lg:px-2')}>
-            {!sidebarCollapsed && (
-              <div className="mb-2 flex items-center gap-2.5 rounded-md px-2 py-1.5">
+            <div className="relative" ref={userMenuRef}>
+              <button
+                aria-expanded={userMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Abrir menu de usuario"
+                className={cn(
+                  'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+                  sidebarCollapsed && 'h-10 justify-center px-0',
+                )}
+                onClick={() => setUserMenuOpen((open) => !open)}
+                type="button"
+              >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
-                  {session?.user.fullName.slice(0, 1).toUpperCase() ?? 'A'}
+                  {userInitial}
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className={cn('min-w-0 flex-1', sidebarCollapsed && 'lg:hidden')}>
                   <p className="truncate text-sm font-semibold text-stone-900">
-                    {session?.user.fullName ?? 'Admin'}
+                    {userName}
                   </p>
-                  <p className="truncate text-xs font-medium text-stone-500">Administrador</p>
+                  <p className="truncate text-xs font-medium text-stone-500">{userRoleLabel}</p>
                 </div>
-                <ChevronDown aria-hidden="true" className="text-stone-400" size={14} />
-              </div>
-            )}
-            <Button
-              className={cn(
-                'w-full justify-start',
-                sidebarCollapsed && 'justify-center',
+                <ChevronDown
+                  aria-hidden="true"
+                  className={cn(
+                    'text-stone-400 transition-transform',
+                    userMenuOpen && 'rotate-180',
+                    sidebarCollapsed && 'lg:hidden',
+                  )}
+                  size={14}
+                />
+              </button>
+
+              {userMenuOpen && (
+                <div
+                  aria-label="Menu de usuario"
+                  className="absolute bottom-full left-0 z-30 mb-2 w-64 overflow-hidden rounded-md border border-stone-200 bg-white py-1 shadow-lg ring-1 ring-black/5"
+                  role="menu"
+                >
+                  <div className="border-b border-stone-100 px-3 py-2">
+                    <p className="truncate text-sm font-semibold text-stone-900">{userName}</p>
+                    <p className="truncate text-xs font-medium text-stone-500">{userRoleLabel}</p>
+                  </div>
+                  <UserMenuItem
+                    icon={Settings}
+                    label="Ajustes de cuenta"
+                    onSelect={() => navigateFromUserMenu('/settings')}
+                  />
+                  {canManageUsers && (
+                    <UserMenuItem
+                      icon={Shield}
+                      label="Usuarios y roles"
+                      onSelect={() => navigateFromUserMenu('/users')}
+                    />
+                  )}
+                  <UserMenuItem
+                    icon={CreditCard}
+                    label="Suscripcion"
+                    onSelect={() => navigateFromUserMenu('/subscription')}
+                  />
+                  <div className="my-1 h-px bg-stone-100" />
+                  <UserMenuItem
+                    icon={LogOut}
+                    label="Cerrar sesion"
+                    onSelect={handleLogout}
+                  />
+                </div>
               )}
-              onClick={handleLogout}
-              variant="ghost"
-            >
-              <LogOut size={16} />
-              {!sidebarCollapsed && <span>Cerrar sesion</span>}
-            </Button>
+            </div>
           </div>
         </aside>
 
@@ -351,6 +429,43 @@ function getPageTitle(pathname: string) {
   }
 
   return 'Inicio'
+}
+
+function formatRoleLabel(role?: string) {
+  if (!role) return 'Administrador'
+
+  const roleLabels: Record<string, string> = {
+    Admin: 'Administrador',
+    Cashier: 'Cajero',
+    InventoryManager: 'Inventario',
+    Owner: 'Propietario',
+    PurchasingManager: 'Compras',
+    ReadOnly: 'Lectura',
+    SaasAdmin: 'Admin plataforma',
+    Supervisor: 'Supervisor',
+  }
+
+  return roleLabels[role] ?? role
+}
+
+type UserMenuItemProps = {
+  icon: LucideIcon
+  label: string
+  onSelect: () => void | Promise<void>
+}
+
+function UserMenuItem({ icon: Icon, label, onSelect }: Readonly<UserMenuItemProps>) {
+  return (
+    <button
+      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-stone-900/20"
+      onClick={onSelect}
+      role="menuitem"
+      type="button"
+    >
+      <Icon aria-hidden="true" className="shrink-0 text-stone-500" size={16} />
+      <span className="truncate">{label}</span>
+    </button>
+  )
 }
 
 type NavigationSectionProps = {

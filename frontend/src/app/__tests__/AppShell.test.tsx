@@ -115,7 +115,8 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: 'Elegir plan' }))
     expect(await screen.findByText('Outlet /subscription')).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Cerrar sesion' }))
+    await user.click(screen.getByRole('button', { name: 'Abrir menu de usuario' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Cerrar sesion' }))
     await waitFor(() => {
       expect(serverLogout).toHaveBeenCalledWith('access-token', 'refresh-token')
       expect(clearSession).toHaveBeenCalled()
@@ -137,7 +138,23 @@ describe('AppShell', () => {
     renderShell('/cash/session-1')
 
     expect(screen.getByRole('button', { name: 'Expandir menu' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Abrir menu de usuario' })).toBeTruthy()
     expect(screen.getByText('Detalle de caja')).toBeTruthy()
+  })
+
+  it('opens the user menu and navigates to account settings', async () => {
+    const user = userEvent.setup()
+
+    renderShell('/')
+
+    await user.click(screen.getByRole('button', { name: 'Abrir menu de usuario' }))
+
+    expect(screen.getByRole('menu', { name: 'Menu de usuario' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Usuarios y roles' })).toBeTruthy()
+
+    await user.click(screen.getByRole('menuitem', { name: 'Ajustes de cuenta' }))
+
+    expect(await screen.findByText('Outlet /settings')).toBeTruthy()
   })
 
   it('keeps logout local even if server logout fails', async () => {
@@ -147,7 +164,8 @@ describe('AppShell', () => {
     renderShell('/users')
     expect(screen.getAllByText('Usuarios').length).toBeGreaterThan(0)
 
-    await user.click(screen.getByRole('button', { name: 'Cerrar sesion' }))
+    await user.click(screen.getByRole('button', { name: 'Abrir menu de usuario' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Cerrar sesion' }))
     await waitFor(() => expect(clearSession).toHaveBeenCalled())
     expect(await screen.findByText('Login page')).toBeTruthy()
   })
@@ -160,6 +178,7 @@ function renderShell(initialPath: string) {
         <Route element={<AppShell />}>
           <Route path="/" element={<p>Outlet /</p>} />
           <Route path="/cash/:id" element={<p>Outlet cash detail</p>} />
+          <Route path="/settings" element={<p>Outlet /settings</p>} />
           <Route path="/subscription" element={<p>Outlet /subscription</p>} />
           <Route path="/users" element={<p>Outlet /users</p>} />
         </Route>
