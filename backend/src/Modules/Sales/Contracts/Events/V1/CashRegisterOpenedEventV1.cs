@@ -14,4 +14,5 @@ public sealed record CashRegisterOpenedEventV1(
   int Version = 1) : IIntegrationEvent
 {
   public DateTimeOffset OccurredAt => OpenedAt;
+  public DateTimeOffset CreatedAt => OpenedAt;
 }

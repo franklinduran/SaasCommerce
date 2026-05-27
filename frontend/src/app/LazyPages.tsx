@@ -199,6 +199,11 @@ const CashRegisterPage = lazy(() =>
     default: module.CashRegisterPage,
   })),
 )
+const CashRegisterHistoryPage = lazy(() =>
+  import('@/modules/cash-register/pages/CashRegisterHistoryPage').then((module) => ({
+    default: module.CashRegisterHistoryPage,
+  })),
+)
 const DailyCashRegisterSummaryPage = lazy(() =>
   import('@/modules/cash-register/pages/DailyCashRegisterSummaryPage').then((module) => ({
     default: module.DailyCashRegisterSummaryPage,
@@ -359,6 +364,10 @@ export function NotificationsRoute() {
 
 export function CashRegisterRoute() {
   return <CashRegisterPage />
+}
+
+export function CashRegisterHistoryRoute() {
+  return <CashRegisterHistoryPage />
 }
 
 export function DailyCashRegisterSummaryRoute() {

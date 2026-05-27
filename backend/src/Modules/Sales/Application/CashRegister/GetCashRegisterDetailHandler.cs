@@ -8,7 +8,7 @@ namespace SaasCommerce.Modules.Sales.Application.CashRegisters;
 public sealed record GetCashRegisterDetailQuery(Guid CashRegisterId);
 
 public sealed class GetCashRegisterDetailHandler(
-  ICashRegisterRepository registers,
+  ICashRegisterReadRepository registers,
   ICurrentUserService currentUser)
 {
   public async Task<Result<CashRegisterDetailResponse>> Handle(

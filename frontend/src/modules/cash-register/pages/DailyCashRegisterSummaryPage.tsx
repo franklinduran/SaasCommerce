@@ -1,7 +1,10 @@
 import { CalendarDays, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useBranches } from '@/modules/branches/hooks/useBranches'
-import { useDailyCashRegisterSummary } from '@/modules/cash-register/hooks/useCashRegister'
+import {
+  useCashRegisterRealtimeInvalidation,
+  useDailyCashRegisterSummary,
+} from '@/modules/cash-register/hooks/useCashRegister'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
@@ -52,6 +55,7 @@ function differenceBadgeClass(type: string | null): string {
 }
 
 export function DailyCashRegisterSummaryPage() {
+  useCashRegisterRealtimeInvalidation()
   const [date, setDate] = useState(todayString())
   const [selectedBranchId, setSelectedBranchId] = useState('')
 
@@ -285,4 +289,3 @@ export function DailyCashRegisterSummaryPage() {
     </div>
   )
 }
-

@@ -4,8 +4,16 @@ export function PurchaseStatusBadge({ status }: Readonly<{ status: PurchaseStatu
   const className = getClassName(status)
 
   let label: string
-  if (status === 'Received') {
+  if (status === 'Completed') {
+    label = 'Completada'
+  } else if (status === 'Processing') {
+    label = 'Procesando'
+  } else if (status === 'InventoryUpdated') {
+    label = 'Inventario actualizado'
+  } else if (status === 'Received') {
     label = 'Recibida'
+  } else if (status === 'Failed') {
+    label = 'Fallida'
   } else if (status === 'Cancelled') {
     label = 'Cancelada'
   } else {
@@ -16,12 +24,16 @@ export function PurchaseStatusBadge({ status }: Readonly<{ status: PurchaseStatu
 }
 
 function getClassName(status: PurchaseStatus) {
-  if (status === 'Received') {
+  if (status === 'Completed' || status === 'InventoryUpdated') {
     return 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200'
   }
 
-  if (status === 'Cancelled') {
+  if (status === 'Failed' || status === 'Cancelled') {
     return 'rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200'
+  }
+
+  if (status === 'Processing' || status === 'Received') {
+    return 'rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-200'
   }
 
   return 'rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200'

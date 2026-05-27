@@ -311,6 +311,44 @@ public sealed class PurchaseReceivedRealtimeConsumer(
   }
 }
 
+public sealed class PurchaseInventoryUpdatedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<PurchaseInventoryUpdatedRealtimeConsumer> logger)
+  : IdempotentConsumer<PurchaseInventoryUpdatedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<PurchaseInventoryUpdatedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      PurchaseRealtimeEvents.Completed,
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
+public sealed class PurchaseFailedRealtimeConsumer(
+  IInboxStore inboxStore,
+  IClock clock,
+  IRealtimeNotifier realtime,
+  ILogger<PurchaseFailedRealtimeConsumer> logger)
+  : IdempotentConsumer<PurchaseFailedEventV1>(inboxStore, clock, logger)
+{
+  protected override Task ConsumeMessageAsync(ConsumeContext<PurchaseFailedEventV1> context)
+  {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return realtime.NotifyBusinessAsync(
+      context.Message.BusinessId,
+      PurchaseRealtimeEvents.Failed,
+      context.Message,
+      context.CancellationToken);
+  }
+}
+
 public sealed class InventoryIncreasedRealtimeConsumer(
   IInboxStore inboxStore,
   IClock clock,
@@ -654,19 +692,26 @@ public sealed class CashRegisterDifferenceNotificationConsumer(
   IInboxStore inboxStore,
   IClock clock,
   CreateNotificationHandler handler,
+  IRealtimeNotifier realtime,
   ILogger<CashRegisterDifferenceNotificationConsumer> logger)
   : IdempotentConsumer<CashRegisterDifferenceDetectedEventV1>(inboxStore, clock, logger)
 {
   private const decimal SignificantDifferenceThreshold = 50m;
 
-  protected override Task ConsumeMessageAsync(ConsumeContext<CashRegisterDifferenceDetectedEventV1> context)
+  protected override async Task ConsumeMessageAsync(ConsumeContext<CashRegisterDifferenceDetectedEventV1> context)
   {
     ArgumentNullException.ThrowIfNull(context);
 
     var msg = context.Message;
+    await realtime.NotifyBusinessAsync(
+      msg.BusinessId,
+      "cashRegister.differenceDetected",
+      msg,
+      context.CancellationToken);
+
     if (Math.Abs(msg.Difference) <= SignificantDifferenceThreshold)
     {
-      return Task.CompletedTask;
+      return;
     }
 
     var severity = Math.Abs(msg.Difference) > 500m
@@ -676,7 +721,7 @@ public sealed class CashRegisterDifferenceNotificationConsumer(
     var direction = msg.Difference > 0 ? "sobrante" : "faltante";
     var amount = Math.Abs(msg.Difference);
 
-    return handler.Handle(
+    await handler.Handle(
       new CreateNotificationCommand(
         BusinessId: msg.BusinessId,
         BranchId: msg.BranchId,

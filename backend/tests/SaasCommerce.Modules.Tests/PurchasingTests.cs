@@ -86,6 +86,35 @@ public sealed class PurchasingTests
   }
 
   [Fact]
+  public void Purchase_ShouldComplete_WhenInventoryWasUpdated()
+  {
+    var clock = new FixedClock();
+    var purchase = CreatePurchase([new PurchaseLine(Guid.NewGuid(), 2, 15)]);
+    purchase.Receive(clock.UtcNow);
+    purchase.StartProcessing(clock.UtcNow);
+    purchase.MarkInventoryUpdated(clock.UtcNow);
+
+    purchase.Complete(clock.UtcNow);
+
+    purchase.Status.Should().Be(PurchaseStatus.Completed);
+    purchase.CompletedAt.Should().Be(clock.UtcNow);
+  }
+
+  [Fact]
+  public void Purchase_ShouldNotComplete_WhenAlreadyFailed()
+  {
+    var clock = new FixedClock();
+    var purchase = CreatePurchase([new PurchaseLine(Guid.NewGuid(), 2, 15)]);
+    purchase.Receive(clock.UtcNow);
+    purchase.Fail("Product missing.", clock.UtcNow);
+
+    var action = () => purchase.Complete(clock.UtcNow);
+
+    action.Should().Throw<InvalidOperationException>();
+    purchase.Status.Should().Be(PurchaseStatus.Failed);
+  }
+
+  [Fact]
   public async Task CreateSupplier_ShouldCreateSupplier_WhenRequestIsValid()
   {
     await using var dbContext = CreateDbContext();
@@ -160,6 +189,18 @@ public sealed class PurchasingTests
 
     result.IsSuccess.Should().BeTrue();
     result.Value.Status.Should().Be("Received");
+    outbox.Events.OfType<PurchaseReceivedEventV1>().Should().ContainSingle();
+    dbContext.Set<InventoryMovement>().Should().BeEmpty();
+
+    var useCase = new ProcessPurchaseReceivedEventUseCase(
+      new EfPurchaseRepository(dbContext),
+      CreateReceiptProcessor(dbContext, outbox),
+      outbox,
+      new EfUnitOfWork(dbContext),
+      clock);
+    var processed = await useCase.ExecuteAsync(outbox.Events.OfType<PurchaseReceivedEventV1>().Single());
+
+    processed.IsSuccess.Should().BeTrue();
     stockItem.Quantity.Should().Be(20);
     product.CostPrice.Should().Be(15);
     dbContext.Set<InventoryMovement>()
@@ -168,11 +209,14 @@ public sealed class PurchasingTests
         movement.PurchaseId == result.Value.PurchaseId &&
         movement.PreviousStock == 10 &&
         movement.NewStock == 20);
-    outbox.Events.OfType<PurchaseReceivedEventV1>().Should().ContainSingle();
     outbox.Events.OfType<InventoryIncreasedEventV1>().Should().ContainSingle();
+    outbox.Events.OfType<PurchaseInventoryUpdatedEventV1>().Should().ContainSingle();
     outbox.Events.OfType<ProductCostUpdatedEventV1>()
       .Should()
       .ContainSingle(@event => @event.PreviousCost == 10 && @event.NewCost == 15);
+    dbContext.Set<Purchase>().Single(purchase => purchase.Id == result.Value.PurchaseId).Status
+      .Should()
+      .Be(PurchaseStatus.Completed);
   }
 
   [Fact]
@@ -205,7 +249,9 @@ public sealed class PurchasingTests
     var useCase = new ProcessPurchaseReceivedEventUseCase(
       new EfPurchaseRepository(dbContext),
       CreateReceiptProcessor(dbContext, new RecordingOutboxWriter()),
-      new EfUnitOfWork(dbContext));
+      new RecordingOutboxWriter(),
+      new EfUnitOfWork(dbContext),
+      clock);
     var message = new PurchaseReceivedEventV1(
       Guid.NewGuid(),
       Guid.NewGuid(),
@@ -227,6 +273,59 @@ public sealed class PurchasingTests
       .Count(movement => movement.PurchaseId == purchase.Id)
       .Should()
       .Be(1);
+    purchase.Status.Should().Be(PurchaseStatus.Completed);
+  }
+
+  [Fact]
+  public async Task PurchaseReceivedConsumerUseCase_ShouldPublishFailedEvent_WhenInventoryUpdateFails()
+  {
+    await using var dbContext = CreateDbContext();
+    var currentUser = TestCurrentUser.Create();
+    var clock = new FixedClock();
+    var businessId = new BusinessId(currentUser.BusinessId!.Value);
+    var branchId = new BranchId(currentUser.BranchId!.Value);
+    var productId = Guid.NewGuid();
+    var supplier = new Supplier(Guid.NewGuid(), businessId, "Distribuidora Norte", new SupplierContactInfo(null, null, null, null), clock.UtcNow);
+    var purchase = Purchase.Create(
+      new PurchaseCreationData(
+        Guid.NewGuid(),
+        businessId,
+        branchId,
+        supplier.Id,
+        currentUser.UserId!.Value,
+        null,
+        clock.UtcNow,
+        null,
+        clock.UtcNow),
+      [new PurchaseLine(productId, 3, 12)]);
+    purchase.Receive(clock.UtcNow);
+    dbContext.Add(supplier);
+    dbContext.Add(purchase);
+    await dbContext.SaveChangesAsync();
+    var outbox = new RecordingOutboxWriter();
+    var useCase = new ProcessPurchaseReceivedEventUseCase(
+      new EfPurchaseRepository(dbContext),
+      CreateReceiptProcessor(dbContext, outbox),
+      outbox,
+      new EfUnitOfWork(dbContext),
+      clock);
+
+    var result = await useCase.ExecuteAsync(new PurchaseReceivedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      purchase.Id,
+      businessId.Value,
+      branchId.Value,
+      supplier.Id,
+      currentUser.UserId.Value,
+      [new PurchaseItemV1(productId, 3, 12, 36)],
+      36,
+      clock.UtcNow));
+
+    result.IsSuccess.Should().BeTrue();
+    purchase.Status.Should().Be(PurchaseStatus.Failed);
+    outbox.Events.OfType<PurchaseFailedEventV1>().Should().ContainSingle();
+    dbContext.Set<InventoryMovement>().Should().BeEmpty();
   }
 
   [Fact]
@@ -702,7 +801,6 @@ public sealed class PurchasingTests
         outbox,
         new FixedClock(),
         new EfUnitOfWork(dbContext)),
-      CreateReceiptProcessor(dbContext, outbox),
       new FixedCorrelationIdProvider(),
       new AllowAllSubscriptionAccessPolicy());
 

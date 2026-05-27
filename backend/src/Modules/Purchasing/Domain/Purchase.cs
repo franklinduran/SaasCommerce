@@ -81,6 +81,12 @@ public sealed class Purchase
 
   public DateTimeOffset? CancelledAt { get; private set; }
 
+  public DateTimeOffset? CompletedAt { get; private set; }
+
+  public DateTimeOffset? FailedAt { get; private set; }
+
+  public string? FailureReason { get; private set; }
+
   public IReadOnlyCollection<PurchaseItem> Items => items.AsReadOnly();
 
   public static Purchase Create(PurchaseCreationData data, IReadOnlyCollection<PurchaseLine> lines)
@@ -122,16 +128,93 @@ public sealed class Purchase
       throw new InvalidOperationException("Received purchases cannot be received twice.");
     }
 
+    if (Status is PurchaseStatus.Processing or PurchaseStatus.InventoryUpdated or PurchaseStatus.Completed)
+    {
+      throw new InvalidOperationException("Processed purchases cannot be received.");
+    }
+
+    if (Status == PurchaseStatus.Failed)
+    {
+      throw new InvalidOperationException("Failed purchases cannot be received.");
+    }
+
     Status = PurchaseStatus.Received;
     ReceivedAt = receivedAt;
     UpdatedAt = receivedAt;
   }
 
+  public void StartProcessing(DateTimeOffset processedAt)
+  {
+    if (Status == PurchaseStatus.Completed)
+    {
+      return;
+    }
+
+    if (Status != PurchaseStatus.Received)
+    {
+      throw new InvalidOperationException("Only received purchases can be processed.");
+    }
+
+    Status = PurchaseStatus.Processing;
+    UpdatedAt = processedAt;
+  }
+
+  public void MarkInventoryUpdated(DateTimeOffset updatedAt)
+  {
+    if (Status == PurchaseStatus.Completed)
+    {
+      return;
+    }
+
+    if (Status != PurchaseStatus.Processing)
+    {
+      throw new InvalidOperationException("Only processing purchases can update inventory.");
+    }
+
+    Status = PurchaseStatus.InventoryUpdated;
+    UpdatedAt = updatedAt;
+  }
+
+  public void Complete(DateTimeOffset completedAt)
+  {
+    if (Status == PurchaseStatus.Completed)
+    {
+      return;
+    }
+
+    if (Status is not (PurchaseStatus.Processing or PurchaseStatus.InventoryUpdated))
+    {
+      throw new InvalidOperationException("Only processing purchases can be completed.");
+    }
+
+    Status = PurchaseStatus.Completed;
+    CompletedAt = completedAt;
+    UpdatedAt = completedAt;
+  }
+
+  public void Fail(string reason, DateTimeOffset failedAt)
+  {
+    if (Status == PurchaseStatus.Completed)
+    {
+      throw new InvalidOperationException("Completed purchases cannot fail.");
+    }
+
+    if (Status == PurchaseStatus.Cancelled)
+    {
+      throw new InvalidOperationException("Cancelled purchases cannot fail.");
+    }
+
+    Status = PurchaseStatus.Failed;
+    FailureReason = NormalizeOptional(reason) ?? "Purchase processing failed.";
+    FailedAt = failedAt;
+    UpdatedAt = failedAt;
+  }
+
   public void Cancel(DateTimeOffset cancelledAt)
   {
-    if (Status == PurchaseStatus.Received)
+    if (Status is PurchaseStatus.Processing or PurchaseStatus.InventoryUpdated or PurchaseStatus.Completed)
     {
-      throw new InvalidOperationException("Received purchases cannot be cancelled.");
+      throw new InvalidOperationException("Processed purchases cannot be cancelled.");
     }
 
     if (Status == PurchaseStatus.Cancelled)

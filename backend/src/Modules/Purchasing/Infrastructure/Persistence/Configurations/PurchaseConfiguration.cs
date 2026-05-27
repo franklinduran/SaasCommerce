@@ -36,6 +36,9 @@ public sealed class PurchaseConfiguration : IEntityTypeConfiguration<Purchase>
     builder.Property(purchase => purchase.Notes)
       .HasMaxLength(1_000);
 
+    builder.Property(purchase => purchase.FailureReason)
+      .HasMaxLength(500);
+
     builder.Property(purchase => purchase.Total)
       .HasPrecision(18, 2)
       .IsRequired();

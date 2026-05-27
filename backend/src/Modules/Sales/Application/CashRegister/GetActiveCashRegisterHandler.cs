@@ -7,7 +7,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 namespace SaasCommerce.Modules.Sales.Application.CashRegisters;
 
 public sealed class GetActiveCashRegisterHandler(
-  ICashRegisterRepository registers,
+  ICashRegisterReadRepository registers,
   ICurrentUserService currentUser)
 {
   public async Task<Result<CashRegisterDetailResponse?>> Handle(CancellationToken cancellationToken = default)

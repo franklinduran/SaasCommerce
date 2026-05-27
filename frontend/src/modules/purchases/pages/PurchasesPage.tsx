@@ -66,12 +66,12 @@ export function PurchasesPage() {
   )
 
   const stats = useMemo(() => {
-    const received = items.filter((purchase) => purchase.status === 'Received').length
+    const completed = items.filter((purchase) => purchase.status === 'Completed').length
     const draft = items.filter((purchase) => purchase.status === 'Draft').length
 
     return {
+      completed,
       draft,
-      received,
       totalAmount: purchases.data?.totalPurchased ?? 0,
       totalItems: purchases.data?.totalItems ?? 0,
     }
@@ -124,7 +124,7 @@ export function PurchasesPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Compras" value={String(stats.totalItems)} />
-        <MetricCard label="Recibidas" tone="success" value={String(stats.received)} />
+        <MetricCard label="Completadas" tone="success" value={String(stats.completed)} />
         <MetricCard label="En borrador" tone="warning" value={String(stats.draft)} />
         <MetricCard label="Monto total" value={formatMoney(stats.totalAmount)} />
       </div>
@@ -201,6 +201,9 @@ export function PurchasesPage() {
                   <SelectItem value="_">Todos</SelectItem>
                   <SelectItem value="Draft">Borrador</SelectItem>
                   <SelectItem value="Received">Recibidas</SelectItem>
+                  <SelectItem value="Processing">Procesando</SelectItem>
+                  <SelectItem value="Completed">Completadas</SelectItem>
+                  <SelectItem value="Failed">Fallidas</SelectItem>
                   <SelectItem value="Cancelled">Canceladas</SelectItem>
                 </SelectContent>
               </Select>

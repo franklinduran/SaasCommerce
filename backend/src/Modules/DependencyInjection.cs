@@ -201,12 +201,14 @@ public static class ModulesServiceCollectionExtensions
 
     // Sales — Advanced Cash Register (Etapa 34)
     services.AddScoped<ICashRegisterRepository, EfCashRegisterRepository>();
+    services.AddScoped<ICashRegisterReadRepository, EfCashRegisterReadRepository>();
     services.AddScoped<ICashRegisterCalculator, EfCashRegisterCalculator>();
     services.AddScoped<OpenCashRegisterHandler>();
     services.AddScoped<RegisterCashRegisterMovementHandler>();
     services.AddScoped<CloseCashRegisterHandler>();
     services.AddScoped<GetActiveCashRegisterHandler>();
     services.AddScoped<GetCashRegisterDetailHandler>();
+    services.AddScoped<GetCashRegistersHandler>();
     services.AddScoped<GetDailyCashRegisterSummaryHandler>();
 
     // Sales — Cash Register

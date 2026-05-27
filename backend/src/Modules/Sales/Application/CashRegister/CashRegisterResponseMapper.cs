@@ -4,6 +4,31 @@ namespace SaasCommerce.Modules.Sales.Application.CashRegisters;
 
 public static class CashRegisterResponseMapper
 {
+  public static CashRegisterSummaryResponse ToSummary(CashRegister register)
+  {
+    ArgumentNullException.ThrowIfNull(register);
+
+    return new CashRegisterSummaryResponse(
+      register.Id,
+      register.BranchId.Value,
+      register.UserId,
+      register.OpeningAmount,
+      register.Status.ToString(),
+      register.OpenedAt,
+      register.ClosedAt,
+      register.ExpectedCashAmount,
+      register.CountedAmount,
+      register.Difference,
+      register.DifferenceType?.ToString(),
+      register.CashSalesTotal,
+      register.CardSalesTotal,
+      register.TransferSalesTotal,
+      register.CreditSalesTotal,
+      register.CashReturnsTotal,
+      register.ManualCashIn,
+      register.ManualCashOut);
+  }
+
   public static CashRegisterDetailResponse ToDetail(CashRegister register)
   {
     ArgumentNullException.ThrowIfNull(register);

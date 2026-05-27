@@ -11,7 +11,6 @@ namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
 public sealed class CreatePurchaseHandler(
   PurchaseHandlerContext context,
-  PurchaseReceiptProcessor receiptProcessor,
   ICorrelationIdProvider correlationIdProvider,
   ISubscriptionAccessPolicy subscriptionAccess)
 {
@@ -89,16 +88,13 @@ public sealed class CreatePurchaseHandler(
 
     if (command.ReceiveNow)
     {
-      var receipt = await receiptProcessor.ProcessAsync(
-        entity,
-        ctx.UserId,
-        correlationId,
-        markAsReceived: true,
-        cancellationToken);
-
-      if (receipt.IsFailure)
+      try
       {
-        return Result.Failure<PurchaseResponse>(receipt.Error);
+        entity.Receive(context.Clock.UtcNow);
+      }
+      catch (InvalidOperationException)
+      {
+        return Result.Failure<PurchaseResponse>(PurchaseErrors.InvalidPurchaseState);
       }
 
       await context.Outbox.AddAsync(ToReceivedEvent(entity, correlationId), cancellationToken);

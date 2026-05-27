@@ -5,7 +5,7 @@ using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Purchasing.Application.Purchases;
 
-public sealed class ReceivePurchaseHandler(PurchaseHandlerContext context, PurchaseReceiptProcessor receiptProcessor, ICorrelationIdProvider correlationIdProvider)
+public sealed class ReceivePurchaseHandler(PurchaseHandlerContext context, ICorrelationIdProvider correlationIdProvider)
 {
   public Task<Result<PurchaseResponse>> Handle(
     ReceivePurchaseCommand command,
@@ -21,7 +21,7 @@ public sealed class ReceivePurchaseHandler(PurchaseHandlerContext context, Purch
     CancellationToken cancellationToken)
   {
     if (context.CurrentUser.BusinessId is not Guid businessId ||
-        context.CurrentUser.UserId is not Guid userId)
+        context.CurrentUser.UserId is not Guid)
     {
       return Result.Failure<PurchaseResponse>(PurchaseErrors.UserContextRequired);
     }
@@ -34,19 +34,16 @@ public sealed class ReceivePurchaseHandler(PurchaseHandlerContext context, Purch
       return Result.Failure<PurchaseResponse>(PurchaseErrors.PurchaseNotFound);
     }
 
-    var correlationId = ResolveCorrelationId();
-    var receipt = await receiptProcessor.ProcessAsync(
-      purchase,
-      userId,
-      correlationId,
-      markAsReceived: true,
-      cancellationToken);
-
-    if (receipt.IsFailure)
+    try
     {
-      return Result.Failure<PurchaseResponse>(receipt.Error);
+      purchase.Receive(context.Clock.UtcNow);
+    }
+    catch (InvalidOperationException)
+    {
+      return Result.Failure<PurchaseResponse>(PurchaseErrors.InvalidPurchaseState);
     }
 
+    var correlationId = ResolveCorrelationId();
     await context.Outbox.AddAsync(
       CreatePurchaseHandler.ToReceivedEvent(purchase, correlationId),
       cancellationToken);

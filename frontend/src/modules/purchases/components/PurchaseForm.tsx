@@ -1,11 +1,13 @@
 import { Plus, Save } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { useProductsQuery } from '@/modules/products/hooks/useProducts'
 import { PurchaseItemsTable } from '@/modules/purchases/components/PurchaseItemsTable'
 import type { DraftPurchaseItem } from '@/modules/purchases/components/PurchaseItemsTable'
 import { PurchaseTotalsSummary } from '@/modules/purchases/components/PurchaseTotalsSummary'
 import { useCreatePurchase } from '@/modules/purchases/hooks/usePurchases'
+import { purchaseSchema, type PurchaseFormValues } from '@/modules/purchases/schemas/purchaseSchema'
 import type { CreatePurchaseRequest } from '@/modules/purchases/types'
 import { useSuppliers } from '@/modules/suppliers/hooks/useSuppliers'
 import { Button } from '@/shared/components/ui/button'
@@ -47,13 +49,19 @@ export function PurchaseForm() {
     () => (products.data?.items ?? []).filter((product) => product.trackInventory),
     [products.data?.items],
   )
-  const [supplierId, setSupplierId] = useState('')
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [purchaseDate, setPurchaseDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [notes, setNotes] = useState('')
-  const [receiveNow, setReceiveNow] = useState(true)
+  const form = useForm<PurchaseFormValues>({
+    defaultValues: {
+      items: [],
+      notes: null,
+      purchaseDate: new Date().toISOString().slice(0, 10),
+      receiveNow: true,
+      supplierId: '',
+      supplierInvoiceNumber: null,
+    },
+  })
+  const supplierId = useWatch({ control: form.control, name: 'supplierId' })
   const [items, setItems] = useState<DraftPurchaseItem[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const total = items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)
 
   function addItem() {
@@ -69,28 +77,26 @@ export function PurchaseForm() {
   }
 
   async function submit() {
-    setError(null)
-
-    if (!supplierId) {
-      setError('Selecciona un proveedor.')
-      return
-    }
+    setSubmitError(null)
 
     const validItems = items.filter((item) => item.productId && item.quantity > 0 && item.unitCost >= 0)
+    const values = form.getValues()
+    const parsed = purchaseSchema.safeParse({ ...values, items: validItems })
 
-    if (validItems.length === 0) {
-      setError('Agrega al menos un producto con cantidad y costo validos.')
+    if (!parsed.success) {
+      setSubmitError(parsed.error.issues[0]?.message ?? 'La compra no es valida.')
       return
     }
 
+    const purchaseDate = parsed.data.purchaseDate
     const request: CreatePurchaseRequest = {
       branchId: null,
-      items: validItems,
-      notes: toNullable(notes),
+      items: parsed.data.items,
+      notes: toNullable(parsed.data.notes),
       purchaseDate: purchaseDate ? new Date(`${purchaseDate}T12:00:00`).toISOString() : null,
-      receiveNow,
-      supplierId,
-      supplierInvoiceNumber: toNullable(invoiceNumber),
+      receiveNow: parsed.data.receiveNow,
+      supplierId: parsed.data.supplierId,
+      supplierInvoiceNumber: toNullable(parsed.data.supplierInvoiceNumber),
     }
 
     try {
@@ -107,7 +113,7 @@ export function PurchaseForm() {
           ? caught.error?.message ?? 'No se pudo crear la compra.'
           : 'No se pudo crear la compra.'
 
-      setError(message)
+      setSubmitError(message)
     }
   }
 
@@ -124,9 +130,9 @@ export function PurchaseForm() {
         </Button>
       </div>
 
-      {error && (
+      {submitError && (
         <div className="rounded-md bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 ring-1 ring-red-200">
-          {error}
+          {submitError}
         </div>
       )}
 
@@ -140,7 +146,7 @@ export function PurchaseForm() {
               <span className="text-sm font-semibold text-stone-700">Proveedor</span>
               <Select
                 value={supplierId || '_'}
-                onValueChange={(v) => setSupplierId(v === '_' ? '' : v)}
+                onValueChange={(v) => form.setValue('supplierId', v === '_' ? '' : v)}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -153,19 +159,19 @@ export function PurchaseForm() {
             </div>
             <label className="space-y-1.5">
               <span className="text-sm font-semibold text-stone-700">Factura proveedor</span>
-              <input className={inputClass} onChange={(event) => setInvoiceNumber(event.target.value)} value={invoiceNumber} />
+              <input className={inputClass} {...form.register('supplierInvoiceNumber')} />
             </label>
             <label className="space-y-1.5">
               <span className="text-sm font-semibold text-stone-700">Fecha</span>
-              <input className={inputClass} onChange={(event) => setPurchaseDate(event.target.value)} type="date" value={purchaseDate} />
+              <input className={inputClass} type="date" {...form.register('purchaseDate')} />
             </label>
             <label className="flex h-11 items-center gap-3 self-end rounded-md bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm ring-1 ring-stone-200">
-              <input checked={receiveNow} className="h-4 w-4 accent-stone-900" onChange={(event) => setReceiveNow(event.target.checked)} type="checkbox" />
+              <input className="h-4 w-4 accent-stone-900" type="checkbox" {...form.register('receiveNow')} />
               <span>Recibir inventario</span>
             </label>
             <label className="space-y-1.5 md:col-span-2">
               <span className="text-sm font-semibold text-stone-700">Notas</span>
-              <input className={inputClass} onChange={(event) => setNotes(event.target.value)} value={notes} />
+              <input className={inputClass} {...form.register('notes')} />
             </label>
           </CardContent>
         </Card>
@@ -200,8 +206,8 @@ export function PurchaseForm() {
   )
 }
 
-function toNullable(value: string) {
-  const normalized = value.trim()
+function toNullable(value: string | null) {
+  const normalized = value?.trim() ?? ''
 
   return normalized.length > 0 ? normalized : null
 }

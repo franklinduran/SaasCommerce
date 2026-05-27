@@ -423,6 +423,46 @@ public sealed class CashRegisterUseCaseTests
     repo.LastQueriedBusinessId.Should().Be(new BusinessId(businessId));
   }
 
+  [Fact]
+  public async Task GetCashRegistersHandler_ShouldFail_WhenNoBusinessContext()
+  {
+    var handler = new GetCashRegistersHandler(new FakeCashRegisterRepo(), Anonymous());
+
+    var result = await handler.Handle(new GetCashRegistersQuery(null, null, null, null, 1, 50));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Be(CashRegisterErrors.UserContextRequired);
+  }
+
+  [Fact]
+  public async Task GetCashRegistersHandler_ShouldReturnPagedSummaryAndClampInvalidPaging()
+  {
+    var register = CreateOpenRegister(openingAmount: 750);
+    var businessId = Guid.NewGuid();
+    var user = new FakeUser { BusinessId = businessId, UserId = Guid.NewGuid(), IsAuthenticated = true };
+    var repo = new FakeCashRegisterRepo
+    {
+      ListData = [register],
+      TotalCount = 1,
+    };
+    var handler = new GetCashRegistersHandler(repo, user);
+
+    var result = await handler.Handle(new GetCashRegistersQuery(register.BranchId.Value, "Open", null, null, -4, 300));
+
+    result.IsSuccess.Should().BeTrue();
+    result.Value.Page.Should().Be(1);
+    result.Value.PageSize.Should().Be(100);
+    result.Value.TotalCount.Should().Be(1);
+    result.Value.Items.Should().ContainSingle(item =>
+      item.CashRegisterId == register.Id &&
+      item.OpeningAmount == 750 &&
+      item.Status == "Open");
+    repo.LastQueriedBusinessId.Should().Be(new BusinessId(businessId));
+    repo.LastCriteria.Should().NotBeNull();
+    repo.LastCriteria!.Page.Should().Be(1);
+    repo.LastCriteria.PageSize.Should().Be(100);
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   private static FakeUser Authed()
@@ -481,7 +521,7 @@ public sealed class CashRegisterUseCaseTests
     }
   }
 
-  private sealed class FakeCashRegisterRepo : ICashRegisterRepository
+  private sealed class FakeCashRegisterRepo : ICashRegisterRepository, ICashRegisterReadRepository
   {
     public bool HasOpen { get; set; }
     public CashRegister? Register { get; set; }
@@ -489,6 +529,9 @@ public sealed class CashRegisterUseCaseTests
     public CashRegister? Added { get; private set; }
     public BusinessId LastQueriedBusinessId { get; private set; }
     public IReadOnlyCollection<CashRegister> DailySummaryData { get; set; } = [];
+    public IReadOnlyCollection<CashRegister> ListData { get; set; } = [];
+    public int TotalCount { get; set; }
+    public CashRegisterSearchCriteria? LastCriteria { get; private set; }
 
     public Task<CashRegister?> GetAsync(BusinessId businessId, Guid cashRegisterId, CancellationToken ct)
     {
@@ -516,11 +559,19 @@ public sealed class CashRegisterUseCaseTests
 
     public Task<IReadOnlyCollection<CashRegister>> ListAsync(
       BusinessId businessId, CashRegisterSearchCriteria criteria, CancellationToken ct)
-      => Task.FromResult<IReadOnlyCollection<CashRegister>>([]);
+    {
+      LastQueriedBusinessId = businessId;
+      LastCriteria = criteria;
+      return Task.FromResult(ListData);
+    }
 
     public Task<int> CountAsync(
       BusinessId businessId, CashRegisterSearchCriteria criteria, CancellationToken ct)
-      => Task.FromResult(0);
+    {
+      LastQueriedBusinessId = businessId;
+      LastCriteria = criteria;
+      return Task.FromResult(TotalCount);
+    }
 
     public Task<IReadOnlyCollection<CashRegister>> GetDailySummaryAsync(
       BusinessId businessId, Guid? branchId, DateOnly summaryDate, CancellationToken ct)

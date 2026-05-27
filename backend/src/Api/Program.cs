@@ -76,6 +76,8 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InventoryTransferFailedRealtimeConsumer>();
     massTransit.AddConsumer<InventoryTransferCancelledRealtimeConsumer>();
     massTransit.AddConsumer<PurchaseReceivedRealtimeConsumer>();
+    massTransit.AddConsumer<PurchaseInventoryUpdatedRealtimeConsumer>();
+    massTransit.AddConsumer<PurchaseFailedRealtimeConsumer>();
     massTransit.AddConsumer<InventoryIncreasedRealtimeConsumer>();
     massTransit.AddConsumer<ProductCostUpdatedRealtimeConsumer>();
     massTransit.AddConsumer<CustomerCreditDebitedRealtimeConsumer>();

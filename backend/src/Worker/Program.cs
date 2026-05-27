@@ -54,6 +54,8 @@ builder.Services.AddBuildingBlocks(
     massTransit.AddConsumer<InventoryAdjustedAuditConsumer>();
     massTransit.AddConsumer<DailyClosingCreatedConsumer>();
     massTransit.AddConsumer<DailyClosingClosedConsumer>();
+    massTransit.AddConsumer<CashRegisterClosedConsumer>();
+    massTransit.AddConsumer<CashRegisterNotificationConsumer>();
     // Notification consumers (persist to DB)
     massTransit.AddConsumer<LowStockNotificationConsumer>();
     massTransit.AddConsumer<SaleFailedNotificationConsumer>();

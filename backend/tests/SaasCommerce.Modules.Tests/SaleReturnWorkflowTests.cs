@@ -3,6 +3,7 @@
 using FluentAssertions;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Messaging;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
@@ -68,6 +69,32 @@ public sealed class SaleReturnWorkflowTests
       .Should().Throw<ArgumentException>();
     FluentActions.Invoking(() => CreditNote.Generate(Guid.NewGuid(), sale, saleReturn, " ", Now))
       .Should().Throw<ArgumentException>();
+  }
+
+  [Theory]
+  [InlineData("id")]
+  [InlineData("creditNoteId")]
+  [InlineData("saleReturnItemId")]
+  [InlineData("productId")]
+  public void CreditNoteItem_ShouldRejectMissingIdentifiers(string parameterName)
+  {
+    var act = () => CreateCreditNoteItemForValidation(parameterName);
+
+    act.Should().Throw<TargetInvocationException>()
+      .WithInnerException<ArgumentException>()
+      .WithParameterName(parameterName);
+  }
+
+  [Theory]
+  [InlineData("quantity")]
+  [InlineData("unitPrice")]
+  public void CreditNoteItem_ShouldRejectInvalidAmounts(string parameterName)
+  {
+    var act = () => CreateCreditNoteItemForValidation(parameterName);
+
+    act.Should().Throw<TargetInvocationException>()
+      .WithInnerException<ArgumentOutOfRangeException>()
+      .WithParameterName(parameterName);
   }
 
   [Fact]
@@ -379,6 +406,21 @@ public sealed class SaleReturnWorkflowTests
       "Cliente devuelve producto",
       [new SaleReturnLine(sale.Items.Single().Id, 1)],
       Now);
+
+  private static void CreateCreditNoteItemForValidation(string invalidParameter)
+  {
+    var constructor = typeof(CreditNoteItem).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+      .Single(ctor => ctor.GetParameters().Length == 6);
+
+    var id = invalidParameter == "id" ? Guid.Empty : Guid.NewGuid();
+    var creditNoteId = invalidParameter == "creditNoteId" ? Guid.Empty : Guid.NewGuid();
+    var saleReturnItemId = invalidParameter == "saleReturnItemId" ? Guid.Empty : Guid.NewGuid();
+    var productId = invalidParameter == "productId" ? Guid.Empty : Guid.NewGuid();
+    var quantity = invalidParameter == "quantity" ? 0m : 1m;
+    var unitPrice = invalidParameter == "unitPrice" ? -1m : 10m;
+
+    constructor.Invoke([id, creditNoteId, saleReturnItemId, productId, quantity, unitPrice]);
+  }
 
   private static SaleReturnRequestedEventV1 RequestedEvent(Scenario scenario, Sale sale, SaleReturn saleReturn)
     => new(

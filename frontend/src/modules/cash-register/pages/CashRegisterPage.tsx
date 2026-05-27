@@ -14,6 +14,7 @@ import { useAuthStore } from '@/modules/auth/authStore'
 import {
   useActiveCashRegister,
   useCloseCashRegister,
+  useCashRegisterRealtimeInvalidation,
   useOpenCashRegister,
   useRegisterCashMovement,
 } from '@/modules/cash-register/hooks/useCashRegister'
@@ -45,6 +46,7 @@ function formatDate(dateString: string) {
 }
 
 export function CashRegisterPage() {
+  useCashRegisterRealtimeInvalidation()
   const { data: activeRegister, isLoading } = useActiveCashRegister()
   const navigate = useNavigate()
 

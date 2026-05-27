@@ -1,6 +1,7 @@
 #pragma warning disable CA1707
 
 using MassTransit;
+using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using SaasCommerce.Api.Realtime;
@@ -10,8 +11,12 @@ using SaasCommerce.BuildingBlocks.Application.Abstractions.Time;
 using SaasCommerce.Modules.Billing.Contracts.Events.V1;
 using SaasCommerce.Modules.Customers.Contracts.Events.V1;
 using SaasCommerce.Modules.Inventory.Contracts.Events.V1;
+using SaasCommerce.Modules.Notifications.Application.Abstractions;
+using SaasCommerce.Modules.Notifications.Application.Handlers;
+using SaasCommerce.Modules.Notifications.Domain;
 using SaasCommerce.Modules.Purchasing.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Contracts.Events.V1;
+using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Api.Tests;
 
@@ -183,6 +188,64 @@ public sealed class RealtimeNotificationConsumerTests
     await realtime.Received(1).NotifyBranchAsync(
       message.BranchId,
       "purchase.received",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task PurchaseInventoryUpdatedRealtimeConsumer_ShouldNotifyBusinessCompleted()
+  {
+    var message = new PurchaseInventoryUpdatedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      240,
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new PurchaseInventoryUpdatedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(PurchaseInventoryUpdatedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<PurchaseInventoryUpdatedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "purchase.completed",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task PurchaseFailedRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = new PurchaseFailedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      "Product missing.",
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new PurchaseFailedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(PurchaseFailedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<PurchaseFailedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "purchase.failed",
       message,
       Arg.Any<CancellationToken>());
   }
@@ -365,6 +428,143 @@ public sealed class RealtimeNotificationConsumerTests
       Arg.Any<CancellationToken>());
   }
 
+  [Fact]
+  public async Task CashRegisterOpenedRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = CashRegisterOpened();
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new CashRegisterOpenedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(CashRegisterOpenedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<CashRegisterOpenedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "cashRegister.opened",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task CashRegisterMovementRegisteredRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = new CashRegisterMovementRegisteredEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      "CashIn",
+      250,
+      "Reposicion",
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new CashRegisterMovementRegisteredRealtimeConsumer(
+      InboxStore(message.EventId, nameof(CashRegisterMovementRegisteredRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<CashRegisterMovementRegisteredRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "cashRegister.movementRegistered",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task CashRegisterClosedRealtimeConsumer_ShouldNotifyBusiness()
+  {
+    var message = CashRegisterClosed();
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var consumer = new CashRegisterClosedRealtimeConsumer(
+      InboxStore(message.EventId, nameof(CashRegisterClosedRealtimeConsumer), alreadyProcessed: false),
+      Clock(),
+      realtime,
+      NullLogger<CashRegisterClosedRealtimeConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "cashRegister.closed",
+      message,
+      Arg.Any<CancellationToken>());
+  }
+
+  [Fact]
+  public async Task CashRegisterDifferenceNotificationConsumer_ShouldNotifyBusinessAndCreateWarning()
+  {
+    var message = new CashRegisterDifferenceDetectedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      -125,
+      "Shortage",
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var notifications = new RecordingNotificationRepository();
+    var consumer = new CashRegisterDifferenceNotificationConsumer(
+      InboxStore(message.EventId, nameof(CashRegisterDifferenceNotificationConsumer), alreadyProcessed: false),
+      Clock(),
+      new CreateNotificationHandler(notifications, Clock()),
+      realtime,
+      NullLogger<CashRegisterDifferenceNotificationConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "cashRegister.differenceDetected",
+      message,
+      Arg.Any<CancellationToken>());
+    notifications.Added.Should().ContainSingle(notification =>
+      notification.Type == OperationalNotificationType.CashDifference &&
+      notification.Severity == OperationalNotificationSeverity.Warning);
+  }
+
+  [Fact]
+  public async Task CashRegisterDifferenceNotificationConsumer_ShouldNotCreateNotificationForSmallDifference()
+  {
+    var message = new CashRegisterDifferenceDetectedEventV1(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      20,
+      "Surplus",
+      Now);
+    var realtime = Substitute.For<IRealtimeNotifier>();
+    var notifications = new RecordingNotificationRepository();
+    var consumer = new CashRegisterDifferenceNotificationConsumer(
+      InboxStore(message.EventId, nameof(CashRegisterDifferenceNotificationConsumer), alreadyProcessed: false),
+      Clock(),
+      new CreateNotificationHandler(notifications, Clock()),
+      realtime,
+      NullLogger<CashRegisterDifferenceNotificationConsumer>.Instance);
+
+    await consumer.Consume(Context(message));
+
+    await realtime.Received(1).NotifyBusinessAsync(
+      message.BusinessId,
+      "cashRegister.differenceDetected",
+      message,
+      Arg.Any<CancellationToken>());
+    notifications.Added.Should().BeEmpty();
+  }
+
   private static SaleCompletedEventV1 SaleCompleted()
     => new(
       Guid.NewGuid(),
@@ -404,6 +604,39 @@ public sealed class RealtimeNotificationConsumerTests
       240,
       Now);
 
+  private static CashRegisterOpenedEventV1 CashRegisterOpened()
+    => new(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      1000,
+      Now);
+
+  private static CashRegisterClosedEventV1 CashRegisterClosed()
+    => new(
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      Guid.NewGuid(),
+      1000,
+      500,
+      200,
+      150,
+      100,
+      50,
+      25,
+      10,
+      1465,
+      1465,
+      0,
+      "Balanced",
+      Now);
+
   private static ConsumeContext<TMessage> Context<TMessage>(TMessage message)
     where TMessage : class
   {
@@ -438,6 +671,39 @@ public sealed class RealtimeNotificationConsumerTests
     var clock = Substitute.For<IClock>();
     clock.UtcNow.Returns(Now);
     return clock;
+  }
+
+  private sealed class RecordingNotificationRepository : IOperationalNotificationRepository
+  {
+    public List<OperationalNotification> Added { get; } = [];
+
+    public Task AddAsync(OperationalNotification notification, CancellationToken cancellationToken = default)
+    {
+      Added.Add(notification);
+      return Task.CompletedTask;
+    }
+
+    public Task<OperationalNotification?> GetByIdAsync(
+      Guid id,
+      BusinessId businessId,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<OperationalNotification?>(null);
+
+    public Task<(IReadOnlyList<OperationalNotification> Items, int TotalCount)> GetPagedAsync(
+      BusinessId businessId,
+      Guid? branchId,
+      OperationalNotificationStatus? status,
+      OperationalNotificationType? type,
+      int page,
+      int pageSize,
+      CancellationToken cancellationToken = default)
+      => Task.FromResult<(IReadOnlyList<OperationalNotification>, int)>(([], 0));
+
+    public Task<int> GetUnreadCountAsync(BusinessId businessId, CancellationToken cancellationToken = default)
+      => Task.FromResult(0);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+      => Task.CompletedTask;
   }
 }
 

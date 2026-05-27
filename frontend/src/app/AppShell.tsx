@@ -83,6 +83,7 @@ const pageTitles: Record<string, string> = {
   '/cash': 'Caja',
   '/cash/history': 'Historial de cajas',
   '/cash-register': 'Arqueo de caja avanzado',
+  '/cash-register/history': 'Historial de arqueos',
   '/cash-register/daily-summary': 'Arqueo diario',
   '/daily-closing': 'Cierre diario',
   '/daily-closing/history': 'Historial de cierres',

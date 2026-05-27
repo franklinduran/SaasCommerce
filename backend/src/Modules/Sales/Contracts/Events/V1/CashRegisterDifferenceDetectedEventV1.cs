@@ -15,4 +15,5 @@ public sealed record CashRegisterDifferenceDetectedEventV1(
   int Version = 1) : IIntegrationEvent
 {
   public DateTimeOffset OccurredAt => DetectedAt;
+  public DateTimeOffset CreatedAt => DetectedAt;
 }

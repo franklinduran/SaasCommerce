@@ -28,6 +28,28 @@ internal static class CashRegisterEndpointExtensions
       .WithTags(CashRegisterTag);
 
     app.MapGet(
+      "/api/cash-registers",
+      async (
+        [AsParameters] CashRegisterSearchParameters parameters,
+        GetCashRegistersHandler handler,
+        ICorrelationIdProvider correlationIdProvider,
+        CancellationToken cancellationToken) =>
+      {
+        var result = await handler.Handle(
+          new GetCashRegistersQuery(
+            parameters.BranchId,
+            parameters.Status,
+            parameters.DateFrom,
+            parameters.DateTo,
+            parameters.Page ?? 1,
+            parameters.PageSize ?? 20),
+          cancellationToken);
+        return ApiHelpers.ToApiResult(result, correlationIdProvider);
+      })
+      .RequireAuthorization($"Permission:{SystemPermissions.CashView}")
+      .WithTags(CashRegisterTag);
+
+    app.MapGet(
       "/api/cash-registers/active",
       async (
         GetActiveCashRegisterHandler handler,
@@ -113,4 +135,14 @@ internal sealed class DailySummaryParameters
 {
   public DateOnly? Date { get; init; }
   public Guid? BranchId { get; init; }
+}
+
+internal sealed class CashRegisterSearchParameters
+{
+  public Guid? BranchId { get; init; }
+  public string? Status { get; init; }
+  public DateTimeOffset? DateFrom { get; init; }
+  public DateTimeOffset? DateTo { get; init; }
+  public int? Page { get; init; }
+  public int? PageSize { get; init; }
 }

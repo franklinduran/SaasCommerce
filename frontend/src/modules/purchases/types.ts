@@ -1,4 +1,4 @@
-export type PurchaseStatus = 'Draft' | 'Received' | 'Cancelled'
+export type PurchaseStatus = 'Draft' | 'Received' | 'Processing' | 'InventoryUpdated' | 'Completed' | 'Failed' | 'Cancelled'
 
 export type PurchaseItem = {
   id: string

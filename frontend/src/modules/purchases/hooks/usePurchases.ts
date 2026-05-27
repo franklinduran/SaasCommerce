@@ -93,11 +93,17 @@ export function usePurchaseRealtimeInvalidation(purchaseId?: string) {
     }
 
     onRealtimeEvent('purchase.received', handler)
+    onRealtimeEvent('purchase.completed', handler)
+    onRealtimeEvent('purchase.failed', handler)
+    onRealtimeEvent('purchase.inventoryUpdated', handler)
     onRealtimeEvent('inventory.updated', handler)
     onRealtimeEvent('product.costUpdated', handler)
 
     return () => {
       offRealtimeEvent('purchase.received', handler)
+      offRealtimeEvent('purchase.completed', handler)
+      offRealtimeEvent('purchase.failed', handler)
+      offRealtimeEvent('purchase.inventoryUpdated', handler)
       offRealtimeEvent('inventory.updated', handler)
       offRealtimeEvent('product.costUpdated', handler)
     }

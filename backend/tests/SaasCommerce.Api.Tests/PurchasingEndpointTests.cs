@@ -67,7 +67,7 @@ public sealed class PurchasingEndpointTests
   }
 
   [Fact]
-  public async Task ReceivePurchase_ShouldUpdateStock_WhenPurchaseIsDraft()
+  public async Task ReceivePurchase_ShouldQueueInventoryProcessing_WhenPurchaseIsDraft()
   {
     using var factory = CreateFactory();
     using var client = factory.CreateClient();
@@ -92,16 +92,12 @@ public sealed class PurchasingEndpointTests
 
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var stock = await dbContext.Set<StockItem>().SingleAsync(
-      item => item.ProductId == product.Id && item.BranchId.Value == SeedBranchId,
-      CancellationToken.None);
-    var movement = await dbContext.Set<InventoryMovement>().SingleAsync(
-      item => item.ProductId == product.Id && item.PurchaseId == purchase.PurchaseId,
-      CancellationToken.None);
-
-    stock.Quantity.Should().Be(3);
-    movement.PreviousStock.Should().Be(0);
-    movement.NewStock.Should().Be(3);
+    dbContext.Set<StockItem>()
+      .Should()
+      .NotContain(item => item.ProductId == product.Id && item.BranchId.Value == SeedBranchId);
+    dbContext.Set<InventoryMovement>()
+      .Should()
+      .NotContain(item => item.ProductId == product.Id && item.PurchaseId == purchase.PurchaseId);
   }
 
   [Fact]

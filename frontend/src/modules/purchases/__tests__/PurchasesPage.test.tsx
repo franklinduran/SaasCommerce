@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { PurchaseForm } from '@/modules/purchases/components/PurchaseForm'
+import { PurchaseStatusBadge } from '@/modules/purchases/components/PurchaseStatusBadge'
 import { PurchaseDetailPage } from '@/modules/purchases/pages/PurchaseDetailPage'
 import { PurchasesPage } from '@/modules/purchases/pages/PurchasesPage'
 
@@ -48,7 +49,7 @@ describe('Purchases module', () => {
     expect(await screen.findAllByText('RD$ 125.00')).toHaveLength(2)
   })
 
-  it('PurchaseDetail should show received status', async () => {
+  it('PurchaseDetail should show completed status', async () => {
     vi.stubGlobal('fetch', createPurchasingFetchMock())
     renderWithProviders(
       <Routes>
@@ -57,8 +58,18 @@ describe('Purchases module', () => {
       `/purchases/${purchaseId}`,
     )
 
-    expect(await screen.findByText('Recibida')).toBeTruthy()
+    expect(await screen.findByText('Completada')).toBeTruthy()
     expect(screen.getByText('Cafe molido')).toBeTruthy()
+  })
+
+  it('PurchaseStatusBadge should render completed and failed states', () => {
+    const { rerender } = renderWithProviders(<PurchaseStatusBadge status="Completed" />)
+
+    expect(screen.getByText('Completada')).toBeTruthy()
+
+    rerender(<PurchaseStatusBadge status="Failed" />)
+
+    expect(screen.getByText('Fallida')).toBeTruthy()
   })
 })
 
@@ -217,7 +228,7 @@ function createPurchase() {
     purchaseDate: '2026-05-17T12:00:00Z',
     purchaseId,
     receivedAt: '2026-05-17T12:00:00Z',
-    status: 'Received',
+    status: 'Completed',
     supplierId,
     supplierInvoiceNumber: 'FAC-001',
     supplierName: 'Distribuidora Norte',

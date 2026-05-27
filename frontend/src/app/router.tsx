@@ -12,6 +12,7 @@ import {
   ProductImportRoute,
   BranchProfitabilityRoute,
   CashHistoryRoute,
+  CashRegisterHistoryRoute,
   CashRegisterRoute,
   CashRoute,
   CashSessionDetailRoute,
@@ -400,6 +401,14 @@ export const router = createBrowserRouter([
         element: (
           <PermissionRoute permissions={Permission.CashView}>
             {withPageLoading(<CashRegisterRoute />)}
+          </PermissionRoute>
+        ),
+      },
+      {
+        path: 'cash-register/history',
+        element: (
+          <PermissionRoute permissions={Permission.CashView}>
+            {withPageLoading(<CashRegisterHistoryRoute />)}
           </PermissionRoute>
         ),
       },

@@ -18,7 +18,7 @@ public sealed class GetDailyCashRegisterSummaryValidator : AbstractValidator<Get
 }
 
 public sealed class GetDailyCashRegisterSummaryHandler(
-  ICashRegisterRepository cashRegisters,
+  ICashRegisterReadRepository cashRegisters,
   ICurrentUserService currentUser)
 {
   public async Task<Result<DailyCashRegisterSummaryResponse>> Handle(
