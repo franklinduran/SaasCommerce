@@ -1,8 +1,6 @@
 import { useAuthStore } from '@/modules/auth/authStore'
+import { buildApiUrl } from '@/shared/services/apiConfig'
 import type { ApiError, ApiResponse } from '@/shared/types/api'
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
-const normalizedApiBaseUrl = apiBaseUrl.replace(/\/$/, '')
 
 /** Paths that should NOT trigger an automatic session-clear on 401.
  *  A wrong password on the login form returns 401 by design. */
@@ -38,7 +36,7 @@ export async function httpClient<T>(
     headers.set('Authorization', `Bearer ${options.accessToken}`)
   }
 
-  const response = await fetch(buildUrl(path), {
+  const response = await fetch(buildApiUrl(path), {
     ...options,
     headers,
   })
@@ -73,14 +71,4 @@ async function readPayload<T>(response: Response): Promise<ApiResponse<T> | null
   }
 
   return (await response.json()) as ApiResponse<T>
-}
-
-function buildUrl(path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
-  if (normalizedApiBaseUrl.endsWith('/api') && normalizedPath.startsWith('/api/')) {
-    return `${normalizedApiBaseUrl}${normalizedPath.slice(4)}`
-  }
-
-  return `${normalizedApiBaseUrl}${normalizedPath}`
 }

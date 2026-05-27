@@ -66,7 +66,7 @@ export function LoginForm() {
               aria-label="Correo electronico"
               autoComplete="email"
               className="h-11 w-full rounded-md bg-white px-3 text-sm text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
-              placeholder="admin@test.com"
+              placeholder="correo@negocio.com"
               type="email"
               {...register('email')}
             />
@@ -83,7 +83,7 @@ export function LoginForm() {
               aria-label="Contrasena"
               autoComplete="current-password"
               className="h-11 w-full rounded-md bg-white px-3 pr-12 text-sm text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
-              placeholder="Admin123!"
+              placeholder="Ingresa tu contrasena"
               type={showPassword ? 'text' : 'password'}
               {...register('password')}
             />

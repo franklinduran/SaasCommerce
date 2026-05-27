@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/modules/auth/authStore'
+import { buildApiUrl } from '@/shared/services/apiConfig'
 
 export type ImportRowError = {
   rowNumber: number
@@ -17,15 +18,10 @@ function getAccessToken(): string | undefined {
   return useAuthStore.getState().session?.accessToken
 }
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000').replace(
-  /\/$/,
-  '',
-)
-
 export const productImportApi = {
   async downloadTemplate(): Promise<Blob> {
     const accessToken = getAccessToken()
-    const res = await fetch(`${apiBaseUrl}/api/products/import/template`, {
+    const res = await fetch(buildApiUrl('/api/products/import/template'), {
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     })
 
@@ -39,7 +35,7 @@ export const productImportApi = {
     const form = new FormData()
     form.append('file', file)
 
-    const res = await fetch(`${apiBaseUrl}/api/products/import`, {
+    const res = await fetch(buildApiUrl('/api/products/import'), {
       body: form,
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       method: 'POST',
@@ -59,7 +55,7 @@ export const productImportApi = {
     const accessToken = getAccessToken()
     const tokenQuery = accessToken ? `?token=${accessToken}` : ''
 
-    return `${apiBaseUrl}/api/products/import/template${tokenQuery}`
+    return buildApiUrl(`/api/products/import/template${tokenQuery}`)
   },
 }
 

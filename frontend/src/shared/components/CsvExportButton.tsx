@@ -1,6 +1,7 @@
 import { Download } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '@/modules/auth/authStore'
+import { buildApiUrl } from '@/shared/services/apiConfig'
 
 interface CsvExportButtonProps {
   endpoint: string
@@ -9,8 +10,6 @@ interface CsvExportButtonProps {
   className?: string
   queryParams?: Record<string, string | undefined>
 }
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export function CsvExportButton({
   endpoint,
@@ -25,7 +24,7 @@ export function CsvExportButton({
   const handleExport = async () => {
     setIsExporting(true)
     try {
-      let url = `${apiBaseUrl}${endpoint}`
+      let url = buildApiUrl(endpoint)
 
       if (queryParams) {
         const params = new URLSearchParams()

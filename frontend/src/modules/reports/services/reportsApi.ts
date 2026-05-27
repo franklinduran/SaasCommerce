@@ -11,9 +11,8 @@ import type {
   SalesReport,
   SalesReportFilters,
 } from '@/modules/reports/types'
+import { buildApiUrl } from '@/shared/services/apiConfig'
 import { httpClient } from '@/shared/services/httpClient'
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
 // ── Sales ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +42,7 @@ export function getSalesExportUrl(filters: SalesReportFilters): string {
   const token = getAccessToken()
   if (token) params.set('access_token', token)
 
-  return `${apiBaseUrl.replace(/\/$/, '')}/api/reports/sales/export?${params.toString()}`
+  return buildApiUrl(`/api/reports/sales/export?${params.toString()}`)
 }
 
 // ── Invoices ───────────────────────────────────────────────────────────────
@@ -72,7 +71,7 @@ export function getInvoiceExportUrl(filters: InvoiceReportFilters): string {
   const token = getAccessToken()
   if (token) params.set('access_token', token)
 
-  return `${apiBaseUrl.replace(/\/$/, '')}/api/reports/invoices/export?${params.toString()}`
+  return buildApiUrl(`/api/reports/invoices/export?${params.toString()}`)
 }
 
 // ── Accounts Receivable ────────────────────────────────────────────────────
@@ -102,7 +101,7 @@ export function getArExportUrl(filters: AccountsReceivableFilters): string {
   const token = getAccessToken()
   if (token) params.set('access_token', token)
 
-  return `${apiBaseUrl.replace(/\/$/, '')}/api/reports/accounts-receivable/export?${params.toString()}`
+  return buildApiUrl(`/api/reports/accounts-receivable/export?${params.toString()}`)
 }
 
 // ── Low Stock ──────────────────────────────────────────────────────────────
@@ -135,7 +134,7 @@ export function getLowStockExportUrl(filters: LowStockFilters): string {
   const token = getAccessToken()
   if (token) params.set('access_token', token)
 
-  return `${apiBaseUrl.replace(/\/$/, '')}/api/reports/inventory-low-stock/export?${params.toString()}`
+  return buildApiUrl(`/api/reports/inventory-low-stock/export?${params.toString()}`)
 }
 
 // ── Purchases ──────────────────────────────────────────────────────────────
@@ -164,7 +163,7 @@ export function getPurchaseExportUrl(filters: PurchaseReportFilters): string {
   const token = getAccessToken()
   if (token) params.set('access_token', token)
 
-  return `${apiBaseUrl.replace(/\/$/, '')}/api/reports/purchases/export?${params.toString()}`
+  return buildApiUrl(`/api/reports/purchases/export?${params.toString()}`)
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

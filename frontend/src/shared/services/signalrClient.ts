@@ -1,6 +1,7 @@
 import * as signalR from '@microsoft/signalr'
+import { resolveSignalRHubUrl } from '@/shared/services/apiConfig'
 
-const hubUrl = import.meta.env.VITE_SIGNALR_HUB_URL ?? 'http://localhost:5000/hubs/realtime'
+const hubUrl = resolveSignalRHubUrl()
 
 let connection: signalR.HubConnection | null = null
 let currentAccessToken: string | null = null
