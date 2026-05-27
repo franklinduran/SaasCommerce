@@ -68,7 +68,11 @@ public sealed class DevelopmentDataSeeder(
     }
 
     var adminUserId = Guid.Parse("44444444-4444-4444-4444-444444444444");
-    await DemoDataSeeder.SeedAsync(dbContext, adminUserId, now, cancellationToken);
+
+    if (configuration.GetValue("SeedDemoData:Enabled", defaultValue: true))
+    {
+      await DemoDataSeeder.SeedAsync(dbContext, adminUserId, now, cancellationToken);
+    }
   }
 
   private string GetAdminSecret()
