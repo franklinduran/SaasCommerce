@@ -4,7 +4,7 @@ import { cn } from '@/shared/utils/cn'
 export function Card({ className, ...props }: Readonly<HTMLAttributes<HTMLDivElement>>) {
   return (
     <div
-      className={cn('min-w-0 rounded-xl bg-white p-0 shadow-sm ring-1 ring-stone-200', className)}
+      className={cn('min-w-0 rounded-2xl bg-card p-0 shadow-sm ring-1 ring-border', className)}
       {...props}
     />
   )
@@ -24,7 +24,7 @@ export function CardTitle({
   ...props
 }: Readonly<HTMLAttributes<HTMLHeadingElement>>) {
   return (
-    <h2 className={cn('text-lg font-semibold text-stone-950', className)} {...props}>
+    <h2 className={cn('text-lg font-semibold text-card-foreground', className)} {...props}>
       {children}
     </h2>
   )
@@ -32,6 +32,6 @@ export function CardTitle({
 
 export function CardDescription({ className, ...props }: Readonly<HTMLAttributes<HTMLParagraphElement>>) {
   return (
-    <p className={cn('text-sm text-stone-600', className)} {...props} />
+    <p className={cn('text-sm text-muted-foreground', className)} {...props} />
   )
 }

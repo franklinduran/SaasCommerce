@@ -200,32 +200,34 @@ export function AppShell() {
   return (
     <div className="h-dvh overflow-hidden bg-background text-foreground">
       <div className="grid h-full w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background lg:grid-cols-[auto_minmax(0,1fr)] lg:grid-rows-[64px_minmax(0,1fr)]">
+        {/* ── Sidebar ────────────────────────────────────────────────────── */}
         <aside
           className={cn(
-            'flex w-full min-w-0 max-w-full shrink-0 flex-col border-b border-stone-200 bg-stone-50 text-stone-900 lg:row-span-2 lg:max-h-dvh lg:min-h-0 lg:border-b-0 lg:border-r',
+            'flex w-full min-w-0 max-w-full shrink-0 flex-col border-b border-sidebar-border bg-sidebar-bg text-sidebar-fg lg:row-span-2 lg:max-h-dvh lg:min-h-0 lg:border-b-0 lg:border-r',
             sidebarCollapsed ? 'lg:w-[76px]' : 'lg:w-[260px]',
           )}
         >
+          {/* Logo / business header */}
           <div
             className={cn(
-              'flex h-16 shrink-0 items-center justify-between gap-2 border-b border-stone-200/60 px-4',
+              'flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/60 px-4',
               sidebarCollapsed && 'lg:h-16 lg:px-3',
             )}
           >
             <div className={cn('flex min-w-0 items-center gap-2.5', sidebarCollapsed && 'lg:justify-center')}>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white shadow-sm">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sidebar-active-bg text-sidebar-active-fg shadow-sm">
                 <CircleDollarSign aria-hidden="true" size={18} />
               </span>
               <div className={cn('min-w-0', sidebarCollapsed && 'lg:hidden')}>
-                <p className="truncate text-sm font-semibold text-stone-900">{businessName}</p>
-                <p className="truncate text-xs font-medium text-stone-500">
+                <p className="truncate text-sm font-semibold text-sidebar-fg">{businessName}</p>
+                <p className="truncate text-xs font-medium text-sidebar-muted">
                   {session?.user.fullName ?? 'Sucursal principal'}
                 </p>
               </div>
             </div>
             <Button
               className={cn(
-                'shrink-0 max-lg:hidden lg:inline-flex',
+                'shrink-0 max-lg:hidden lg:inline-flex text-sidebar-fg hover:bg-sidebar-hover-bg hover:text-sidebar-fg focus-visible:ring-sidebar-active-bg/25',
                 sidebarCollapsed && 'lg:hidden',
               )}
               aria-label="Contraer menu"
@@ -238,28 +240,30 @@ export function AppShell() {
             </Button>
           </div>
 
+          {/* Search bar (expanded) */}
           {!sidebarCollapsed && (
             <div className="hidden px-3 py-3 lg:block">
               <Button
                 aria-label="Buscar"
-                className="w-full justify-start px-3"
+                className="w-full justify-start px-3 bg-sidebar-hover-bg text-sidebar-fg ring-1 ring-sidebar-border/60 hover:bg-sidebar-hover-bg/80 hover:text-sidebar-fg focus-visible:ring-sidebar-active-bg/25"
                 type="button"
-                variant="secondary"
+                variant="ghost"
               >
                 <Search aria-hidden="true" size={15} />
                 <span className="font-medium">Buscar...</span>
-                <kbd className="ml-auto rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-stone-500 ring-1 ring-stone-200">
+                <kbd className="ml-auto rounded bg-sidebar-border/40 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-sidebar-muted ring-1 ring-sidebar-border/60">
                   Ctrl K
                 </kbd>
               </Button>
             </div>
           )}
 
+          {/* Expand button (collapsed) */}
           {sidebarCollapsed && (
             <div className="hidden px-2 py-2 lg:block">
               <Button
                 aria-label="Expandir menu"
-                className="w-full"
+                className="w-full text-sidebar-fg hover:bg-sidebar-hover-bg hover:text-sidebar-fg focus-visible:ring-sidebar-active-bg/25"
                 onClick={toggleSidebar}
                 size="icon"
                 title="Expandir menu"
@@ -270,6 +274,7 @@ export function AppShell() {
             </div>
           )}
 
+          {/* Navigation */}
           <nav
             className={cn(
               'flex min-w-0 shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto lg:overflow-x-hidden lg:py-2',
@@ -290,32 +295,33 @@ export function AppShell() {
             />
           </nav>
 
-          <div className={cn('hidden shrink-0 border-t border-stone-200/60 p-3 lg:block', sidebarCollapsed && 'lg:px-2')}>
+          {/* User menu trigger */}
+          <div className={cn('hidden shrink-0 border-t border-sidebar-border/60 p-3 lg:block', sidebarCollapsed && 'lg:px-2')}>
             <div className="relative" ref={userMenuRef}>
               <button
                 aria-expanded={userMenuOpen}
                 aria-haspopup="menu"
                 aria-label="Abrir menu de usuario"
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
+                  'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-sidebar-hover-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active-bg/25 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-bg',
                   sidebarCollapsed && 'h-10 justify-center px-0',
                 )}
                 onClick={() => setUserMenuOpen((open) => !open)}
                 type="button"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-900 text-xs font-semibold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active-bg text-xs font-semibold text-sidebar-active-fg">
                   {userInitial}
                 </div>
                 <div className={cn('min-w-0 flex-1', sidebarCollapsed && 'lg:hidden')}>
-                  <p className="truncate text-sm font-semibold text-stone-900">
+                  <p className="truncate text-sm font-semibold text-sidebar-fg">
                     {userName}
                   </p>
-                  <p className="truncate text-xs font-medium text-stone-500">{userRoleLabel}</p>
+                  <p className="truncate text-xs font-medium text-sidebar-muted">{userRoleLabel}</p>
                 </div>
                 <ChevronDown
                   aria-hidden="true"
                   className={cn(
-                    'text-stone-400 transition-transform',
+                    'text-sidebar-muted transition-transform',
                     userMenuOpen && 'rotate-180',
                     sidebarCollapsed && 'lg:hidden',
                   )}
@@ -326,12 +332,12 @@ export function AppShell() {
               {userMenuOpen && (
                 <div
                   aria-label="Menu de usuario"
-                  className="absolute bottom-full left-0 z-30 mb-2 w-64 overflow-hidden rounded-md border border-stone-200 bg-white py-1 shadow-lg ring-1 ring-black/5"
+                  className="absolute bottom-full left-0 z-30 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg ring-1 ring-black/5"
                   role="menu"
                 >
-                  <div className="border-b border-stone-100 px-3 py-2">
-                    <p className="truncate text-sm font-semibold text-stone-900">{userName}</p>
-                    <p className="truncate text-xs font-medium text-stone-500">{userRoleLabel}</p>
+                  <div className="border-b border-muted px-3 py-2">
+                    <p className="truncate text-sm font-semibold text-foreground">{userName}</p>
+                    <p className="truncate text-xs font-medium text-muted-foreground">{userRoleLabel}</p>
                   </div>
                   <UserMenuItem
                     icon={Settings}
@@ -350,7 +356,7 @@ export function AppShell() {
                     label="Suscripcion"
                     onSelect={() => navigateFromUserMenu('/subscription')}
                   />
-                  <div className="my-1 h-px bg-stone-100" />
+                  <div className="my-1 h-px bg-muted" />
                   <UserMenuItem
                     icon={LogOut}
                     label="Cerrar sesion"
@@ -362,25 +368,27 @@ export function AppShell() {
           </div>
         </aside>
 
-        <header className="sticky top-0 z-20 hidden h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-6 lg:flex">
+        {/* ── Topbar ─────────────────────────────────────────────────────── */}
+        <header className="sticky top-0 z-20 hidden h-16 shrink-0 items-center justify-between border-b border-border bg-card px-6 lg:flex">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               SaasCommerce
             </p>
-            <h1 className="text-lg font-semibold text-stone-900">{pageTitle}</h1>
+            <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell />
             <div className="text-right">
-              <p className="text-sm font-semibold text-stone-900">
+              <p className="text-sm font-semibold text-foreground">
                 {session?.user.fullName ?? 'Admin'}
               </p>
-              <p className="text-xs font-medium text-stone-500">{businessName}</p>
+              <p className="text-xs font-medium text-muted-foreground">{businessName}</p>
             </div>
           </div>
         </header>
 
-        <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-surface-subtle">
+        {/* ── Main content ───────────────────────────────────────────────── */}
+        <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-background">
           {isHome && !bannerDismissed && (
             <SubscriptionAlertBanner
               className="sticky top-0 z-10 rounded-none border-x-0 border-t-0"
@@ -457,12 +465,12 @@ type UserMenuItemProps = {
 function UserMenuItem({ icon: Icon, label, onSelect }: Readonly<UserMenuItemProps>) {
   return (
     <button
-      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-stone-900/20"
+      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/20"
       onClick={onSelect}
       role="menuitem"
       type="button"
     >
-      <Icon aria-hidden="true" className="shrink-0 text-stone-500" size={16} />
+      <Icon aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
       <span className="truncate">{label}</span>
     </button>
   )
@@ -489,7 +497,7 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
   return (
     <div className="flex gap-1 lg:flex-col lg:gap-0.5">
       {!collapsed && (
-        <p className="hidden px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 lg:block">
+        <p className="hidden px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-muted lg:block">
           {label}
         </p>
       )}
@@ -497,9 +505,9 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
         <NavLink
           className={({ isActive }) =>
             cn(
-              'group relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900',
-              'active:bg-stone-300 active:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2',
-              isActive && 'bg-stone-900 text-white font-semibold shadow-sm ring-1 ring-stone-900 hover:bg-stone-900 hover:text-white active:bg-stone-950 active:text-white',
+              'group relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-sidebar-fg transition-colors hover:bg-sidebar-hover-bg hover:text-sidebar-fg',
+              'active:bg-sidebar-hover-bg/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active-bg/25 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-bg',
+              isActive && 'bg-sidebar-active-bg text-sidebar-active-fg font-semibold shadow-sm ring-1 ring-sidebar-active-bg/50 hover:bg-sidebar-active-bg hover:text-sidebar-active-fg',
               collapsed && 'lg:h-10 lg:w-10 lg:justify-center lg:px-0',
             )
           }
@@ -514,12 +522,12 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
                 aria-hidden="true"
                 className={cn(
                   'shrink-0 transition-colors',
-                  isActive ? 'text-white' : 'text-stone-500 group-hover:text-stone-900',
+                  isActive ? 'text-sidebar-active-fg' : 'text-sidebar-muted group-hover:text-sidebar-fg',
                 )}
                 size={17}
                 strokeWidth={isActive ? 2.25 : 2}
               />
-              <span className={cn('truncate', isActive && 'text-white', collapsed && 'lg:hidden')}>
+              <span className={cn('truncate', isActive && 'text-sidebar-active-fg', collapsed && 'lg:hidden')}>
                 {item.label}
               </span>
             </>

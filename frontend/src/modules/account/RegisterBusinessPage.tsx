@@ -63,7 +63,7 @@ const registerBusinessSchema = z.object({
 type RegisterBusinessFormValues = z.infer<typeof registerBusinessSchema>
 
 const inputClass =
-  'h-11 w-full min-w-0 rounded-md bg-white px-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15'
+  'h-11 w-full min-w-0 rounded-md bg-card px-3 text-sm font-medium text-foreground shadow-control outline-none transition placeholder:text-muted-foreground focus:shadow-control-focus focus:ring-2 focus:ring-ring/15'
 
 export function RegisterBusinessPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -119,7 +119,7 @@ export function RegisterBusinessPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 py-8 text-stone-950">
+    <main className="min-h-dvh bg-background px-4 py-8 text-foreground">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-stone-900 text-white">
@@ -132,7 +132,7 @@ export function RegisterBusinessPage() {
         </div>
 
         <form
-          className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6"
+          className="rounded-2xl bg-card p-5 shadow-sm ring-1 ring-border sm:p-6"
           onSubmit={handleSubmit(onSubmit)}
         >
           <div className="grid gap-5 md:grid-cols-2">
@@ -178,9 +178,9 @@ export function RegisterBusinessPage() {
                 </span>
               )}
             </Field>
-            <div className="rounded-md bg-stone-50 p-4 ring-1 ring-stone-200">
+            <div className="rounded-xl bg-muted p-4 ring-1 ring-border">
               <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   <CreditCard size={17} />
                 </span>
                 <div>
@@ -278,7 +278,7 @@ type FieldProps = {
 function Field({ children, error, label }: Readonly<FieldProps>) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-stone-900">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-foreground">{label}</span>
       {children}
       {error && <span className="mt-2 block text-sm font-medium text-red-700">{error}</span>}
     </label>

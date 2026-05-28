@@ -1,6 +1,58 @@
 # Reglas de UI - SaasCommerce
 
-La interfaz debe ser limpia, sobria y profesional. Debe usar como base visual la paleta Tailwind Stone, tomando como referencia UI Colors / Tailwind Colors Stone: https://uicolors.app/tailwind-colors/stone.
+La interfaz debe ser limpia, sobria y profesional. Usa la paleta Indigo como base visual con un sidebar oscuro (navy/indigo-950), fondo lavanda suave (indigo-50) y brand color indigo-600.
+
+## 0. Sistema de tokens de diseño (HOW TO RETHEME)
+
+**Toda modificacion visual debe hacerse en `frontend/src/index.css` unicamente.**
+
+La arquitectura de tokens es:
+```
+frontend/src/index.css        ← FUENTE DE VERDAD: define todos los colores en :root
+  @theme inline { ... }       ← Mapea vars CSS a utilidades Tailwind (no tocar)
+frontend/tailwind.config.ts   ← Solo aliases legacy; referencia CSS vars (no hardcodear hex)
+Componentes (.tsx)            ← Solo usan clases semanticas: bg-primary, text-foreground, etc.
+```
+
+### Tokens principales disponibles como utilidades Tailwind:
+
+```txt
+# Superficie
+bg-background       → fondo global (indigo-50 #EEF2FF)
+bg-card             → tarjetas / formularios (blanco)
+bg-muted            → superficie secundaria (indigo-50)
+bg-secondary        → hover suave, chips (indigo-100)
+
+# Texto
+text-foreground         → texto principal
+text-muted-foreground   → texto secundario / labels
+text-card-foreground    → texto dentro de cards
+
+# Accion primaria (brand indigo)
+bg-primary              → boton primario, active states
+text-primary-foreground → texto sobre primary
+hover:bg-primary-hover  → hover del primario
+
+# Bordes y rings
+border-border           → bordes de cards, dividers
+shadow-control          → ring de inputs normal (0 0 0 1px var(--border))
+shadow-control-focus    → ring de inputs en focus (0 0 0 1px var(--ring))
+ring-ring/25            → focus ring para botones e interactivos
+
+# Sidebar (dark navy)
+bg-sidebar-bg           → fondo sidebar
+text-sidebar-fg         → texto sidebar
+text-sidebar-muted      → labels de secciones, texto secundario
+border-sidebar-border   → dividers dentro del sidebar
+bg-sidebar-hover-bg     → hover de items
+bg-sidebar-active-bg    → item activo (= brand)
+text-sidebar-active-fg  → texto item activo (blanco)
+```
+
+### Regla para nuevos componentes:
+- Usar SIEMPRE clases semanticas (bg-card, text-foreground, border-border).
+- NUNCA hardcodear colores de paleta (bg-indigo-600, text-stone-900, #4F46E5).
+- Para cambiar el look del sistema: editar solo `:root` en `index.css`.
 
 ## 1. Estilo visual obligatorio
 
@@ -29,30 +81,30 @@ No usar:
 
 ## 2. Paleta principal
 
-Usar `stone` como neutral principal:
+Usar tokens semanticos, no clases de paleta directa:
 
 ```txt
-Background principal: stone-50
-Surface/Card: white
-Surface secundaria: stone-100
-Border: stone-200
-Texto principal: stone-900
-Texto secundario: stone-600
-Texto muted: stone-500
-Hover suave: stone-100
-Sidebar fondo recomendado: stone-100 o white
-Sidebar activa: stone-900
-Sidebar texto activo: white
+Background principal:  bg-background      (indigo-50  #EEF2FF)
+Surface/Card:          bg-card            (blanco)
+Surface secundaria:    bg-muted           (indigo-50)
+Border:                border-border      (indigo-200)
+Texto principal:       text-foreground    (near-black con tinte indigo)
+Texto secundario:      text-muted-foreground
+Hover suave:           hover:bg-muted / hover:bg-secondary
+Sidebar fondo:         bg-sidebar-bg      (indigo-950 #1E1B4B)
+Sidebar texto:         text-sidebar-fg    (indigo-100)
+Sidebar activa:        bg-sidebar-active-bg (indigo-600 #4F46E5)
+Sidebar texto activo:  text-sidebar-active-fg (blanco)
 ```
 
 ## 3. Color de accion
 
-El color primario debe ser sobrio.
+El color primario es indigo-600:
 
 ```txt
-Primary: stone-900
-Primary hover: stone-800
-Primary text: white
+Primary:          bg-primary              (#4F46E5)
+Primary hover:    hover:bg-primary-hover  (#4338CA)
+Primary text:     text-primary-foreground (blanco)
 ```
 
 Para acciones criticas o estados:
@@ -103,26 +155,27 @@ No usar scroll del body para pantallas internas.
 
 ## 5. Sidebar
 
-La sidebar debe ser simple:
+La sidebar usa un tema oscuro (dark navy):
 
 ```txt
-Fondo recomendado: stone-100 o white
-Texto: stone-700
-Texto activo: white
-Item hover: stone-200
-Item activo: stone-900
-Borde derecho: stone-200
+Fondo:              bg-sidebar-bg      (indigo-950 #1E1B4B)
+Texto:              text-sidebar-fg    (indigo-100 #E0E7FF)
+Labels de seccion:  text-sidebar-muted
+Item hover:         bg-sidebar-hover-bg
+Item activo:        bg-sidebar-active-bg (indigo-600)
+Texto activo:       text-sidebar-active-fg (blanco)
+Bordes/dividers:    border-sidebar-border
 ```
 
 Reglas:
 
 ```txt
 Iconos pequenos.
-Texto legible.
-No usar muchos colores.
+Texto legible sobre fondo oscuro.
+Usar solo tokens sidebar-* dentro del sidebar.
+No usar clases de paleta directa (indigo-*, stone-*) en el sidebar.
 No usar cards dentro del sidebar.
 No usar gradientes.
-No usar negro o fondos oscuros pesados por defecto.
 ```
 
 ## 6. Topbar
@@ -139,9 +192,9 @@ Usuario actual o negocio
 Estilo:
 
 ```txt
-Background: white
-Border bottom: stone-200
-Texto: stone-900
+Background:     bg-card      (blanco)
+Border bottom:  border-border
+Texto:          text-foreground / text-muted-foreground
 ```
 
 ## 7. Cards
@@ -149,30 +202,30 @@ Texto: stone-900
 Usar cards para secciones, metricas y formularios.
 
 ```txt
-Background: white
-Border: stone-200
-Radius: rounded-xl
-Shadow: shadow-sm o sin shadow
-Padding: p-5 o p-6
+Background: bg-card   (blanco)
+Border:     ring-1 ring-border
+Radius:     rounded-2xl
+Shadow:     shadow-sm
+Padding:    p-5 o p-6
 ```
 
 No hacer cards con colores fuertes. Para resaltar, usar borde o badge.
 
 ## 8. Botones
 
-Jerarquia obligatoria:
+Jerarquia obligatoria (usando variants de button-variants.ts):
 
 ```txt
-Primary:
-bg-stone-900 text-white hover:bg-stone-800
+Primary (default):
+bg-primary text-primary-foreground hover:bg-primary-hover
 
 Secondary:
-bg-white text-stone-900 border border-stone-300 hover:bg-stone-50
+bg-card text-foreground ring-1 ring-border hover:bg-secondary
 
 Ghost:
-text-stone-700 hover:bg-stone-100
+bg-transparent text-foreground hover:bg-muted
 
-Danger:
+Danger (destructive):
 bg-red-600 text-white hover:bg-red-700
 ```
 
@@ -189,12 +242,12 @@ No usar botones de colores diferentes sin razon.
 Inputs:
 
 ```txt
-bg-white
-border-stone-300
-text-stone-900
-placeholder-stone-400
-focus:ring-stone-900
-focus:border-stone-900
+bg-card
+shadow-control          (ring indigo-200 normal)
+shadow-control-focus    (ring indigo-600 al focus)
+text-foreground
+placeholder:text-muted-foreground
+focus:ring-ring/15
 ```
 
 Reglas:
@@ -212,12 +265,12 @@ Validacion con React Hook Form + Zod.
 Tablas limpias, no recargadas.
 
 ```txt
-Header: bg-stone-50 text-stone-600
-Rows: bg-white
-Border: stone-200
-Hover row: stone-50
-Text: stone-900
-Secondary text: stone-500
+Header: bg-muted text-muted-foreground
+Rows: bg-card
+Border: border-border
+Hover row: hover:bg-muted
+Text: text-foreground
+Secondary text: text-muted-foreground
 ```
 
 Reglas:
@@ -309,7 +362,7 @@ No debes crear UI bonita sin consistencia. Debes usar el sistema visual definido
 ## 15. Checklist obligatorio antes de aceptar UI
 
 ```txt
-Usa paleta stone?
+Usa tokens semanticos (bg-primary, text-foreground, border-border, etc.)?
 Tiene jerarquia visual clara?
 Tiene estados loading/error/empty?
 Usa componentes reutilizables?
@@ -325,7 +378,7 @@ No se mezclo logica de negocio en componentes visuales?
 ## Prompt corto para agentes
 
 ```txt
-Antes de modificar UI, debes seguir las reglas de UI del proyecto. La interfaz debe usar Tailwind Stone como paleta principal, con estilo SaaS administrativo sobrio, limpio y profesional. No uses colores aleatorios, gradientes fuertes, sombras exageradas ni componentes gigantes. Usa ShadCN UI, cards blancas, bordes stone-200, texto stone-900, secundarios stone-600, primary stone-900, estados con emerald/amber/red/sky solo cuando representen informacion real. Toda pantalla debe tener loading, error y empty states, formularios con React Hook Form + Zod, componentes reutilizables y diseno responsive.
+Antes de modificar UI, debes seguir las reglas de UI del proyecto. El sistema usa tokens semanticos definidos en index.css — NUNCA hardcodees colores de paleta (indigo-*, stone-*, hex). Usa bg-card para tarjetas blancas, bg-background para fondos lavanda, bg-primary para acciones brand (indigo-600), text-foreground para texto principal, text-muted-foreground para secundario, border-border para dividers. El sidebar usa tokens bg-sidebar-bg / text-sidebar-fg / bg-sidebar-active-bg. Cards usan rounded-2xl. Inputs usan shadow-control / shadow-control-focus. Usa ShadCN UI, estados con emerald/amber/red/sky solo para informacion real, React Hook Form + Zod en formularios, diseno responsive.
 ```
 # Regla de formularios de onboarding
 

@@ -1,18 +1,18 @@
 import { cva } from 'class-variance-authority'
 
 export const buttonVariants = cva(
-  'inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:shadow-none',
+  'inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:shadow-none',
   {
     variants: {
       variant: {
         default:
-          'bg-stone-900 text-white shadow-sm hover:bg-stone-800 hover:text-white active:bg-stone-950 active:text-white disabled:bg-stone-200 disabled:text-stone-600',
+          'bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover active:bg-brand-hover/90 active:text-primary-foreground disabled:bg-muted disabled:text-muted-foreground',
         secondary:
-          'bg-white text-stone-900 shadow-sm ring-1 ring-stone-300 hover:bg-stone-50 hover:text-stone-950 active:bg-stone-100 active:text-stone-950 disabled:bg-stone-100 disabled:text-stone-600 disabled:ring-stone-200',
+          'bg-card text-foreground shadow-sm ring-1 ring-border hover:bg-secondary hover:text-foreground active:bg-secondary/80 active:text-foreground disabled:bg-muted disabled:text-muted-foreground disabled:ring-border',
         ghost:
-          'bg-transparent text-stone-700 hover:bg-stone-100 hover:text-stone-950 active:bg-stone-200 active:text-stone-950 disabled:text-stone-500',
+          'bg-transparent text-foreground hover:bg-muted hover:text-foreground active:bg-secondary active:text-foreground disabled:text-muted-foreground',
         outline:
-          'bg-white text-stone-900 shadow-sm ring-1 ring-stone-300 hover:bg-stone-50 hover:text-stone-950 active:bg-stone-100 active:text-stone-950 disabled:bg-stone-100 disabled:text-stone-600 disabled:ring-stone-200',
+          'bg-card text-foreground shadow-sm ring-1 ring-border hover:bg-secondary hover:text-foreground active:bg-secondary/80 active:text-foreground disabled:bg-muted disabled:text-muted-foreground disabled:ring-border',
         destructive:
           'bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-600/25 disabled:bg-red-100 disabled:text-red-700',
       },

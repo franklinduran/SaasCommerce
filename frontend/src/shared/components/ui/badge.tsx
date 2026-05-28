@@ -4,12 +4,12 @@ import { cn } from '@/shared/utils/cn'
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning'
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: 'bg-stone-900 text-white',
+  default:     'bg-primary text-primary-foreground',
   destructive: 'bg-red-600 text-white',
-  outline: 'border border-stone-300 text-stone-700',
-  secondary: 'bg-stone-100 text-stone-800',
-  success: 'bg-emerald-100 text-emerald-800',
-  warning: 'bg-amber-100 text-amber-800',
+  outline:     'border border-border text-foreground',
+  secondary:   'bg-secondary text-secondary-foreground',
+  success:     'bg-emerald-100 text-emerald-800',
+  warning:     'bg-amber-100 text-amber-800',
 }
 
 export function Badge({
