@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Building2, Eye, EyeOff } from 'lucide-react'
+import { Building2, CreditCard, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { useRegisterBusinessMutation } from '@/modules/account/hooks/useRegisterBusinessMutation'
+import { useSubscriptionPlans } from '@/modules/subscription/hooks/useSubscription'
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ const registerBusinessSchema = z.object({
   }),
   ownerFullName: z.string().min(2, 'Nombre del administrador requerido'),
   password: z.string().min(8, 'La contrasena debe tener al menos 8 caracteres'),
+  planId: z.string().min(1, 'Selecciona un plan'),
   phonePrimary: z.string().min(1, 'Telefono principal requerido'),
   phoneSecondary: z.string().optional(),
 }).superRefine((values, context) => {
@@ -67,6 +69,8 @@ export function RegisterBusinessPage() {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const registerBusiness = useRegisterBusinessMutation()
+  const plansQuery = useSubscriptionPlans()
+  const plans = Array.isArray(plansQuery.data) ? plansQuery.data : []
   const {
     control,
     formState: { errors, isValid },
@@ -83,6 +87,7 @@ export function RegisterBusinessPage() {
       identificationType: 'Cedula',
       ownerFullName: '',
       password: '',
+      planId: '',
       phonePrimary: '',
       phoneSecondary: '',
     },
@@ -102,6 +107,7 @@ export function RegisterBusinessPage() {
       identificationType: emptyToNull(values.identificationType),
       ownerFullName: values.ownerFullName,
       password: values.password,
+      planId: values.planId,
       phones: [
         { isPrimary: true, label: 'Principal', number: values.phonePrimary },
         ...(emptyToNull(values.phoneSecondary)
@@ -130,6 +136,61 @@ export function RegisterBusinessPage() {
           onSubmit={handleSubmit(onSubmit)}
         >
           <div className="grid gap-5 md:grid-cols-2">
+            <Field error={errors.planId?.message} label="Plan *">
+              <Controller
+                control={control}
+                name="planId"
+                render={({ field }) => (
+                  <Select
+                    disabled={plansQuery.isLoading || plansQuery.isError}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={plansQuery.isLoading ? 'Cargando planes' : 'Selecciona un plan'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.name} - {formatMoney(plan.monthlyPrice)} / mes
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {plansQuery.isLoading && (
+                <span className="mt-2 flex items-center gap-1.5 text-sm font-medium text-stone-500">
+                  <Loader2 className="animate-spin" size={14} />
+                  Cargando planes disponibles
+                </span>
+              )}
+              {plansQuery.isError && (
+                <span className="mt-2 flex items-center gap-2 text-sm font-medium text-red-700">
+                  {'No se pudieron cargar los planes. '}
+                  <button
+                    className="underline hover:text-red-900"
+                    type="button"
+                    onClick={() => void plansQuery.refetch()}
+                  >
+                    Reintentar
+                  </button>
+                </span>
+              )}
+            </Field>
+            <div className="rounded-md bg-stone-50 p-4 ring-1 ring-stone-200">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-900 text-white">
+                  <CreditCard size={17} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-stone-950">Plan requerido</p>
+                  <p className="mt-1 text-sm font-medium text-stone-600">
+                    El comercio queda asociado al plan elegido desde el inicio; no se crean tenants sin plan.
+                  </p>
+                </div>
+              </div>
+            </div>
             <Field error={errors.businessName?.message} label="Nombre del comercio *">
               <input className={inputClass} placeholder="Colmado La Fe" {...register('businessName')} />
             </Field>
@@ -198,7 +259,7 @@ export function RegisterBusinessPage() {
             <Button onClick={() => navigate('/login')} type="button" variant="secondary">
               Ya tengo cuenta
             </Button>
-            <Button disabled={registerBusiness.isPending || !isValid} type="submit">
+            <Button disabled={registerBusiness.isPending || plansQuery.isLoading || plansQuery.isError || !isValid} type="submit">
               {registerBusiness.isPending ? 'Creando comercio' : 'Crear comercio'}
             </Button>
           </div>
@@ -226,4 +287,13 @@ function Field({ children, error, label }: Readonly<FieldProps>) {
 
 function emptyToNull(value?: string | null): string | null {
   return value && value.trim().length > 0 ? value.trim() : null
+}
+
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat('es-DO', {
+    currency: 'DOP',
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: 'currency',
+  }).format(value)
 }

@@ -71,4 +71,8 @@ public static class SubscriptionErrors
   public static readonly DomainError DuplicateSubscription = new(
     "subscription.duplicate",
     "The business already has an active subscription.");
+
+  public static DomainError DowngradeBlocked(string message) => new(
+    "subscription.downgrade_blocked",
+    message);
 }

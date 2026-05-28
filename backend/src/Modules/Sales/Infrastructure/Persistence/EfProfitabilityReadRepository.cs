@@ -158,7 +158,7 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
   {
     // Step 1: Sales + count by branch
     var salesByBranch = await CompletedSales(businessId, dateFrom, dateTo, null)
-      .GroupBy(s => s.BranchId.Value)
+      .GroupBy(s => s.BranchId)
       .Select(g => new
       {
         BranchId = g.Key,
@@ -184,7 +184,7 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
       from product in pg.DefaultIfEmpty()
       let fallbackCost = product == null ? 0m : product.CostPrice
       let effectiveUnitCost = item.UnitCost ?? fallbackCost
-      group item.Quantity * effectiveUnitCost by sale.BranchId.Value
+      group item.Quantity * effectiveUnitCost by sale.BranchId
       into g
       select new { BranchId = g.Key, TotalCost = g.Sum() })
       .ToArrayAsync(cancellationToken);
@@ -195,16 +195,15 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
       .Where(e => e.BusinessId == businessId
                   && e.Status == OperatingExpenseStatus.Paid
                   && e.ExpenseDate >= dateFrom && e.ExpenseDate <= dateTo)
-      .GroupBy(e => e.BranchId.Value)
+      .GroupBy(e => e.BranchId)
       .Select(g => new { BranchId = g.Key, TotalExpenses = g.Sum(e => e.Amount) })
       .ToArrayAsync(cancellationToken);
 
     // Step 4: Branch names
     var branchIds = salesByBranch.Select(s => s.BranchId).ToArray();
-    var branchIdObjects = branchIds.Select(id => new BranchId(id)).ToArray();
     var branchNames = await dbContext.Set<Branch>()
       .AsNoTracking()
-      .Where(b => b.BusinessId == businessId && branchIdObjects.Contains(b.Id))
+      .Where(b => b.BusinessId == businessId && branchIds.Contains(b.Id))
       .Select(b => new { b.Id, b.Name })
       .ToDictionaryAsync(b => b.Id.Value, b => b.Name, cancellationToken);
 
@@ -221,8 +220,8 @@ public sealed class EfProfitabilityReadRepository(AppDbContext dbContext) : IPro
         var netProfit = ProfitabilityCalculator.EstimatedNetProfit(grossProfit, expenses);
 
         return new BranchProfitabilityResponse(
-          BranchId: s.BranchId,
-          BranchName: branchNames.GetValueOrDefault(s.BranchId, "Sucursal desconocida"),
+          BranchId: s.BranchId.Value,
+          BranchName: branchNames.GetValueOrDefault(s.BranchId.Value, "Sucursal desconocida"),
           TotalSales: s.TotalSales,
           TotalCost: totalCost,
           GrossProfit: grossProfit,

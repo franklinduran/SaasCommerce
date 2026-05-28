@@ -90,7 +90,8 @@ public sealed class InvoicesEndpointTests
         "Rnc",
         NextIdentificationNumber(),
         [new RegisterBusinessPhoneRequest(NextPhoneNumber(), "Principal", true)],
-        "Principal"));
+        "Principal",
+        Guid.Parse("11111111-1111-1111-1111-111111111111")));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterBusinessResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.OK);

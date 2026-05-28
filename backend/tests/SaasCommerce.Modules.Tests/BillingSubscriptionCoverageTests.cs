@@ -613,11 +613,12 @@ public sealed class BillingSubscriptionCoverageTests
     var changed = await new ChangeBusinessPlanCommandHandler(
         scenario.Subscriptions,
         scenario.Plans,
+        scenario.Usage,
         currentUser,
         scenario.Clock,
         scenario.UnitOfWork,
         outbox)
-      .Handle(new ChangeBusinessPlanCommand(null, newPlan.Id));
+      .Handle(new ChangeBusinessPlanCommand(newPlan.Id));
 
     changed.IsSuccess.Should().BeTrue();
     changed.Value.Plan.Id.Should().Be(newPlan.Id);
@@ -646,6 +647,37 @@ public sealed class BillingSubscriptionCoverageTests
     reactivated.IsSuccess.Should().BeTrue();
     reactivated.Value.Status.Should().Be(nameof(SubscriptionStatus.Active));
     scenario.UnitOfWork.SaveCount.Should().BeGreaterThan(3);
+  }
+
+  [Fact]
+  public async Task ChangeBusinessPlanShouldRejectPlanWhenCurrentUsageExceedsTargetLimits()
+  {
+    var scenario = new BillingScenario();
+    var currentUser = TestCurrentUser.Create(scenario.BusinessId.Value);
+    var outbox = new RecordingOutboxWriter();
+    var currentPlan = Plan(code: "PREMIUM", maxBranches: 10, maxUsers: 10, maxProducts: 1000, maxSales: 1000);
+    var lowerPlan = Plan(code: "BASIC", maxBranches: 1, maxUsers: 2, maxProducts: 300, maxSales: 100);
+    scenario.Subscriptions.Current = ActiveSubscription(currentPlan.Id);
+    scenario.Plans.Items.AddRange([currentPlan, lowerPlan]);
+    scenario.Usage.Branches = 2;
+    scenario.Usage.Users = 3;
+
+    var result = await new ChangeBusinessPlanCommandHandler(
+        scenario.Subscriptions,
+        scenario.Plans,
+        scenario.Usage,
+        currentUser,
+        scenario.Clock,
+        scenario.UnitOfWork,
+        outbox)
+      .Handle(new ChangeBusinessPlanCommand(lowerPlan.Id));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Code.Should().Be("subscription.downgrade_blocked");
+    result.Error.Message.Should().Contain("sucursales activas: 2/1");
+    result.Error.Message.Should().Contain("usuarios activos: 3/2");
+    scenario.Subscriptions.Current.PlanId.Should().Be(currentPlan.Id);
+    scenario.UnitOfWork.SaveCount.Should().Be(0);
   }
 
   [Fact]
@@ -681,21 +713,23 @@ public sealed class BillingSubscriptionCoverageTests
     (await new ChangeBusinessPlanCommandHandler(
         scenario.Subscriptions,
         scenario.Plans,
+        scenario.Usage,
         currentUser,
         scenario.Clock,
         scenario.UnitOfWork,
         outbox)
-      .Handle(new ChangeBusinessPlanCommand(null, Guid.Empty)))
+      .Handle(new ChangeBusinessPlanCommand(Guid.Empty)))
       .Error.Should().Be(SubscriptionErrors.InvalidPlanData);
 
     (await new ChangeBusinessPlanCommandHandler(
         scenario.Subscriptions,
         scenario.Plans,
+        scenario.Usage,
         currentUser,
         scenario.Clock,
         scenario.UnitOfWork,
         outbox)
-      .Handle(new ChangeBusinessPlanCommand(null, Guid.NewGuid())))
+      .Handle(new ChangeBusinessPlanCommand(Guid.NewGuid())))
       .Error.Should().Be(SubscriptionErrors.PlanNotFound);
 
     scenario.Subscriptions.Current = null;

@@ -1,10 +1,13 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace SaasCommerce.BuildingBlocks.Infrastructure.Persistence.Migrations;
 
+[DbContext(typeof(AppDbContext))]
+[Migration("202605270002_AddBetaFeedback")]
 public partial class AddBetaFeedback : Migration
 {
   private const string FeedbackSchema = "feedback";

@@ -21,6 +21,7 @@ namespace SaasCommerce.Modules.Billing.Application.Subscriptions;
 public sealed class ChangeBusinessPlanCommandHandler(
   IBusinessSubscriptionRepository subscriptionRepository,
   ISubscriptionPlanRepository planRepository,
+  ISubscriptionUsageReader usageReader,
   ICurrentUserService currentUser,
   IClock clock,
   IUnitOfWork unitOfWork,
@@ -39,7 +40,7 @@ public sealed class ChangeBusinessPlanCommandHandler(
       return Result.Failure<BusinessSubscriptionResponse>(SubscriptionErrors.InvalidPlanData);
     }
 
-    var businessId = command.BusinessId ?? currentUser.BusinessId ?? Guid.Empty;
+    var businessId = currentUser.BusinessId ?? Guid.Empty;
     if (businessId == Guid.Empty)
     {
       return Result.Failure<BusinessSubscriptionResponse>(SubscriptionErrors.UserContextRequired);
@@ -66,10 +67,17 @@ public sealed class ChangeBusinessPlanCommandHandler(
       return Result.Failure<BusinessSubscriptionResponse>(SubscriptionErrors.PlanNotActive);
     }
 
-    // Change the plan
     var now = clock.UtcNow;
+    var downgradeCheck = await EnsureCurrentUsageFitsPlanAsync(tenantId, newPlan, now, cancellationToken);
+    if (downgradeCheck.IsFailure)
+    {
+      return Result.Failure<BusinessSubscriptionResponse>(downgradeCheck.Error);
+    }
+
+    // Capture previous state before mutating
     var newPeriodEnd = now.AddDays(BillingDays);
     var previousPlanId = subscription.PlanId;
+    var previousStatus = subscription.Status.ToString();
 
     subscription.ChangePlan(command.NewPlanId, newPeriodEnd, now);
 
@@ -82,10 +90,10 @@ public sealed class ChangeBusinessPlanCommandHandler(
         subscription.Id,
         previousPlanId,
         command.NewPlanId,
-        "Active", // Previous status (assumed active)
-        "Active", // New status
+        previousStatus,
+        subscription.Status.ToString(),
         currentUser.UserId,
-        $"Plan changed from {newPlan?.Name} to {newPlan?.Name}",
+        $"Plan changed to {newPlan!.Name}",
         now),
       cancellationToken);
 
@@ -93,5 +101,48 @@ public sealed class ChangeBusinessPlanCommandHandler(
 
     var response = BusinessSubscriptionResponseMapper.ToResponse(subscription, newPlan!);
     return Result.Success(response);
+  }
+
+  private async Task<Result> EnsureCurrentUsageFitsPlanAsync(
+    BusinessId businessId,
+    SubscriptionPlan plan,
+    DateTimeOffset now,
+    CancellationToken cancellationToken)
+  {
+    var monthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, now.Offset);
+    var monthEnd = monthStart.AddMonths(1);
+    var violations = new List<string>();
+
+    var branches = await usageReader.CountActiveBranchesAsync(businessId, cancellationToken);
+    if (branches > plan.MaxBranches)
+    {
+      violations.Add($"sucursales activas: {branches}/{plan.MaxBranches}");
+    }
+
+    var users = await usageReader.CountActiveUsersAsync(businessId, cancellationToken);
+    if (users > plan.MaxUsers)
+    {
+      violations.Add($"usuarios activos: {users}/{plan.MaxUsers}");
+    }
+
+    var products = await usageReader.CountActiveProductsAsync(businessId, cancellationToken);
+    if (products > plan.MaxProducts)
+    {
+      violations.Add($"productos activos: {products}/{plan.MaxProducts}");
+    }
+
+    var monthlySales = await usageReader.CountMonthlySalesAsync(businessId, monthStart, monthEnd, cancellationToken);
+    if (monthlySales > plan.MaxSalesPerMonth)
+    {
+      violations.Add($"ventas del mes: {monthlySales}/{plan.MaxSalesPerMonth}");
+    }
+
+    if (violations.Count == 0)
+    {
+      return Result.Success();
+    }
+
+    return Result.Failure(SubscriptionErrors.DowngradeBlocked(
+      $"No puedes cambiar a {plan.Name} porque tu uso actual excede sus limites: {string.Join(", ", violations)}. Reduce el uso o elige un plan superior."));
   }
 }

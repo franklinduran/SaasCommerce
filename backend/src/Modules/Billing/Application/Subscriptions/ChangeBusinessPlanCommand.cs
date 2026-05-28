@@ -2,8 +2,6 @@ namespace SaasCommerce.Modules.Billing.Application.Subscriptions;
 
 /// <summary>
 /// Command to change a business's subscription plan (upgrade or downgrade).
-/// Can be initiated by the business owner or an admin.
+/// BusinessId is always resolved from the authenticated user context — never from the caller.
 /// </summary>
-public sealed record ChangeBusinessPlanCommand(
-  Guid? BusinessId,
-  Guid NewPlanId);
+public sealed record ChangeBusinessPlanCommand(Guid NewPlanId);

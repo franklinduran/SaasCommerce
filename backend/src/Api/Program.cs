@@ -288,7 +288,8 @@ app.MapPost(
         request.Phones?
           .Select(phone => new RegisterBusinessPhoneCommand(phone.Number, phone.Label, phone.IsPrimary))
           .ToArray(),
-        request.BranchName),
+        request.BranchName,
+        request.PlanId),
       cancellationToken);
 
     return ApiHelpers.ToApiResult(result, correlationIdProvider);

@@ -203,7 +203,7 @@ internal static class SubscriptionEndpointExtensions
         CancellationToken cancellationToken) =>
       {
         var result = await handler.Handle(
-          new ChangeBusinessPlanCommand(null, request.PlanId),
+          new ChangeBusinessPlanCommand(request.PlanId),
           cancellationToken);
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })

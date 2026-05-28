@@ -106,7 +106,8 @@ public sealed class AccountRegistrationTests
       identificationType,
       identificationNumber,
       [new RegisterBusinessPhoneCommand("8090000000", "Principal", true)],
-      branchName));
+      branchName,
+      BillingDataSeeder.BasicPlanId));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
@@ -143,7 +144,8 @@ public sealed class AccountRegistrationTests
       "Cedula",
       "00112345678",
       [new RegisterBusinessPhoneCommand("8090000000", "Local", false)],
-      "Sucursal principal"));
+      "Sucursal principal",
+      BillingDataSeeder.BasicPlanId));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
@@ -166,7 +168,8 @@ public sealed class AccountRegistrationTests
         new RegisterBusinessPhoneCommand("8090000000", "Uno", true),
         new RegisterBusinessPhoneCommand("8290000000", "Dos", true)
       ],
-      "Sucursal principal"));
+      "Sucursal principal",
+      BillingDataSeeder.BasicPlanId));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
@@ -194,11 +197,33 @@ public sealed class AccountRegistrationTests
         new RegisterBusinessPhoneCommand("8090000000", "Uno", true),
         new RegisterBusinessPhoneCommand(secondPhone, "Dos", false)
       ],
-      "Sucursal principal"));
+      "Sucursal principal",
+      BillingDataSeeder.BasicPlanId));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
     result.Error.Details.Should().Contain(error => error.Code == "phones");
+  }
+
+  [Fact]
+  public async Task RegisterBusinessShouldRejectMissingPlan()
+  {
+    await using var dbContext = CreateDbContext();
+    var handler = CreateHandler(dbContext);
+
+    var result = await handler.Handle(new RegisterBusinessCommand(
+      "Colmado",
+      "Admin Principal",
+      "admin@test.com",
+      "Password123!",
+      "Cedula",
+      "00112345678",
+      [new RegisterBusinessPhoneCommand("8090000000", "Principal", true)],
+      "Sucursal principal"));
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Code.Should().Be(AccountErrors.InvalidRegistration.Code);
+    result.Error.Details.Should().Contain(error => error.Code == "planId");
   }
 
   private static RegisterBusinessCommand Command(
@@ -220,7 +245,8 @@ public sealed class AccountRegistrationTests
           index == 0 ? "Principal" : "Secundario",
           index == 0))
         .ToArray(),
-      "Sucursal principal");
+      "Sucursal principal",
+      BillingDataSeeder.BasicPlanId);
 
   private static RegisterBusinessHandler CreateHandler(AppDbContext dbContext)
   {

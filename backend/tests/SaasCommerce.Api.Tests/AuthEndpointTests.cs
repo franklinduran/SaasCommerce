@@ -229,7 +229,8 @@ public sealed class AuthEndpointTests
           new RegisterBusinessPhoneRequest("8493564360", "Principal", true),
           new RegisterBusinessPhoneRequest("8493564360", "Secundario", false)
         ],
-        "Sucursal principal"));
+        "Sucursal principal",
+        Guid.Parse("11111111-1111-1111-1111-111111111111")));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterBusinessResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -240,6 +241,34 @@ public sealed class AuthEndpointTests
     payload.Error.ValidationErrors.Should().Contain(error =>
       error.Field == "phones" &&
       error.Message == "Phone numbers must not be duplicated.");
+  }
+
+  [Fact]
+  public async Task RegisterBusinessShouldRequirePlan()
+  {
+    using var factory = CreateFactory();
+    using var client = factory.CreateClient();
+
+    var response = await client.PostAsJsonAsync(
+      "/api/account/register-business",
+      new RegisterBusinessRequest(
+        "Inderiva",
+        "Franklin De Jesus Duran",
+        $"info-{Guid.NewGuid():N}@inderiva.com",
+        "Admin123!",
+        "Cedula",
+        "40231756822",
+        [new RegisterBusinessPhoneRequest("8493564360", "Principal", true)],
+        "Sucursal principal"));
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterBusinessResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    payload.Should().NotBeNull();
+    payload!.IsSuccess.Should().BeFalse();
+    payload.Error!.Code.Should().Be("VALIDATION_ERROR");
+    payload.Error.ValidationErrors.Should().Contain(error =>
+      error.Field == "planId" &&
+      error.Message == "A subscription plan is required.");
   }
 
   private static async Task AuthenticateAsync(HttpClient client)

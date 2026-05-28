@@ -8,4 +8,5 @@ public sealed record RegisterBusinessCommand(
   string? IdentificationType,
   string? IdentificationNumber,
   IReadOnlyCollection<RegisterBusinessPhoneCommand>? Phones,
-  string BranchName);
+  string BranchName,
+  Guid? PlanId = null);

@@ -9,6 +9,7 @@ export type RegisterBusinessRequest = {
   identificationNumber: string | null
   phones: RegisterBusinessPhoneRequest[] | null
   branchName: string
+  planId: string
 }
 
 export type RegisterBusinessPhoneRequest = {

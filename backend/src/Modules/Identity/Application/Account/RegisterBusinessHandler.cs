@@ -103,16 +103,30 @@ public sealed class RegisterBusinessHandler(RegisterBusinessDependencies depende
       clock.UtcNow);
     user.AddRole(adminRole);
 
-    var basicPlan = await subscriptionPlans.GetByCodeAsync(SubscriptionPlanCodes.Basic, cancellationToken);
-    if (basicPlan is null)
+    if (!command.PlanId.HasValue || command.PlanId.Value == Guid.Empty)
+    {
+      return Result.Failure<RegisterBusinessResponse>(
+        AccountErrors.InvalidRegistrationWith(
+        [
+          new DomainError("planId", "A subscription plan is required.")
+        ]));
+    }
+
+    var selectedPlan = await subscriptionPlans.GetByIdAsync(command.PlanId.Value, cancellationToken);
+    if (selectedPlan is null)
     {
       return Result.Failure<RegisterBusinessResponse>(SubscriptionErrors.PlanNotFound);
+    }
+
+    if (!selectedPlan.IsActive)
+    {
+      return Result.Failure<RegisterBusinessResponse>(SubscriptionErrors.PlanNotActive);
     }
 
     var subscription = BusinessSubscription.StartTrial(
       Guid.NewGuid(),
       businessId,
-      basicPlan.Id,
+      selectedPlan.Id,
       clock.UtcNow,
       clock.UtcNow.AddDays(14));
 
