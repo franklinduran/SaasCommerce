@@ -30,7 +30,9 @@ import {
   Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { CommandPalette, type CommandPaletteItem } from '@/app/CommandPalette'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import { logout as serverLogout } from '@/modules/auth/services/authService'
@@ -192,7 +194,6 @@ export function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const pageTitle = getPageTitle(location.pathname)
-  const ToggleSidebarIcon = sidebarCollapsed ? PanelLeftOpen : PanelLeftClose
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const userName = session?.user.fullName ?? 'Admin'
@@ -235,6 +236,96 @@ export function AppShell() {
     // Click the open group → close it. Click another → it becomes the only open.
     setExpandedGroup((curr) => (curr === label ? null : label))
   }
+
+  // Collapsed-mode popup: which group's flyout menu is open. Only one at a time.
+  const [openPopup, setOpenPopup] = useState<string | null>(null)
+  // Grace-period timer for hover-out: prevents the popup from snapping shut
+  // when the user moves their mouse from the trigger to the popup.
+  const popupCloseTimerRef = useRef<number | null>(null)
+
+  function cancelPopupClose() {
+    if (popupCloseTimerRef.current !== null) {
+      clearTimeout(popupCloseTimerRef.current)
+      popupCloseTimerRef.current = null
+    }
+  }
+
+  function openPopupHover(label: string) {
+    cancelPopupClose()
+    setOpenPopup(label)
+  }
+
+  function schedulePopupClose(label: string) {
+    cancelPopupClose()
+    popupCloseTimerRef.current = window.setTimeout(() => {
+      // Only close if THIS popup is still the open one — guards against the
+      // race where the user moves from one group to another within the delay.
+      setOpenPopup((curr) => (curr === label ? null : curr))
+      popupCloseTimerRef.current = null
+    }, 200)
+  }
+
+  function closePopupNow() {
+    cancelPopupClose()
+    setOpenPopup(null)
+  }
+
+  // Cleanup timer on unmount
+  useEffect(() => () => cancelPopupClose(), [])
+
+  // Close popup on outside click or escape (matches user-menu pattern).
+  useEffect(() => {
+    if (!openPopup) return
+    function handlePointerDown(event: MouseEvent) {
+      if (!(event.target as Element | null)?.closest('[data-sidebar-popup]')) {
+        closePopupNow()
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') closePopupNow()
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [openPopup])
+
+  // Close any open popup when toggling between collapsed/expanded modes.
+  useEffect(() => {
+    closePopupNow()
+  }, [sidebarCollapsed])
+
+  // ─── Command palette (Ctrl/Cmd+K search) ─────────────────────────────────
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Flatten all nav items so the search can match across every group.
+  const commandItems = useMemo<CommandPaletteItem[]>(
+    () =>
+      navigationGroups.flatMap((g) =>
+        g.items.map((item) => ({
+          groupLabel: g.label,
+          icon: item.icon,
+          label: item.label,
+          path: item.path,
+          requiredPermission: item.requiredPermission,
+        })),
+      ),
+    [],
+  )
+
+  // Global Ctrl/Cmd+K to toggle the palette.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setSearchOpen((open) => !open)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   function dismissBanner() {
     sessionStorage.setItem(BANNER_DISMISSED_KEY, 'true')
@@ -297,112 +388,121 @@ export function AppShell() {
         {/* ── Sidebar ────────────────────────────────────────────────────── */}
         <aside
           className={cn(
-            'flex w-full min-w-0 max-w-full shrink-0 flex-col border-b border-sidebar-border bg-sidebar-bg text-sidebar-fg lg:row-span-2 lg:max-h-dvh lg:min-h-0 lg:border-b-0 lg:border-r',
+            'relative flex w-full min-w-0 max-w-full shrink-0 flex-col border-b border-sidebar-border bg-sidebar-bg text-sidebar-fg lg:row-span-2 lg:max-h-dvh lg:min-h-0 lg:border-b-0 lg:border-r',
             sidebarCollapsed ? 'lg:w-[76px]' : 'lg:w-[260px]',
           )}
         >
-          {/* Logo / business header */}
+          {/* Logo / business header — logo always visible, even in collapsed mode */}
           <div
             className={cn(
-              'flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/60 px-4',
-              sidebarCollapsed && 'lg:h-16 lg:px-3',
+              'flex h-16 shrink-0 items-center border-b border-sidebar-border/60',
+              sidebarCollapsed ? 'justify-center px-3' : 'gap-2.5 px-3',
             )}
           >
-            <div className={cn('flex min-w-0 items-center gap-2.5', sidebarCollapsed && 'lg:justify-center')}>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sidebar-active-bg text-sidebar-active-fg shadow-sm">
-                <CircleDollarSign aria-hidden="true" size={18} />
-              </span>
-              <div className={cn('min-w-0', sidebarCollapsed && 'lg:hidden')}>
-                <p className="truncate text-sm font-semibold text-sidebar-fg">{businessName}</p>
-                <p className="truncate text-xs font-medium text-sidebar-muted">
-                  {session?.user.fullName ?? 'Sucursal principal'}
-                </p>
-              </div>
-            </div>
-            <Button
-              className={cn(
-                'shrink-0 max-lg:hidden lg:inline-flex text-sidebar-fg hover:bg-sidebar-hover-bg hover:text-sidebar-fg focus-visible:ring-sidebar-active-bg/25',
-                sidebarCollapsed && 'lg:hidden',
-              )}
-              aria-label="Contraer menu"
-              onClick={toggleSidebar}
-              size="icon"
-              title="Contraer menu"
-              variant="ghost"
-            >
-              <ToggleSidebarIcon aria-hidden="true" size={16} strokeWidth={2} />
-            </Button>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sidebar-active-bg text-sidebar-active-fg shadow-sm">
+              <CircleDollarSign aria-hidden="true" size={18} />
+            </span>
+            {!sidebarCollapsed && (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-sidebar-fg">{businessName}</p>
+                  <p className="truncate text-xs font-medium text-sidebar-muted">
+                    {session?.user.fullName ?? 'Sucursal principal'}
+                  </p>
+                </div>
+                {/* Inline collapse button — next to the logo when expanded */}
+                <button
+                  aria-label="Contraer menu"
+                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-sidebar-hover-bg hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30 max-lg:hidden lg:inline-flex"
+                  onClick={toggleSidebar}
+                  title="Contraer menu"
+                  type="button"
+                >
+                  <PanelLeftClose aria-hidden="true" size={17} strokeWidth={2} />
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Search bar (expanded) */}
+          {/* Floating expand button — ONLY shown when collapsed, sits on the
+              right edge of the sidebar, vertically centered on the divider. */}
+          {sidebarCollapsed && (
+            <button
+              aria-label="Expandir menu"
+              className="absolute right-0 top-16 z-30 hidden h-6 w-6 -translate-y-1/2 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-all hover:border-gray-300 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30 lg:flex"
+              onClick={toggleSidebar}
+              title="Expandir menu"
+              type="button"
+            >
+              <PanelLeftOpen aria-hidden="true" size={12} strokeWidth={2.5} />
+            </button>
+          )}
+
+          {/* Search bar (expanded only) — opens the command palette */}
           {!sidebarCollapsed && (
             <div className="hidden px-3 py-3 lg:block">
-              <Button
+              <button
                 aria-label="Buscar"
-                className="w-full justify-start px-3 bg-sidebar-hover-bg text-sidebar-fg ring-1 ring-sidebar-border/60 hover:bg-sidebar-hover-bg/80 hover:text-sidebar-fg focus-visible:ring-sidebar-active-bg/25"
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md bg-sidebar-hover-bg px-3 py-2 text-sidebar-fg ring-1 ring-sidebar-border/60 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30"
+                onClick={() => setSearchOpen(true)}
                 type="button"
-                variant="ghost"
               >
-                <Search aria-hidden="true" size={15} />
-                <span className="font-medium">Buscar...</span>
-                <kbd className="ml-auto rounded bg-sidebar-border/40 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-sidebar-muted ring-1 ring-sidebar-border/60">
+                <Search aria-hidden="true" className="text-gray-500" size={15} />
+                <span className="text-sm font-medium text-gray-500">Buscar...</span>
+                <kbd className="ml-auto rounded bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-gray-500 ring-1 ring-gray-200">
                   Ctrl K
                 </kbd>
-              </Button>
+              </button>
             </div>
           )}
 
-          {/* Expand button (collapsed) */}
-          {sidebarCollapsed && (
-            <div className="hidden px-2 py-2 lg:block">
-              <Button
-                aria-label="Expandir menu"
-                className="w-full text-sidebar-fg hover:bg-sidebar-hover-bg hover:text-sidebar-fg focus-visible:ring-sidebar-active-bg/25"
-                onClick={toggleSidebar}
-                size="icon"
-                title="Expandir menu"
-                variant="ghost"
-              >
-                <ToggleSidebarIcon aria-hidden="true" size={16} strokeWidth={2} />
-              </Button>
-            </div>
-          )}
-
-          {/* Navigation */}
+          {/* Navigation — px-3 / py-3 / gap-3 consistent both modes */}
           <nav
             className={cn(
-              'flex min-w-0 shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-4 lg:overflow-y-auto lg:overflow-x-hidden lg:py-3',
-              sidebarCollapsed && 'lg:px-2',
+              'flex min-w-0 shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto lg:overflow-x-hidden lg:px-3 lg:py-3',
+              sidebarCollapsed && 'lg:items-center',
             )}
           >
             {navigationGroups.map((group, i) => (
-              <NavigationSection
-                collapsed={sidebarCollapsed}
-                expanded={group.label ? expandedGroup === group.label : true}
-                items={group.items}
-                key={group.label ?? `group-${i}`}
-                label={group.label}
-                onToggle={group.label ? () => toggleGroup(group.label!) : undefined}
-                userPermissions={userPermissions}
-              />
+              <Fragment key={group.label ?? `group-${i}`}>
+                {/* Section separator in collapsed mode — visually splits one
+                    group from the next so users can tell where each starts. */}
+                {sidebarCollapsed && i > 0 && (
+                  <hr aria-hidden="true" className="hidden h-px w-6 border-0 bg-gray-200 lg:block" />
+                )}
+                <NavigationSection
+                  collapsed={sidebarCollapsed}
+                  expanded={group.label ? expandedGroup === group.label : true}
+                  items={group.items}
+                  label={group.label}
+                  onPopupCancelClose={cancelPopupClose}
+                  onPopupClose={closePopupNow}
+                  onPopupHoverEnter={group.label ? () => openPopupHover(group.label!) : undefined}
+                  onPopupHoverLeave={group.label ? () => schedulePopupClose(group.label!) : undefined}
+                  onPopupToggle={group.label ? () => (openPopup === group.label ? closePopupNow() : openPopupHover(group.label!)) : undefined}
+                  onToggle={group.label ? () => toggleGroup(group.label!) : undefined}
+                  popupOpen={group.label !== undefined && openPopup === group.label}
+                  userPermissions={userPermissions}
+                />
+              </Fragment>
             ))}
           </nav>
 
-          {/* User menu trigger */}
-          <div className={cn('hidden shrink-0 border-t border-sidebar-border/60 p-3 lg:block', sidebarCollapsed && 'lg:px-2')}>
+          {/* User menu trigger — px-3 py-3 consistent with nav */}
+          <div className="hidden shrink-0 border-t border-sidebar-border/60 px-3 py-3 lg:block">
             <div className="relative" ref={userMenuRef}>
               <button
                 aria-expanded={userMenuOpen}
                 aria-haspopup="menu"
                 aria-label="Abrir menu de usuario"
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-sidebar-hover-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active-bg/25 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-bg',
-                  sidebarCollapsed && 'h-10 justify-center px-0',
+                  'flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-sidebar-hover-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30',
+                  sidebarCollapsed && 'h-9 justify-center px-0',
                 )}
                 onClick={() => setUserMenuOpen((open) => !open)}
                 type="button"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-active-bg text-xs font-semibold text-sidebar-active-fg">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-active-bg text-[11px] font-semibold text-sidebar-active-fg">
                   {userInitial}
                 </div>
                 <div className={cn('min-w-0 flex-1', sidebarCollapsed && 'lg:hidden')}>
@@ -425,7 +525,7 @@ export function AppShell() {
               {userMenuOpen && (
                 <div
                   aria-label="Menu de usuario"
-                  className="absolute bottom-full left-0 z-30 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg ring-1 ring-black/5"
+                  className="absolute bottom-full left-0 z-40 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg ring-1 ring-black/5"
                   role="menu"
                 >
                   <div className="border-b border-muted px-3 py-2">
@@ -496,6 +596,14 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {searchOpen && (
+        <CommandPalette
+          items={commandItems}
+          onClose={() => setSearchOpen(false)}
+          userPermissions={userPermissions}
+        />
+      )}
     </div>
   )
 }
@@ -574,11 +682,30 @@ type NavigationSectionProps = {
   expanded: boolean
   items: readonly NavigationItem[]
   label?: string
+  onPopupCancelClose?: () => void
+  onPopupClose?: () => void
+  onPopupHoverEnter?: () => void
+  onPopupHoverLeave?: () => void
+  onPopupToggle?: () => void
   onToggle?: () => void
+  popupOpen?: boolean
   userPermissions: string[]
 }
 
-function NavigationSection({ collapsed, expanded, items, label, onToggle, userPermissions }: Readonly<NavigationSectionProps>) {
+function NavigationSection({
+  collapsed,
+  expanded,
+  items,
+  label,
+  onPopupCancelClose,
+  onPopupClose,
+  onPopupHoverEnter,
+  onPopupHoverLeave,
+  onPopupToggle,
+  onToggle,
+  popupOpen,
+  userPermissions,
+}: Readonly<NavigationSectionProps>) {
   const visibleItems = items.filter((item) => {
     if (!item.requiredPermission) return true
     const required = Array.isArray(item.requiredPermission)
@@ -589,14 +716,31 @@ function NavigationSection({ collapsed, expanded, items, label, onToggle, userPe
 
   if (visibleItems.length === 0) return null
 
-  // When sidebar is icon-only (collapsed), labels & toggles are hidden:
-  // all items render as icons stacked vertically.
-  const isCollapsibleHeader = label && !collapsed && Boolean(onToggle)
-  const itemsVisible = collapsed || !label || expanded
+  const hasToggle = Boolean(label) && Boolean(onToggle)
+
+  // ── Collapsed + grouped → popup-menu pattern (like the user-menu button) ──
+  if (collapsed && hasToggle && label) {
+    return (
+      <CollapsedGroupPopup
+        items={visibleItems}
+        label={label}
+        onPopupCancelClose={onPopupCancelClose}
+        onPopupClose={onPopupClose}
+        onPopupHoverEnter={onPopupHoverEnter}
+        onPopupHoverLeave={onPopupHoverLeave}
+        onPopupToggle={onPopupToggle}
+        popupOpen={popupOpen}
+      />
+    )
+  }
+
+  // ── Standard layout: expanded mode accordion OR standalone collapsed items ──
+  const itemsVisible = !label || expanded
 
   return (
-    <div className="flex gap-1 lg:flex-col lg:gap-0.5">
-      {isCollapsibleHeader && (
+    <div className={cn('flex gap-1 lg:flex-col lg:gap-0.5', collapsed && 'lg:items-center')}>
+      {/* Expanded sidebar: text-only header (no icon — items already have them) */}
+      {hasToggle && !collapsed && (
         <button
           aria-expanded={expanded}
           className={cn(
@@ -632,7 +776,7 @@ function NavigationSection({ collapsed, expanded, items, label, onToggle, userPe
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30',
               // Active: white card lift + subtle ring for definition + darker text
               isActive && 'bg-sidebar-active-bg text-sidebar-active-fg font-semibold shadow-sm ring-1 ring-gray-200 hover:bg-sidebar-active-bg hover:text-sidebar-active-fg',
-              collapsed && 'lg:h-10 lg:w-10 lg:justify-center lg:px-0',
+              collapsed && 'lg:h-9 lg:w-9 lg:justify-center lg:px-0',
             )
           }
           end={item.path === '/'}
@@ -658,6 +802,123 @@ function NavigationSection({ collapsed, expanded, items, label, onToggle, userPe
           )}
         </NavLink>
       ))}
+    </div>
+  )
+}
+
+// ─── Collapsed group popup (portaled, fixed positioning) ─────────────────────
+// Renders OUTSIDE the sidebar via createPortal so it can't be clipped by the
+// nav's overflow. Position is computed from the trigger button's bounding box.
+
+type CollapsedGroupPopupProps = {
+  items: readonly NavigationItem[]
+  label: string
+  onPopupCancelClose?: () => void
+  onPopupClose?: () => void
+  onPopupHoverEnter?: () => void
+  onPopupHoverLeave?: () => void
+  onPopupToggle?: () => void
+  popupOpen?: boolean
+}
+
+function CollapsedGroupPopup({
+  items,
+  label,
+  onPopupCancelClose,
+  onPopupClose,
+  onPopupHoverEnter,
+  onPopupHoverLeave,
+  onPopupToggle,
+  popupOpen,
+}: Readonly<CollapsedGroupPopupProps>) {
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+
+  // Compute popup position relative to the trigger button. Re-runs on open
+  // and on viewport resize (close to avoid stale positions on scroll).
+  useEffect(() => {
+    if (!popupOpen || !triggerRef.current) {
+      setPos(null)
+      return
+    }
+    function place() {
+      const el = triggerRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      setPos({ top: rect.top, left: rect.right + 8 })
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [popupOpen])
+
+  return (
+    <div className="hidden lg:block" data-sidebar-popup>
+      <button
+        aria-expanded={popupOpen}
+        aria-haspopup="menu"
+        aria-label={label}
+        className={cn(
+          'flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-[12px] font-semibold uppercase transition-colors',
+          popupOpen
+            ? 'bg-sidebar-active-bg text-gray-900 shadow-sm ring-1 ring-gray-200'
+            : 'text-gray-500 hover:bg-sidebar-hover-bg hover:text-gray-900',
+        )}
+        onClick={onPopupToggle}
+        onMouseEnter={onPopupHoverEnter}
+        onMouseLeave={onPopupHoverLeave}
+        ref={triggerRef}
+        title={label}
+        type="button"
+      >
+        {label.slice(0, 2)}
+      </button>
+
+      {popupOpen && pos && createPortal(
+        <div
+          aria-label={label}
+          className="fixed z-50 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg ring-1 ring-black/5 animate-in fade-in slide-in-from-left-1 duration-150 ease-out"
+          data-sidebar-popup
+          onMouseEnter={onPopupCancelClose}
+          onMouseLeave={onPopupHoverLeave}
+          role="menu"
+          style={{ left: pos.left, top: pos.top }}
+        >
+          <div className="border-b border-gray-100 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+              {label}
+            </p>
+          </div>
+          <div className="py-1">
+            {items.map((item) => (
+              <NavLink
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900',
+                  )
+                }
+                end={item.path === '/'}
+                key={item.path}
+                onClick={onPopupClose}
+                role="menuitem"
+                to={item.path}
+              >
+                <item.icon
+                  aria-hidden="true"
+                  className="shrink-0 text-gray-500"
+                  size={15}
+                  strokeWidth={1.85}
+                />
+                <span className="truncate">{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }
