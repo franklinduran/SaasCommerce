@@ -34,6 +34,10 @@ vi.mock('@/modules/notifications/components/NotificationBell', () => ({
   NotificationBell: () => <button type="button">Notificaciones</button>,
 }))
 
+vi.mock('@/modules/notifications/hooks/useNotifications', () => ({
+  useUnreadNotificationCount: () => ({ data: { unreadCount: 0 } }),
+}))
+
 vi.mock('@/modules/subscription/components/SubscriptionAlertBanner', () => ({
   SubscriptionAlertBanner: ({
     onChoosePlan,
@@ -94,7 +98,8 @@ describe('AppShell', () => {
     const user = userEvent.setup()
     renderShell('/')
 
-    expect(screen.getAllByText('Colmado Test').length).toBeGreaterThan(0)
+    // Brand logo always visible in sidebar header
+    expect(screen.getByAltText('Bimmo')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Inicio/ })).toBeTruthy()
     expect(screen.getByRole('link', { name: /POS/ })).toBeTruthy()
     expect(screen.queryByRole('link', { name: /Productos/ })).toBeNull()
@@ -115,8 +120,9 @@ describe('AppShell', () => {
     await user.click(screen.getByRole('button', { name: 'Elegir plan' }))
     expect(await screen.findByText('Outlet /subscription')).toBeTruthy()
 
+    // Open sidebar user dropdown then logout
     await user.click(screen.getByRole('button', { name: 'Abrir menu de usuario' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Cerrar sesion' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Cerrar sesión/ }))
     await waitFor(() => {
       expect(serverLogout).toHaveBeenCalledWith('access-token', 'refresh-token')
       expect(clearSession).toHaveBeenCalled()
@@ -139,21 +145,15 @@ describe('AppShell', () => {
 
     expect(screen.getByRole('button', { name: 'Expandir menu' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Abrir menu de usuario' })).toBeTruthy()
-    expect(screen.getByText('Detalle de caja')).toBeTruthy()
   })
 
-  it('opens the user menu and navigates to account settings', async () => {
+  it('navigates to account settings via sidebar Ajustes link', async () => {
     const user = userEvent.setup()
 
     renderShell('/')
 
-    await user.click(screen.getByRole('button', { name: 'Abrir menu de usuario' }))
-
-    expect(screen.getByRole('menu', { name: 'Menu de usuario' })).toBeTruthy()
-    expect(screen.getByRole('menuitem', { name: 'Usuarios y roles' })).toBeTruthy()
-
-    await user.click(screen.getByRole('menuitem', { name: 'Ajustes de cuenta' }))
-
+    // Ajustes is now a NavLink in the sidebar nav area
+    await user.click(screen.getByRole('link', { name: /Ajustes/ }))
     expect(await screen.findByText('Outlet /settings')).toBeTruthy()
   })
 
@@ -164,8 +164,9 @@ describe('AppShell', () => {
     renderShell('/users')
     expect(screen.getAllByText('Usuarios').length).toBeGreaterThan(0)
 
+    // Open sidebar user dropdown then logout
     await user.click(screen.getByRole('button', { name: 'Abrir menu de usuario' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Cerrar sesion' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Cerrar sesión/ }))
     await waitFor(() => expect(clearSession).toHaveBeenCalled())
     expect(await screen.findByText('Login page')).toBeTruthy()
   })

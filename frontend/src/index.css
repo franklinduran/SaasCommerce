@@ -103,8 +103,8 @@
   --sidebar-fg:         oklch(0.373 0.034 259.733);  /* gray-700 — body text      */
   --sidebar-muted:      oklch(0.707 0.022 261.325);  /* gray-400 — faint labels   */
   --sidebar-border:     oklch(0.928 0.006 264.531);  /* gray-200 — barely there   */
-  --sidebar-hover-bg:   oklch(0.967 0.003 264.542);  /* gray-100 — subtle hover   */
-  --sidebar-active-bg:  oklch(1 0 0);                /* white — active = card lift */
+  --sidebar-hover-bg:   oklch(0.961 0.003 264.542);  /* gray-100 — subtle hover   */
+  --sidebar-active-bg:  oklch(0.940 0.004 264.542);  /* gray-150 — subtle active  */
   --sidebar-active-fg:  oklch(0.210 0.034 264.665);  /* gray-900 — text on active */
 
   /* === SURFACE (neutral whites & soft grays) === */

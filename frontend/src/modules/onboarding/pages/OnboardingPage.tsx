@@ -68,7 +68,7 @@ export function OnboardingPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Configuración inicial</h1>
         <p className="mt-1 text-gray-600">
-          Completa estos pasos para empezar a usar ComercioFlow RD.
+          Completa estos pasos para empezar a usar BimmoFlow RD.
         </p>
       </div>
 

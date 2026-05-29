@@ -49,7 +49,7 @@ export function SubscriptionGate({ children }: Readonly<PropsWithChildren>) {
           <span className="flex h-8 w-8 items-center justify-center rounded-md bg-stone-900 text-white">
             <CircleDollarSign aria-hidden="true" size={16} />
           </span>
-          <span className="text-sm font-semibold text-stone-900">ComercioFlow</span>
+          <span className="text-sm font-semibold text-stone-900">Bimmo</span>
         </div>
         <span className="text-sm font-medium text-stone-500">{businessName}</span>
       </header>

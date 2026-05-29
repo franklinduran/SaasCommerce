@@ -110,7 +110,7 @@ function AuthHeroPanel() {
           <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white/15 ring-1 ring-inset ring-white/20 backdrop-blur">
             <ShoppingBag aria-hidden="true" size={17} strokeWidth={2.5} />
           </div>
-          <span className="text-[16px] font-semibold tracking-tight">Comercio</span>
+          <span className="text-[16px] font-semibold tracking-tight">Bimmo</span>
         </div>
 
         {/* Testimonial slider — text directly on photo */}

@@ -222,7 +222,7 @@ export function RegisterBusinessPage() {
 
       {/* Footer — copyright left, support links right */}
       <footer className="flex shrink-0 items-center justify-between border-t border-gray-200 px-10 py-5 lg:px-14">
-        <span className="text-[12px] text-gray-400">© 2026 ComercioFlow</span>
+        <span className="text-[12px] text-gray-400">© 2026 Bimmo</span>
         <nav aria-label="Ayuda" className="flex items-center gap-5 text-[13px] text-gray-500">
           <a className="transition hover:text-gray-900" href="#soporte">Soporte</a>
           <a className="transition hover:text-gray-900" href="#preguntas">Preguntas frecuentes</a>
