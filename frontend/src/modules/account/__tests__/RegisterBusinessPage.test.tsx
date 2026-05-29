@@ -11,22 +11,23 @@ describe('RegisterBusinessPage', () => {
     vi.unstubAllGlobals()
   })
 
-  it('keeps submit disabled when required fields are missing', () => {
+  it('opens on step 1 with a Continuar button and no Crear comercio button', () => {
     renderRegisterBusinessPage()
 
-    expect(screen.getByRole('button', { name: 'Crear comercio' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Crear comercio' })).toBeNull()
   })
 
-  it('shows identification and primary phone validation errors', async () => {
+  it('shows identification and primary phone validation errors in step 1', async () => {
     const user = userEvent.setup()
 
     renderRegisterBusinessPage()
 
-    await user.clear(screen.getByLabelText('Numero de identificacion *'))
-    await user.type(screen.getByLabelText('Numero de identificacion *'), '123')
-    await user.clear(screen.getByLabelText('Telefono principal *'))
-    await user.type(screen.getByLabelText('Telefono principal *'), '1')
-    await user.clear(screen.getByLabelText('Telefono principal *'))
+    await user.clear(screen.getByLabelText('Numero de identificacion'))
+    await user.type(screen.getByLabelText('Numero de identificacion'), '123')
+    await user.clear(screen.getByLabelText('Telefono principal'))
+    await user.type(screen.getByLabelText('Telefono principal'), '1')
+    await user.clear(screen.getByLabelText('Telefono principal'))
 
     expect(await screen.findByText('La cedula debe tener 11 digitos')).toBeTruthy()
     expect(await screen.findByText('Telefono principal requerido')).toBeTruthy()
@@ -38,10 +39,9 @@ describe('RegisterBusinessPage', () => {
     renderRegisterBusinessPage()
 
     expect(await screen.findByRole('button', { name: 'Reintentar' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Crear comercio' })).toBeDisabled()
   })
 
-  it('submits valid registration data', async () => {
+  it('submits valid registration data navigating through all three steps', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       if (String(url).includes('/api/subscription-plans')) {
@@ -85,15 +85,22 @@ describe('RegisterBusinessPage', () => {
 
     renderRegisterBusinessPage()
 
-    await user.click(await screen.findByRole('combobox', { name: 'Plan *' }))
+    // ── Step 1: Business info ────────────────────────────────────────────
+    await user.click(await screen.findByRole('combobox', { name: 'Plan' }))
     await user.click(screen.getByRole('option', { name: 'Basic - RD$29.00 / mes' }))
-    await user.type(screen.getByLabelText('Nombre del comercio *'), 'Colmado La Fe')
-    await user.type(screen.getByLabelText('Administrador *'), 'Admin Principal')
-    await user.type(screen.getByLabelText('Correo electronico *'), 'admin@lafe.com')
-    await user.type(screen.getByLabelText('Contrasena *'), 'Password123!')
-    await user.type(screen.getByLabelText('Numero de identificacion *'), '00112345678')
-    await user.type(screen.getByLabelText('Telefono principal *'), '8090000000')
-    await user.click(screen.getByRole('button', { name: 'Crear comercio' }))
+    await user.type(screen.getByLabelText('Nombre del comercio'), 'Colmado La Fe')
+    await user.type(screen.getByLabelText('Numero de identificacion'), '00112345678')
+    await user.type(screen.getByLabelText('Telefono principal'), '8090000000')
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    // ── Step 2: Admin info ───────────────────────────────────────────────
+    await user.type(await screen.findByLabelText('Administrador'), 'Admin Principal')
+    await user.type(screen.getByLabelText('Correo electronico'), 'admin@lafe.com')
+    await user.type(screen.getByLabelText('Contrasena'), 'Password123!')
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    // ── Step 3: Confirm & submit ─────────────────────────────────────────
+    await user.click(await screen.findByRole('button', { name: 'Crear comercio' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     const [, registerOptions] = fetchMock.mock.calls.find(([url]) =>

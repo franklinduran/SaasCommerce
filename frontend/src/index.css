@@ -4,21 +4,38 @@
 /*
  * ─── DESIGN TOKEN SYSTEM ───────────────────────────────────────────────────
  *
- * HOW TO CUSTOMIZE THE LOOK:
- *   1. Edit the CSS custom properties inside :root below.
- *   2. The @theme inline block maps those variables to Tailwind utilities
- *      (bg-primary, text-sidebar-fg, shadow-control, etc.) — do NOT edit it.
- *   3. tailwind.config.ts also reads some of these vars; it auto-updates.
+ * PHILOSOPHY: muted, pastel, discreet ("todo desapercibido").
+ * Color is the exception, not the rule. Highlights are reserved for
+ * status (success, danger) and the occasional brand accent.
  *
- * PALETTE REFERENCE (Tailwind v4 indigo oklch):
- *   indigo-50   oklch(0.962 0.018 272.314)  #EEF2FF
- *   indigo-100  oklch(0.930 0.034 272.788)  #E0E7FF
- *   indigo-200  oklch(0.870 0.065 274.039)  #C7D2FE
- *   indigo-600  oklch(0.511 0.262 276.966)  #4F46E5
- *   indigo-700  oklch(0.457 0.240 277.023)  #4338CA
- *   indigo-800  oklch(0.398 0.195 277.366)  #3730A3
- *   indigo-900  oklch(0.359 0.144 278.697)  #312E81
- *   indigo-950  oklch(0.257 0.090 281.288)  #1E1B4B
+ *   • Primary actions   → CHARCOAL (gray-900) — elegant, minimal
+ *   • Surfaces          → near-WHITE (gray-50)
+ *   • Borders           → soft gray-200
+ *   • Text              → neutral gray scale
+ *   • Brand accent      → SOFT PASTEL indigo (use sparingly via `bg-brand`,
+ *                          `text-brand`, `bg-brand-muted` — never overuse)
+ *   • Sidebar           → soft charcoal (gray-950), not vibrant navy
+ *   • Status (red/amber/emerald/sky) → only for semantic meaning
+ *
+ * HOW TO CUSTOMIZE:
+ *   1. Edit CSS custom properties in :root below.
+ *   2. @theme inline below maps them to Tailwind utilities — do NOT edit it.
+ *
+ * PALETTE REFERENCE (Tailwind v4 oklch):
+ *   Gray  (the workhorse):
+ *     gray-50     oklch(0.985 0.002 247.839)  #F9FAFB
+ *     gray-100    oklch(0.967 0.003 264.542)  #F3F4F6
+ *     gray-200    oklch(0.928 0.006 264.531)  #E5E7EB
+ *     gray-400    oklch(0.707 0.022 261.325)  #9CA3AF
+ *     gray-500    oklch(0.554 0.046 257.417)  #6B7280
+ *     gray-700    oklch(0.373 0.034 259.733)  #374151
+ *     gray-800    oklch(0.278 0.033 256.848)  #1F2937
+ *     gray-900    oklch(0.210 0.034 264.665)  #111827
+ *     gray-950    oklch(0.130 0.028 261.692)  #030712
+ *   Indigo  (used very sparingly as brand accent):
+ *     indigo-50   oklch(0.962 0.018 272.314)  #EEF2FF (pastel wash)
+ *     indigo-400  oklch(0.674 0.182 276.93)   #818CF8 (soft pastel)
+ *     indigo-600  oklch(0.511 0.262 276.966)  #4F46E5 (full brand — rare)
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -76,46 +93,46 @@
 
 /* ─── TOKEN DEFINITIONS — edit these to retheme the entire app ────────────── */
 :root {
-  /* === BRAND & ACTION === */
-  --brand:              oklch(0.511 0.262 276.966);  /* indigo-600 #4F46E5 */
-  --brand-hover:        oklch(0.457 0.240 277.023);  /* indigo-700 #4338CA */
-  --brand-muted:        oklch(0.962 0.018 272.314);  /* indigo-50  #EEF2FF */
+  /* === BRAND ACCENT (soft pastel indigo — used sparingly) === */
+  --brand:              oklch(0.674 0.182 276.93);   /* indigo-400 #818CF8 (soft) */
+  --brand-hover:        oklch(0.598 0.179 277);      /* indigo-500 (slightly stronger on hover) */
+  --brand-muted:        oklch(0.962 0.018 272.314);  /* indigo-50  #EEF2FF (pastel wash) */
 
-  /* === SIDEBAR (dark navy — indigo-950) === */
-  --sidebar-bg:         oklch(0.257 0.090 281.288);  /* #1E1B4B dark navy   */
-  --sidebar-fg:         oklch(0.930 0.034 272.788);  /* #E0E7FF lavender-fg */
-  --sidebar-muted:      oklch(0.600 0.065 277);      /* muted label text    */
-  --sidebar-border:     oklch(0.359 0.144 278.697);  /* indigo-900 divider  */
-  --sidebar-hover-bg:   oklch(0.320 0.110 279);      /* hover item bg       */
-  --sidebar-active-bg:  oklch(0.511 0.262 276.966);  /* active = brand      */
-  --sidebar-active-fg:  oklch(1 0 0);                /* white               */
+  /* === SIDEBAR (light, blends with page — Notion/Linear style) === */
+  --sidebar-bg:         oklch(0.985 0.002 247.839);  /* gray-50 — same as page bg */
+  --sidebar-fg:         oklch(0.373 0.034 259.733);  /* gray-700 — body text      */
+  --sidebar-muted:      oklch(0.707 0.022 261.325);  /* gray-400 — faint labels   */
+  --sidebar-border:     oklch(0.928 0.006 264.531);  /* gray-200 — barely there   */
+  --sidebar-hover-bg:   oklch(0.967 0.003 264.542);  /* gray-100 — subtle hover   */
+  --sidebar-active-bg:  oklch(1 0 0);                /* white — active = card lift */
+  --sidebar-active-fg:  oklch(0.210 0.034 264.665);  /* gray-900 — text on active */
 
-  /* === SURFACE === */
-  --background:         oklch(0.962 0.018 272.314);  /* indigo-50 #EEF2FF   */
-  --foreground:         oklch(0.145 0.010 270);       /* near-black          */
+  /* === SURFACE (neutral whites & soft grays) === */
+  --background:         oklch(0.985 0.002 247.839);  /* gray-50 — page bg   */
+  --foreground:         oklch(0.210 0.034 264.665);  /* gray-900 — body text */
   --card:               oklch(1 0 0);                 /* white               */
-  --card-foreground:    oklch(0.145 0.010 270);
+  --card-foreground:    oklch(0.210 0.034 264.665);
   --popover:            oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.010 270);
+  --popover-foreground: oklch(0.210 0.034 264.665);
 
-  /* === INTERACTIVE === */
-  --primary:              oklch(0.511 0.262 276.966);  /* indigo-600 */
-  --primary-foreground:   oklch(1 0 0);                /* white      */
-  --primary-hover:        oklch(0.457 0.240 277.023);  /* indigo-700 */
-  --secondary:            oklch(0.930 0.034 272.788);  /* indigo-100 */
-  --secondary-foreground: oklch(0.398 0.195 277.366);  /* indigo-800 */
-  --muted:                oklch(0.962 0.018 272.314);  /* indigo-50  */
-  --muted-foreground:     oklch(0.520 0.060 277);      /* medium tone */
-  --accent:               oklch(0.930 0.034 272.788);  /* indigo-100 */
-  --accent-foreground:    oklch(0.398 0.195 277.366);  /* indigo-800 */
+  /* === INTERACTIVE — primary is CHARCOAL (Apple/Stripe/Vercel style) === */
+  --primary:              oklch(0.210 0.034 264.665);  /* gray-900 — elegant black */
+  --primary-foreground:   oklch(1 0 0);                /* white                    */
+  --primary-hover:        oklch(0.278 0.033 256.848);  /* gray-800 on hover        */
+  --secondary:            oklch(0.967 0.003 264.542);  /* gray-100                 */
+  --secondary-foreground: oklch(0.373 0.034 259.733);  /* gray-700                 */
+  --muted:                oklch(0.967 0.003 264.542);  /* gray-100                 */
+  --muted-foreground:     oklch(0.554 0.046 257.417);  /* gray-500                 */
+  --accent:               oklch(0.967 0.003 264.542);  /* gray-100                 */
+  --accent-foreground:    oklch(0.373 0.034 259.733);  /* gray-700                 */
 
-  /* === STATUS === */
+  /* === STATUS — semantic only (red/amber/emerald/sky used in components) === */
   --destructive: oklch(0.628 0.258 29.234);  /* red-600 — never change */
 
-  /* === STRUCTURE === */
-  --border:  oklch(0.870 0.065 274.039);  /* indigo-200 */
-  --input:   oklch(0.870 0.065 274.039);  /* indigo-200 */
-  --ring:    oklch(0.511 0.262 276.966);  /* indigo-600 */
+  /* === STRUCTURE (soft, barely-there borders) === */
+  --border:  oklch(0.928 0.006 264.531);  /* gray-200 — almost invisible */
+  --input:   oklch(0.928 0.006 264.531);  /* gray-200                    */
+  --ring:    oklch(0.554 0.046 257.417);  /* gray-500 — neutral focus, not loud indigo */
   --radius:  0.5rem;
 
   color: var(--foreground);
@@ -151,4 +168,57 @@ select {
 
 #root {
   min-height: 100vh;
+}
+
+/* ─── Pointer cursor on all clickable elements ──────────────────────────────
+ * Tailwind v4 preflight resets `cursor: pointer` to `cursor: default` on
+ * buttons. Restore it for anything actually clickable so the affordance is
+ * obvious. Disabled / aria-disabled controls stay with the default arrow. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+a[href],
+label[for],
+summary,
+select:not(:disabled),
+[type="button"]:not(:disabled),
+[type="submit"]:not(:disabled),
+[type="reset"]:not(:disabled),
+[type="checkbox"]:not(:disabled),
+[type="radio"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"],
+[type="button"]:disabled,
+[type="submit"]:disabled {
+  cursor: not-allowed;
+}
+
+/* ─── Subtle scrollbars (matches the muted palette) ───────────────────────── */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+/* WebKit (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  /* trick: transparent border + content-box clip → thumb appears thinner,
+     with padding around it, feels like a floating pill */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.30);
 }

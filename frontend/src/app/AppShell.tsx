@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarCheck,
   ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardList,
   CreditCard,
@@ -50,34 +51,82 @@ type NavigationItem = {
   requiredPermission?: PermissionCode | PermissionCode[]
 }
 
-const navigationItems: readonly NavigationItem[] = [
-  { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
-  { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
-  { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
-  { label: 'Arqueo Caja', path: '/cash-register', icon: Banknote, requiredPermission: Permission.CashView },
-  { label: 'Cierre Diario', path: '/daily-closing', icon: CalendarCheck, requiredPermission: Permission.DailyClosingView },
-  { label: 'Gastos', path: '/expenses', icon: CircleDollarSign, requiredPermission: Permission.ExpensesView },
-  { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
-  { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
-  { label: 'Inventario', path: '/inventory', icon: Boxes, requiredPermission: Permission.InventoryView },
-  { label: 'Transferencias', path: '/inventory-transfers', icon: ArrowLeftRight, requiredPermission: Permission.InventoryTransfer },
-  { label: 'Sucursales', path: '/branches', icon: GitBranch, requiredPermission: Permission.BranchesView },
-  { label: 'Clientes', path: '/customers', icon: Users, requiredPermission: Permission.CustomersView },
-  { label: 'Proveedores', path: '/suppliers', icon: Building2, requiredPermission: Permission.PurchasesView },
-  { label: 'Compras', path: '/purchases', icon: Truck, requiredPermission: Permission.PurchasesView },
-  { label: 'Recibos', path: '/invoices', icon: ReceiptText, requiredPermission: Permission.InvoicesView },
-  { label: 'Reportes', path: '/reports', icon: BarChart3, requiredPermission: Permission.ReportsView },
-  { label: 'Rentabilidad', path: '/profitability', icon: TrendingUp, requiredPermission: Permission.ProfitabilityView },
-  { label: 'Usuarios', path: '/users', icon: Shield, requiredPermission: Permission.UsersView },
-  { label: 'Auditoria', path: '/audit-logs', icon: ClipboardList, requiredPermission: Permission.AuditView },
-  { label: 'Suscripcion', path: '/subscription', icon: CreditCard },
-  { label: 'Feedback Beta', path: '/beta-feedback', icon: MessageSquareWarning, requiredPermission: Permission.BetaFeedbackView },
-  { label: 'Metricas Piloto', path: '/admin/pilot-metrics', icon: BarChart2, requiredPermission: Permission.SaasPilotMetrics },
-  { label: 'Ajustes', path: '/settings', icon: Settings },
-]
+type NavigationGroup = {
+  /** Optional section heading. Omit for the standalone item at top (e.g. Inicio). */
+  label?: string
+  items: readonly NavigationItem[]
+}
 
-const mainNavigation = navigationItems.slice(0, 10)
-const growthTools = navigationItems.slice(10)
+/**
+ * Navigation organized into compact, scannable groups.
+ * Each group surfaces 2-5 related actions. Order = priority of use during
+ * the daily workflow of a colmado / retail business.
+ */
+const navigationGroups: readonly NavigationGroup[] = [
+  // Standalone — the dashboard always sits at the top.
+  {
+    items: [
+      { label: 'Inicio', path: '/', icon: LayoutDashboard, requiredPermission: Permission.DashboardView },
+    ],
+  },
+  {
+    label: 'Ventas',
+    items: [
+      { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
+      { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
+      { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
+      { label: 'Arqueo de caja', path: '/cash-register', icon: Banknote, requiredPermission: Permission.CashView },
+      { label: 'Cierre diario', path: '/daily-closing', icon: CalendarCheck, requiredPermission: Permission.DailyClosingView },
+    ],
+  },
+  {
+    label: 'Inventario',
+    items: [
+      { label: 'Productos', path: '/products', icon: Package, requiredPermission: Permission.ProductsView },
+      { label: 'Stock', path: '/inventory', icon: Boxes, requiredPermission: Permission.InventoryView },
+      { label: 'Transferencias', path: '/inventory-transfers', icon: ArrowLeftRight, requiredPermission: Permission.InventoryTransfer },
+    ],
+  },
+  {
+    label: 'Finanzas',
+    items: [
+      { label: 'Compras', path: '/purchases', icon: Truck, requiredPermission: Permission.PurchasesView },
+      { label: 'Gastos', path: '/expenses', icon: CircleDollarSign, requiredPermission: Permission.ExpensesView },
+      { label: 'Recibos', path: '/invoices', icon: ReceiptText, requiredPermission: Permission.InvoicesView },
+    ],
+  },
+  {
+    label: 'Contactos',
+    items: [
+      { label: 'Clientes', path: '/customers', icon: Users, requiredPermission: Permission.CustomersView },
+      { label: 'Proveedores', path: '/suppliers', icon: Building2, requiredPermission: Permission.PurchasesView },
+      { label: 'Sucursales', path: '/branches', icon: GitBranch, requiredPermission: Permission.BranchesView },
+    ],
+  },
+  {
+    label: 'Análisis',
+    items: [
+      { label: 'Reportes', path: '/reports', icon: BarChart3, requiredPermission: Permission.ReportsView },
+      { label: 'Rentabilidad', path: '/profitability', icon: TrendingUp, requiredPermission: Permission.ProfitabilityView },
+    ],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      { label: 'Usuarios', path: '/users', icon: Shield, requiredPermission: Permission.UsersView },
+      { label: 'Auditoría', path: '/audit-logs', icon: ClipboardList, requiredPermission: Permission.AuditView },
+      { label: 'Suscripción', path: '/subscription', icon: CreditCard },
+      { label: 'Ajustes', path: '/settings', icon: Settings },
+    ],
+  },
+  {
+    label: 'Plataforma',
+    items: [
+      { label: 'Feedback Beta', path: '/beta-feedback', icon: MessageSquareWarning, requiredPermission: Permission.BetaFeedbackView },
+      { label: 'Métricas piloto', path: '/admin/pilot-metrics', icon: BarChart2, requiredPermission: Permission.SaasPilotMetrics },
+    ],
+  },
+]
 
 const pageTitles: Record<string, string> = {
   '/': 'Inicio',
@@ -117,6 +166,20 @@ const pageTitles: Record<string, string> = {
 }
 
 const BANNER_DISMISSED_KEY = 'subscription-banner-dismissed'
+const SIDEBAR_EXPANDED_GROUP_KEY = 'sidebar-expanded-group-v2'
+
+function loadExpandedGroup(): string | null {
+  // Default for first-time users: open the first named group (most-used flow).
+  const firstGroup = navigationGroups.find((g) => g.label)?.label ?? null
+  try {
+    const stored = localStorage.getItem(SIDEBAR_EXPANDED_GROUP_KEY)
+    // Never stored → use default. Empty string → user explicitly collapsed all.
+    if (stored === null) return firstGroup
+    return stored || null
+  } catch {
+    return firstGroup
+  }
+}
 
 export function AppShell() {
   const businessName = useAppStore((state) => state.businessName)
@@ -141,6 +204,37 @@ export function AppShell() {
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(
     () => sessionStorage.getItem(BANNER_DISMISSED_KEY) === 'true'
   )
+
+  // Sidebar — only ONE group can be expanded at a time (accordion behavior).
+  // Persisted to localStorage. `null` = all collapsed.
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(loadExpandedGroup)
+
+  // Auto-expand the group containing the currently active route, so the
+  // user always sees where they are in the nav tree.
+  useEffect(() => {
+    const activeGroup = navigationGroups.find((g) =>
+      g.items.some((item) => item.path === location.pathname),
+    )
+    if (activeGroup?.label && expandedGroup !== activeGroup.label) {
+      setExpandedGroup(activeGroup.label)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
+  // Persist whenever user toggles. Empty string = user explicitly closed all
+  // (different from "never stored" which falls back to the default group).
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_EXPANDED_GROUP_KEY, expandedGroup ?? '')
+    } catch {
+      // ignore quota / privacy mode errors
+    }
+  }, [expandedGroup])
+
+  function toggleGroup(label: string) {
+    // Click the open group → close it. Click another → it becomes the only open.
+    setExpandedGroup((curr) => (curr === label ? null : label))
+  }
 
   function dismissBanner() {
     sessionStorage.setItem(BANNER_DISMISSED_KEY, 'true')
@@ -277,22 +371,21 @@ export function AppShell() {
           {/* Navigation */}
           <nav
             className={cn(
-              'flex min-w-0 shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-3 lg:overflow-y-auto lg:overflow-x-hidden lg:py-2',
+              'flex min-w-0 shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-4 lg:overflow-y-auto lg:overflow-x-hidden lg:py-3',
               sidebarCollapsed && 'lg:px-2',
             )}
           >
-            <NavigationSection
-              collapsed={sidebarCollapsed}
-              items={mainNavigation}
-              label="Navegacion"
-              userPermissions={userPermissions}
-            />
-            <NavigationSection
-              collapsed={sidebarCollapsed}
-              items={growthTools}
-              label="Operacion"
-              userPermissions={userPermissions}
-            />
+            {navigationGroups.map((group, i) => (
+              <NavigationSection
+                collapsed={sidebarCollapsed}
+                expanded={group.label ? expandedGroup === group.label : true}
+                items={group.items}
+                key={group.label ?? `group-${i}`}
+                label={group.label}
+                onToggle={group.label ? () => toggleGroup(group.label!) : undefined}
+                userPermissions={userPermissions}
+              />
+            ))}
           </nav>
 
           {/* User menu trigger */}
@@ -478,12 +571,14 @@ function UserMenuItem({ icon: Icon, label, onSelect }: Readonly<UserMenuItemProp
 
 type NavigationSectionProps = {
   collapsed: boolean
+  expanded: boolean
   items: readonly NavigationItem[]
-  label: string
+  label?: string
+  onToggle?: () => void
   userPermissions: string[]
 }
 
-function NavigationSection({ collapsed, items, label, userPermissions }: Readonly<NavigationSectionProps>) {
+function NavigationSection({ collapsed, expanded, items, label, onToggle, userPermissions }: Readonly<NavigationSectionProps>) {
   const visibleItems = items.filter((item) => {
     if (!item.requiredPermission) return true
     const required = Array.isArray(item.requiredPermission)
@@ -494,20 +589,49 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
 
   if (visibleItems.length === 0) return null
 
+  // When sidebar is icon-only (collapsed), labels & toggles are hidden:
+  // all items render as icons stacked vertically.
+  const isCollapsibleHeader = label && !collapsed && Boolean(onToggle)
+  const itemsVisible = collapsed || !label || expanded
+
   return (
     <div className="flex gap-1 lg:flex-col lg:gap-0.5">
-      {!collapsed && (
-        <p className="hidden px-3 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-muted lg:block">
-          {label}
-        </p>
+      {isCollapsibleHeader && (
+        <button
+          aria-expanded={expanded}
+          className={cn(
+            'group/header hidden w-full cursor-pointer items-center justify-between gap-2 rounded-md',
+            'px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-gray-500',
+            'transition-colors hover:bg-sidebar-hover-bg hover:text-gray-900',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30',
+            'lg:flex',
+          )}
+          onClick={onToggle}
+          type="button"
+        >
+          <span>{label}</span>
+          <ChevronRight
+            aria-hidden="true"
+            className={cn(
+              'shrink-0 text-gray-400 transition-transform duration-200',
+              'group-hover/header:text-gray-700',
+              expanded && 'rotate-90',
+            )}
+            size={12}
+            strokeWidth={2.5}
+          />
+        </button>
       )}
-      {visibleItems.map((item) => (
+
+      {itemsVisible && visibleItems.map((item) => (
         <NavLink
           className={({ isActive }) =>
             cn(
-              'group relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-sidebar-fg transition-colors hover:bg-sidebar-hover-bg hover:text-sidebar-fg',
-              'active:bg-sidebar-hover-bg/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-active-bg/25 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-bg',
-              isActive && 'bg-sidebar-active-bg text-sidebar-active-fg font-semibold shadow-sm ring-1 ring-sidebar-active-bg/50 hover:bg-sidebar-active-bg hover:text-sidebar-active-fg',
+              'group relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-[13.5px] font-medium text-sidebar-fg transition-colors',
+              'hover:bg-sidebar-hover-bg hover:text-gray-900',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/30',
+              // Active: white card lift + subtle ring for definition + darker text
+              isActive && 'bg-sidebar-active-bg text-sidebar-active-fg font-semibold shadow-sm ring-1 ring-gray-200 hover:bg-sidebar-active-bg hover:text-sidebar-active-fg',
               collapsed && 'lg:h-10 lg:w-10 lg:justify-center lg:px-0',
             )
           }
@@ -522,12 +646,12 @@ function NavigationSection({ collapsed, items, label, userPermissions }: Readonl
                 aria-hidden="true"
                 className={cn(
                   'shrink-0 transition-colors',
-                  isActive ? 'text-sidebar-active-fg' : 'text-sidebar-muted group-hover:text-sidebar-fg',
+                  isActive ? 'text-gray-900' : 'text-gray-500 group-hover:text-gray-900',
                 )}
                 size={17}
-                strokeWidth={isActive ? 2.25 : 2}
+                strokeWidth={isActive ? 2.25 : 1.85}
               />
-              <span className={cn('truncate', isActive && 'text-sidebar-active-fg', collapsed && 'lg:hidden')}>
+              <span className={cn('truncate', collapsed && 'lg:hidden')}>
                 {item.label}
               </span>
             </>

@@ -9,9 +9,5 @@ export function AuthPage() {
     return <Navigate replace to="/" />
   }
 
-  return (
-    <main className="grid min-h-screen place-items-center bg-background px-5 py-10">
-      <LoginForm />
-    </main>
-  )
+  return <LoginForm />
 }
