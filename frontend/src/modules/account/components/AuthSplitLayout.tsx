@@ -1,12 +1,14 @@
 import { ShoppingBag } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/shared/components/ui/button'
+import { cn } from '@/shared/utils/cn'
 
 /**
  * Shared auth/onboarding split layout — full-bleed.
  *
  * - Mobile / md: form panel only, fills viewport (`h-dvh`).
  * - lg+: architecture photo hero on the left, white form panel on the right.
- *   Edge-to-edge full viewport, no floating card.
  */
 export function AuthSplitLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -19,12 +21,72 @@ export function AuthSplitLayout({ children }: Readonly<{ children: ReactNode }>)
   )
 }
 
-// ─── Hero panel — premium architecture photo with overlay ─────────────────────
+/**
+ * Top-right header used by both auth pages to surface the alternate flow
+ * ("¿Ya tienes cuenta?" / "¿No tienes cuenta?"). Centralised so the spacing,
+ * typography and button variant stay in lockstep on both pages.
+ */
+export function AuthAltHeader({
+  actionLabel,
+  prompt,
+  to,
+}: Readonly<{ actionLabel: string; prompt: string; to: string }>) {
+  const navigate = useNavigate()
+  return (
+    <header className="flex shrink-0 items-center justify-between px-8 py-5 lg:px-12">
+      <span className="text-[13px] text-gray-400">{prompt}</span>
+      <Button
+        className="font-medium"
+        onClick={() => navigate(to)}
+        size="sm"
+        variant="outline"
+      >
+        {actionLabel}
+      </Button>
+    </header>
+  )
+}
+
+// ─── Hero panel — premium architecture photo with working testimonial slider ─
 
 const HERO_PHOTO_URL =
   'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80'
 
+const TESTIMONIALS = [
+  {
+    name: 'Karen Yue',
+    quote: 'Simplemente tiene todas las herramientas que mi equipo necesita',
+    role: 'Directora de Tecnología de Marketing Digital',
+  },
+  {
+    name: 'Carlos Méndez',
+    quote: 'Manejar inventario y ventas nunca había sido tan simple',
+    role: 'Propietario · Colmado La Esperanza',
+  },
+  {
+    name: 'María Reyes',
+    quote: 'Nuestro equipo ahorra horas cada semana gracias a la plataforma',
+    role: 'Gerente de Operaciones · Boutique Lima',
+  },
+] as const
+
+const ROTATION_MS = 6000
+
 function AuthHeroPanel() {
+  const [active, setActive] = useState(0)
+
+  // Auto-rotate every ROTATION_MS. Resetting the interval each time the
+  // user clicks a dot avoids a stale interval firing right after manual nav.
+  useEffect(() => {
+    const id = window.setInterval(
+      () => setActive((i) => (i + 1) % TESTIMONIALS.length),
+      ROTATION_MS,
+    )
+    return () => window.clearInterval(id)
+  }, [active])
+
+  const current = TESTIMONIALS[active]
+
   return (
     <div className="relative hidden overflow-hidden lg:flex lg:w-[42%] lg:shrink-0 lg:flex-col">
 
@@ -36,7 +98,7 @@ function AuthHeroPanel() {
         src={HERO_PHOTO_URL}
       />
 
-      {/* Dual-layer gradient overlay */}
+      {/* Dual-layer gradient overlay — softens top, deepens bottom for legibility */}
       <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-black/40 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
@@ -51,23 +113,37 @@ function AuthHeroPanel() {
           <span className="text-[16px] font-semibold tracking-tight">Comercio</span>
         </div>
 
-        {/* Testimonial — text directly on photo, no card */}
+        {/* Testimonial slider — text directly on photo */}
         <div className="text-white">
-          <blockquote className="text-[1.65rem] font-bold leading-[1.2] tracking-tight">
-            "Simplemente tiene todas<br />
-            las herramientas que mi<br />
-            equipo necesita"
-          </blockquote>
-          <p className="mt-6 text-[15px] font-semibold">Karen Yue</p>
-          <p className="mt-1 text-[13px] text-white/70">
-            Directora de Tecnología de Marketing Digital
-          </p>
+          {/* key forces remount → restart fade-in animation on slide change */}
+          <div className="animate-in fade-in duration-500" key={active}>
+            <blockquote className="text-[1.65rem] font-bold leading-[1.2] tracking-tight">
+              "{current.quote}"
+            </blockquote>
+            <p className="mt-6 text-[15px] font-semibold">{current.name}</p>
+            <p className="mt-1 text-[13px] text-white/70">{current.role}</p>
+          </div>
 
-          {/* Carousel dots: 1 wide + 2 small */}
-          <div className="mt-6 flex items-center gap-2">
-            <span className="h-1.5 w-6 rounded-full bg-white" />
-            <span className="h-1.5 w-1.5 rounded-full bg-white/35" />
-            <span className="h-1.5 w-1.5 rounded-full bg-white/35" />
+          {/* Clickable carousel dots */}
+          <div
+            aria-label="Testimonios"
+            className="mt-6 flex items-center gap-2"
+            role="tablist"
+          >
+            {TESTIMONIALS.map((t, i) => (
+              <button
+                aria-label={`Testimonio de ${t.name}`}
+                aria-selected={i === active}
+                className={cn(
+                  'h-1.5 rounded-full transition-all',
+                  i === active ? 'w-6 bg-white' : 'w-1.5 bg-white/35 hover:bg-white/55',
+                )}
+                key={t.name}
+                onClick={() => setActive(i)}
+                role="tab"
+                type="button"
+              />
+            ))}
           </div>
         </div>
 

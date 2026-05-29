@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { HttpClientError } from '@/shared/services/httpClient'
-import { AuthSplitLayout } from '@/modules/account/components/AuthSplitLayout'
+import { AuthAltHeader, AuthSplitLayout } from '@/modules/account/components/AuthSplitLayout'
 import { useRegisterBusinessMutation } from '@/modules/account/hooks/useRegisterBusinessMutation'
 import { useSubscriptionPlans } from '@/modules/subscription/hooks/useSubscription'
 import { cn } from '@/shared/utils/cn'
@@ -134,8 +134,14 @@ export function RegisterBusinessPage() {
   return (
     <AuthSplitLayout>
 
+      <AuthAltHeader
+        actionLabel="Iniciar sesión"
+        prompt="¿Ya tienes una cuenta?"
+        to="/login"
+      />
+
       {/* Content — vertically centered, no scroll */}
-      <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-10 pt-10 lg:px-14">
+      <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-10 lg:px-14">
         <div className="w-full max-w-[540px]">
 
           {/* Heading */}
@@ -214,18 +220,9 @@ export function RegisterBusinessPage() {
         </div>
       </div>
 
-      {/* Footer — secondary link left, support links right */}
+      {/* Footer — copyright left, support links right */}
       <footer className="flex shrink-0 items-center justify-between border-t border-gray-200 px-10 py-5 lg:px-14">
-        <p className="text-[13.5px] text-gray-500">
-          ¿Ya tienes una cuenta?{' '}
-          <button
-            className="font-medium text-primary hover:underline"
-            onClick={() => navigate('/login')}
-            type="button"
-          >
-            Iniciar sesión
-          </button>
-        </p>
+        <span className="text-[12px] text-gray-400">© 2026 ComercioFlow</span>
         <nav aria-label="Ayuda" className="flex items-center gap-5 text-[13px] text-gray-500">
           <a className="transition hover:text-gray-900" href="#soporte">Soporte</a>
           <a className="transition hover:text-gray-900" href="#preguntas">Preguntas frecuentes</a>

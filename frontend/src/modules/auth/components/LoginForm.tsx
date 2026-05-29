@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { Button } from '@/shared/components/ui/button'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { useLoginMutation } from '@/modules/auth/hooks/useLoginMutation'
-import { AuthSplitLayout } from '@/modules/account/components/AuthSplitLayout'
+import { AuthAltHeader, AuthSplitLayout } from '@/modules/account/components/AuthSplitLayout'
 import { cn } from '@/shared/utils/cn'
 
 const loginSchema = z.object({
@@ -43,18 +43,11 @@ export function LoginForm() {
 
   return (
     <AuthSplitLayout>
-      {/* Top bar — secondary action: go to register */}
-      <header className="flex shrink-0 items-center justify-between px-8 py-5 lg:px-12">
-        <span className="text-[13px] text-gray-400">¿No tienes una cuenta?</span>
-        <Button
-          className="font-medium"
-          onClick={() => navigate('/register-business')}
-          size="sm"
-          variant="outline"
-        >
-          Crear cuenta
-        </Button>
-      </header>
+      <AuthAltHeader
+        actionLabel="Crear cuenta"
+        prompt="¿No tienes una cuenta?"
+        to="/register-business"
+      />
 
       {/* Content — vertically centered */}
       <div className="flex flex-1 flex-col items-center justify-center px-8 py-2 lg:px-12">
