@@ -21,6 +21,7 @@ public sealed class EfReportsReadRepository(AppDbContext dbContext) : IReportsRe
   public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(
     BusinessId businessId,
     DateTimeOffset today,
+    DateTimeOffset thirtyDaysAgo,
     CancellationToken cancellationToken = default)
   {
     var todayEnd = today.AddDays(1).AddTicks(-1);
@@ -107,6 +108,86 @@ public sealed class EfReportsReadRepository(AppDbContext dbContext) : IReportsRe
       .Take(DashboardRecentItemCount)
       .ToArrayAsync(cancellationToken);
 
+    var dailySales = await dbContext.Set<Sale>()
+      .AsNoTracking()
+      .Where(s => s.BusinessId == businessId &&
+                  s.Status == SaleStatus.Completed &&
+                  s.CompletedAt >= thirtyDaysAgo)
+      .GroupBy(s => new { s.CompletedAt!.Value.Year, s.CompletedAt!.Value.Month, s.CompletedAt!.Value.Day })
+      .Select(g => new {
+        g.Key.Year,
+        g.Key.Month,
+        g.Key.Day,
+        Total = g.Sum(s => s.Total),
+        Count = g.Count()
+      })
+      .OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day)
+      .ToArrayAsync(cancellationToken);
+
+    var dailySalesPoints = dailySales
+      .Select(x => new DailySalesPointDto(
+        $"{x.Year:D4}-{x.Month:D2}-{x.Day:D2}",
+        x.Total,
+        x.Count))
+      .ToArray();
+
+    var dailyPurchasesRaw = await dbContext.Set<Purchase>()
+      .AsNoTracking()
+      .Where(p => p.BusinessId == businessId &&
+                  p.Status == PurchaseStatus.Completed &&
+                  p.PurchaseDate >= thirtyDaysAgo)
+      .GroupBy(p => new { p.PurchaseDate.Year, p.PurchaseDate.Month, p.PurchaseDate.Day })
+      .Select(g => new {
+        g.Key.Year,
+        g.Key.Month,
+        g.Key.Day,
+        Total = g.Sum(p => p.Total),
+        Count = g.Count()
+      })
+      .OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day)
+      .ToArrayAsync(cancellationToken);
+
+    var dailyPurchasesPoints = dailyPurchasesRaw
+      .Select(x => new DailyPurchasesPointDto(
+        $"{x.Year:D4}-{x.Month:D2}-{x.Day:D2}",
+        x.Total,
+        x.Count))
+      .ToArray();
+
+    var paymentMethodRaw = await dbContext.Set<Sale>()
+      .AsNoTracking()
+      .Where(s => s.BusinessId == businessId &&
+                  s.Status == SaleStatus.Completed &&
+                  s.CompletedAt >= thirtyDaysAgo)
+      .GroupBy(s => s.PaymentMethod)
+      .Select(g => new {
+        Method = g.Key,
+        Count = g.Count(),
+        Total = g.Sum(s => s.Total)
+      })
+      .OrderByDescending(x => x.Total)
+      .ToArrayAsync(cancellationToken);
+
+    var paymentMethodTotals = paymentMethodRaw
+      .Select(x => new PaymentMethodTotalDto(x.Method, x.Count, x.Total))
+      .ToArray();
+
+    var statusRaw = await dbContext.Set<Sale>()
+      .AsNoTracking()
+      .Where(s => s.BusinessId == businessId && s.CreatedAt >= thirtyDaysAgo)
+      .GroupBy(s => s.Status)
+      .Select(g => new { Status = g.Key, Count = g.Count() })
+      .ToArrayAsync(cancellationToken);
+
+    var statusMap = statusRaw.ToDictionary(x => x.Status, x => x.Count);
+    var saleStatusBreakdown = new SaleStatusBreakdownDto(
+      statusMap.GetValueOrDefault(SaleStatus.Completed, 0),
+      statusMap.GetValueOrDefault(SaleStatus.Cancelled, 0),
+      statusMap.GetValueOrDefault(SaleStatus.Received, 0),
+      statusMap.GetValueOrDefault(SaleStatus.Failed, 0),
+      statusMap.Where(kv => kv.Key is not (SaleStatus.Completed or SaleStatus.Cancelled
+        or SaleStatus.Received or SaleStatus.Failed)).Sum(kv => kv.Value));
+
     return new DashboardSummaryResponse(
       new DashboardSalesTodayDto(salesToday?.Count ?? 0, salesToday?.Total ?? 0),
       new DashboardInvoicesTodayDto(invoicesToday?.Count ?? 0, invoicesToday?.Total ?? 0),
@@ -114,7 +195,11 @@ public sealed class EfReportsReadRepository(AppDbContext dbContext) : IReportsRe
       new DashboardLowStockDto(lowStockCount),
       recentSales,
       recentInvoices,
-      recentPurchases);
+      recentPurchases,
+      dailySalesPoints,
+      dailyPurchasesPoints,
+      paymentMethodTotals,
+      saleStatusBreakdown);
   }
 
   public async Task<SalesReportResponse> GetSalesReportAsync(

@@ -362,6 +362,7 @@ public sealed class ReportingTests
     public IReadOnlyCollection<DashboardRecentSaleDto> RecentSales { get; set; } = [];
     public IReadOnlyCollection<DashboardRecentInvoiceDto> RecentInvoices { get; set; } = [];
     public IReadOnlyCollection<DashboardRecentPurchaseDto> RecentPurchases { get; set; } = [];
+    public IReadOnlyCollection<DailySalesPointDto> DailySales { get; set; } = [];
     public SalesReportResponse SalesReport { get; set; } = new([], new(0, 0, 0), 1, 25, 0, 0, false, false);
     public InvoiceReportResponse InvoiceReport { get; set; } = new([], new(0, 0), 1, 25, 0, 0, false, false);
     public AccountsReceivableReportResponse ArReport { get; set; } = new([], new(0, 0, 0), 1, 25, 0, 0, false, false);
@@ -369,10 +370,10 @@ public sealed class ReportingTests
     public PurchaseReportResponse PurchaseReport { get; set; } = new([], new(0, 0), 1, 25, 0, 0, false, false);
 
     public Task<DashboardSummaryResponse> GetDashboardSummaryAsync(
-      BusinessId businessId, DateTimeOffset today, CancellationToken cancellationToken = default)
+      BusinessId businessId, DateTimeOffset today, DateTimeOffset thirtyDaysAgo, CancellationToken cancellationToken = default)
       => Task.FromResult(new DashboardSummaryResponse(
         SalesToday, InvoicesToday, Receivables, LowStock,
-        RecentSales, RecentInvoices, RecentPurchases));
+        RecentSales, RecentInvoices, RecentPurchases, DailySales));
 
     public Task<SalesReportResponse> GetSalesReportAsync(
       BusinessId businessId, SalesReportCriteria criteria, CancellationToken cancellationToken = default)

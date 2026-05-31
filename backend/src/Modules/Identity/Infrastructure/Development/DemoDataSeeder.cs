@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using SaasCommerce.BuildingBlocks.Infrastructure.Persistence;
+using SaasCommerce.Modules.Billing.Domain;
 using SaasCommerce.Modules.Catalog.Domain;
 using SaasCommerce.Modules.Customers.Domain;
+using SaasCommerce.Modules.Customers.Domain.Credits;
 using SaasCommerce.Modules.Inventory.Domain;
 using SaasCommerce.Modules.Purchasing.Domain;
+using SaasCommerce.Modules.Sales.Domain;
 using SaasCommerce.SharedKernel.Tenancy;
 
 namespace SaasCommerce.Modules.Development;
@@ -26,14 +29,12 @@ public static class DemoDataSeeder
   {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    var hasProducts = await dbContext.Set<Product>().AnyAsync(ct);
-    if (hasProducts)
-    {
-      return;
-    }
-
     var businessId = new BusinessId(BusinessIdValue);
     var branchId = new BranchId(BranchIdValue);
+
+    var hasProducts = await dbContext.Set<Product>().AnyAsync(ct);
+    if (!hasProducts)
+    {
 
     // ── 1. Categories ─────────────────────────────────────────────────────────
 
@@ -169,7 +170,410 @@ public static class DemoDataSeeder
     await dbContext.Set<StockItem>().AddRangeAsync(stockItems, ct);
     await dbContext.Set<InventoryMovement>().AddRangeAsync(movements, ct);
     await dbContext.SaveChangesAsync(ct);
-  }
+    } // end if (!hasProducts)
+
+    // Shared RNG for all seeding sections (deterministic seed → same data every fresh run).
+    var rng = new Random(20240101);
+
+    // ── 6. Historical sales (last 30 days) ────────────────────────────────────
+    // Independent guard: runs even if products already existed (e.g. second startup).
+
+    // Only skip if historical Completed sales already exist — ignores stray Processing/test sales.
+    var hasCompletedSales = await dbContext.Set<Sale>()
+      .AnyAsync(s => s.BusinessId == businessId && s.Status == SaleStatus.Completed, ct);
+    if (!hasCompletedSales)
+    {
+
+    // Load products from DB (may have just been seeded above, or already existed).
+    var productList = await dbContext.Set<Product>()
+      .Where(p => p.BusinessId == businessId)
+      .OrderBy(p => p.CreatedAt)
+      .Take(20)
+      .ToListAsync(ct);
+
+    if (productList.Count == 0)
+    {
+      return;
+    }
+
+    // Prices and costs aligned to products[0..19] order above.
+    decimal[] salePrices =
+    [
+      65m, 95m, 35m, 65m, 175m,
+      45m, 185m, 55m, 75m, 120m,
+      45m, 95m, 135m, 85m, 65m,
+      145m, 130m, 175m, 65m, 125m,
+    ];
+
+    decimal[] costPrices =
+    [
+      47m, 68m, 20m, 45m, 140m,
+      32m, 155m, 40m, 55m, 92m,
+      32m, 75m, 105m, 65m, 48m,
+      112m, 98m, 130m, 48m, 98m,
+    ];
+
+    // Payment method distribution: 60% Efectivo, 25% Tarjeta, 15% Transferencia.
+    string[] paymentMethods = ["Efectivo", "Efectivo", "Efectivo", "Efectivo", "Efectivo", "Efectivo",
+                               "Tarjeta", "Tarjeta", "Tarjeta",
+                               "Transferencia", "Transferencia", "Transferencia",
+                               "Efectivo", "Efectivo", "Tarjeta",
+                               "Efectivo", "Efectivo", "Efectivo", "Tarjeta", "Transferencia"];
+
+    var allSales = new List<Sale>(capacity: 30 * 8);
+
+    for (var dayOffset = 29; dayOffset >= 0; dayOffset--)
+    {
+      var saleDay = now.AddDays(-dayOffset).Date;
+      var dayOfWeek = saleDay.DayOfWeek;
+      var isToday = dayOffset == 0;
+
+      // Today always gets a good amount of sales so KPI cards are non-zero.
+      var isWeekend = dayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+      var minSales = isToday ? 8 : isWeekend ? 3 : 6;
+      var maxSales = isToday ? 14 : isWeekend ? 6 : 12;
+      var salesCount = rng.Next(minSales, maxSales + 1);
+
+      for (var saleIndex = 0; saleIndex < salesCount; saleIndex++)
+      {
+        // For today: spread from 07:00 up to (now - 5 min) so CompletedAt is in the past.
+        // For past days: spread across full business day 07:00-20:00.
+        var maxHour = isToday ? Math.Max(0, now.Hour - 7) : 13;
+        var hourOffset = maxHour > 0 ? rng.Next(0, maxHour) : 0;
+        var minuteOffset = rng.Next(0, 60);
+        var saleTime = new DateTimeOffset(
+          saleDay.AddHours(7 + hourOffset).AddMinutes(minuteOffset),
+          now.Offset);
+
+        // 1–4 distinct products per sale.
+        var lineCount = rng.Next(1, 5);
+        var chosenIndexes = new HashSet<int>(capacity: lineCount);
+        while (chosenIndexes.Count < lineCount)
+        {
+          chosenIndexes.Add(rng.Next(0, productList.Count));
+        }
+
+        var lines = chosenIndexes
+          .Select(i => new SaleLine(
+            ProductId: productList[i].Id,
+            Quantity: rng.Next(1, 5),
+            UnitPrice: salePrices[i],
+            UnitCost: costPrices[i]))
+          .ToList()
+          .AsReadOnly();
+
+        var payment = paymentMethods[rng.Next(0, paymentMethods.Length)];
+
+        var sale = Sale.Create(
+          id: Guid.NewGuid(),
+          businessId: businessId,
+          branchId: branchId,
+          userId: adminUserId,
+          lines: lines,
+          paymentMethod: payment,
+          createdAt: saleTime);
+
+        sale.MarkAsProcessing(saleTime.AddSeconds(rng.Next(5, 60)));
+        sale.Complete(saleTime.AddSeconds(rng.Next(60, 180)));
+
+        allSales.Add(sale);
+      }
+    }
+
+      await dbContext.Set<Sale>().AddRangeAsync(allSales, ct);
+      await dbContext.SaveChangesAsync(ct);
+    } // end if (!hasCompletedSales)
+
+    // ── 6b. Cancelled sales (~10% of days) — enriches status breakdown chart ──
+
+    var hasCancelledSales = await dbContext.Set<Sale>()
+      .AnyAsync(s => s.BusinessId == businessId && s.Status == SaleStatus.Cancelled, ct);
+
+    if (!hasCancelledSales)
+    {
+      var productList2 = await dbContext.Set<Product>()
+        .Where(p => p.BusinessId == businessId)
+        .OrderBy(p => p.CreatedAt)
+        .Take(20)
+        .ToListAsync(ct);
+
+      decimal[] salePrices2 = [65m, 95m, 35m, 65m, 175m, 45m, 185m, 55m, 75m, 120m,
+                                45m, 95m, 135m, 85m, 65m, 145m, 130m, 175m, 65m, 125m];
+      decimal[] costPrices2  = [47m, 68m, 20m, 45m, 140m, 32m, 155m, 40m, 55m, 92m,
+                                 32m, 75m, 105m, 65m, 48m, 112m, 98m, 130m, 48m, 98m];
+
+      var rngC = new Random(20240201);
+      string[] cancelReasons = ["Cliente cambió de opinión", "Error en el pedido", "Pago rechazado"];
+      var cancelledSales = new List<Sale>();
+
+      for (var dayOffset = 29; dayOffset >= 0; dayOffset--)
+      {
+        if (rngC.Next(0, 10) < 7) continue; // ~30% de días tienen cancelaciones
+
+        var saleDay = now.AddDays(-dayOffset).Date;
+        var count = rngC.Next(1, 3);
+
+        for (var i = 0; i < count; i++)
+        {
+          var saleTime = new DateTimeOffset(
+            saleDay.AddHours(8 + rngC.Next(0, 10)).AddMinutes(rngC.Next(0, 60)),
+            now.Offset);
+
+          var idx = rngC.Next(0, productList2.Count);
+          var lines = new List<SaleLine>
+          {
+            new(productList2[idx].Id, rngC.Next(1, 3), salePrices2[idx], costPrices2[idx]),
+          }.AsReadOnly();
+
+          var sale = Sale.Create(
+            id: Guid.NewGuid(),
+            businessId: businessId,
+            branchId: branchId,
+            userId: adminUserId,
+            lines: lines,
+            paymentMethod: "Efectivo",
+            createdAt: saleTime);
+
+          sale.MarkAsProcessing(saleTime.AddSeconds(rngC.Next(5, 30)));
+          sale.Cancel(cancelReasons[rngC.Next(0, cancelReasons.Length)], saleTime.AddSeconds(rngC.Next(30, 90)));
+          cancelledSales.Add(sale);
+        }
+      }
+
+      if (cancelledSales.Count > 0)
+      {
+        await dbContext.Set<Sale>().AddRangeAsync(cancelledSales, ct);
+        await dbContext.SaveChangesAsync(ct);
+      }
+    }
+
+    // ── 6c. Failed sales (~5% rate) — adds another slice to status chart ──────
+
+    var hasFailedSales = await dbContext.Set<Sale>()
+      .AnyAsync(s => s.BusinessId == businessId && s.Status == SaleStatus.Failed, ct);
+
+    if (!hasFailedSales)
+    {
+      var productList3 = await dbContext.Set<Product>()
+        .Where(p => p.BusinessId == businessId)
+        .OrderBy(p => p.CreatedAt)
+        .Take(10)
+        .ToListAsync(ct);
+
+      decimal[] salePrices3 = [65m, 95m, 35m, 65m, 175m, 45m, 185m, 55m, 75m, 120m];
+      decimal[] costPrices3  = [47m, 68m, 20m, 45m, 140m, 32m, 155m, 40m, 55m, 92m];
+
+      var rngF = new Random(20240301);
+      var failedSales = new List<Sale>();
+
+      for (var dayOffset = 29; dayOffset >= 0; dayOffset -= rngF.Next(3, 7))
+      {
+        var saleDay = now.AddDays(-dayOffset).Date;
+        var saleTime = new DateTimeOffset(
+          saleDay.AddHours(9 + rngF.Next(0, 8)).AddMinutes(rngF.Next(0, 60)),
+          now.Offset);
+
+        var idx = rngF.Next(0, productList3.Count);
+        var lines = new List<SaleLine>
+        {
+          new(productList3[idx].Id, 1, salePrices3[idx], costPrices3[idx]),
+        }.AsReadOnly();
+
+        var sale = Sale.Create(
+          id: Guid.NewGuid(),
+          businessId: businessId,
+          branchId: branchId,
+          userId: adminUserId,
+          lines: lines,
+          paymentMethod: "Tarjeta",
+          createdAt: saleTime);
+
+        sale.MarkAsProcessing(saleTime.AddSeconds(rngF.Next(5, 30)));
+        sale.Fail("Error en procesamiento de pago", saleTime.AddSeconds(rngF.Next(30, 120)));
+        failedSales.Add(sale);
+      }
+
+      if (failedSales.Count > 0)
+      {
+        await dbContext.Set<Sale>().AddRangeAsync(failedSales, ct);
+        await dbContext.SaveChangesAsync(ct);
+      }
+    }
+
+    // ── 7. Invoices — issued for ~40% of completed sales ─────────────────────
+
+    var hasInvoices = await dbContext.Set<Invoice>()
+      .AnyAsync(i => i.BusinessId == businessId, ct);
+
+    if (!hasInvoices)
+    {
+      var completedSales = await dbContext.Set<Sale>()
+        .AsNoTracking()
+        .Where(s => s.BusinessId == businessId && s.Status == SaleStatus.Completed)
+        .OrderBy(s => s.CreatedAt)
+        .ToListAsync(ct);
+
+      var invoices = new List<Invoice>(capacity: completedSales.Count / 2);
+      var seq = 1;
+
+      foreach (var sale in completedSales)
+      {
+        // Issue invoice for roughly every other sale (40% coverage).
+        if (rng.Next(0, 10) >= 4) continue;
+
+        var inv = Invoice.Issue(
+          id: Guid.NewGuid(),
+          saleId: sale.Id,
+          sequence: seq++,
+          context: new InvoiceContext(businessId, branchId, null),
+          financials: new InvoiceFinancials(
+            Subtotal: sale.Total,
+            DiscountTotal: 0m,
+            TaxTotal: 0m,
+            Total: sale.Total),
+          createdAt: sale.CompletedAt ?? sale.CreatedAt);
+
+        invoices.Add(inv);
+      }
+
+      await dbContext.Set<Invoice>().AddRangeAsync(invoices, ct);
+      await dbContext.SaveChangesAsync(ct);
+    }
+
+    // ── 8. Credit accounts with pending balances ──────────────────────────────
+
+    var hasCreditAccounts = await dbContext.Set<CustomerCreditAccount>()
+      .AnyAsync(c => c.BusinessId == businessId && c.CurrentBalance > 0, ct);
+
+    if (!hasCreditAccounts)
+    {
+      var customers = await dbContext.Set<Customer>()
+        .Where(c => c.BusinessId == businessId)
+        .Take(3)
+        .ToListAsync(ct);
+
+      var creditSales = await dbContext.Set<Sale>()
+        .AsNoTracking()
+        .Where(s => s.BusinessId == businessId && s.Status == SaleStatus.Completed)
+        .OrderByDescending(s => s.CreatedAt)
+        .Take(6)
+        .ToListAsync(ct);
+
+      var creditAccounts = new List<CustomerCreditAccount>(customers.Count);
+      var creditMovements = new List<CustomerCreditMovement>(customers.Count * 2);
+
+      decimal[] pendingAmounts = [1_850m, 3_200m, 750m];
+
+      for (var ci = 0; ci < customers.Count && ci < creditSales.Count; ci++)
+      {
+        var account = new CustomerCreditAccount(
+          id: Guid.NewGuid(),
+          businessId: businessId,
+          customerId: customers[ci].Id,
+          creditLimit: 10_000m,
+          createdAt: now.AddDays(-20));
+
+        var saleForDebit = creditSales[ci];
+        var movement = account.ApplyDebit(
+          movementId: Guid.NewGuid(),
+          saleId: saleForDebit.Id,
+          amount: pendingAmounts[ci],
+          note: "Crédito por compra",
+          createdBy: adminUserId,
+          createdAt: saleForDebit.CreatedAt.AddMinutes(1));
+
+        creditAccounts.Add(account);
+        creditMovements.Add(movement);
+      }
+
+      await dbContext.Set<CustomerCreditAccount>().AddRangeAsync(creditAccounts, ct);
+      await dbContext.Set<CustomerCreditMovement>().AddRangeAsync(creditMovements, ct);
+      await dbContext.SaveChangesAsync(ct);
+    }
+
+    // ── 9. Historical purchases (30 days, Completed) ──────────────────────────
+
+    var hasCompletedPurchases = await dbContext.Set<Purchase>()
+      .AnyAsync(p => p.BusinessId == businessId && p.Status == PurchaseStatus.Completed, ct);
+
+    if (!hasCompletedPurchases)
+    {
+      var productList4 = await dbContext.Set<Product>()
+        .Where(p => p.BusinessId == businessId)
+        .OrderBy(p => p.CreatedAt)
+        .Take(20)
+        .ToListAsync(ct);
+
+      var supplierList = await dbContext.Set<Supplier>()
+        .Where(s => s.BusinessId == businessId)
+        .ToListAsync(ct);
+
+      if (productList4.Count > 0 && supplierList.Count > 0)
+      {
+        decimal[] costPrices4 = [47m, 68m, 20m, 45m, 140m, 32m, 155m, 40m, 55m, 92m,
+                                   32m, 75m, 105m, 65m, 48m, 112m, 98m, 130m, 48m, 98m];
+
+        var rngP = new Random(20240401);
+        var allPurchases = new List<Purchase>();
+
+        for (var dayOffset = 29; dayOffset >= 0; dayOffset--)
+        {
+          // 2-3 purchases per week (roughly every 2-3 days)
+          if (rngP.Next(0, 7) >= 3) continue;
+
+          var purchaseDay = now.AddDays(-dayOffset).Date;
+          var purchaseTime = new DateTimeOffset(
+            purchaseDay.AddHours(8 + rngP.Next(0, 4)).AddMinutes(rngP.Next(0, 60)),
+            now.Offset);
+
+          var supplier = supplierList[rngP.Next(0, supplierList.Count)];
+
+          // 3-8 product lines per purchase order
+          var lineCount = rngP.Next(3, 9);
+          var chosenIdxs = new HashSet<int>(capacity: lineCount);
+          while (chosenIdxs.Count < lineCount)
+          {
+            chosenIdxs.Add(rngP.Next(0, productList4.Count));
+          }
+
+          var purchaseLines = chosenIdxs
+            .Select(i => new PurchaseLine(
+              ProductId: productList4[i].Id,
+              Quantity: rngP.Next(12, 48),
+              UnitCost: costPrices4[i]))
+            .ToList()
+            .AsReadOnly();
+
+          var purchase = Purchase.Create(
+            new PurchaseCreationData(
+              Id: Guid.NewGuid(),
+              BusinessId: businessId,
+              BranchId: branchId,
+              SupplierId: supplier.Id,
+              UserId: adminUserId,
+              SupplierInvoiceNumber: $"FAC-{rngP.Next(1000, 9999)}",
+              PurchaseDate: purchaseTime,
+              Notes: null,
+              CreatedAt: purchaseTime),
+            purchaseLines);
+
+          var receivedAt = purchaseTime.AddMinutes(rngP.Next(30, 120));
+          purchase.Receive(receivedAt);
+          purchase.StartProcessing(receivedAt.AddMinutes(rngP.Next(5, 20)));
+          purchase.MarkInventoryUpdated(receivedAt.AddMinutes(rngP.Next(20, 40)));
+          purchase.Complete(receivedAt.AddMinutes(rngP.Next(40, 90)));
+
+          allPurchases.Add(purchase);
+        }
+
+        if (allPurchases.Count > 0)
+        {
+          await dbContext.Set<Purchase>().AddRangeAsync(allPurchases, ct);
+          await dbContext.SaveChangesAsync(ct);
+        }
+      }
+    }
+  } // end SeedAsync
 
   // ── Private helpers ─────────────────────────────────────────────────────────
 

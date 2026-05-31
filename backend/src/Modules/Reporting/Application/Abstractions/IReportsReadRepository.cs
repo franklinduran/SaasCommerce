@@ -8,6 +8,7 @@ public interface IReportsReadRepository
   Task<DashboardSummaryResponse> GetDashboardSummaryAsync(
     BusinessId businessId,
     DateTimeOffset today,
+    DateTimeOffset thirtyDaysAgo,
     CancellationToken cancellationToken = default);
 
   Task<SalesReportResponse> GetSalesReportAsync(

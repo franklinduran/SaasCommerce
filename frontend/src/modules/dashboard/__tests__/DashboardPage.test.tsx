@@ -37,15 +37,23 @@ describe('DashboardPage', () => {
     const user = userEvent.setup()
     renderPage()
 
-    expect(screen.getByText('Tu tienda de un vistazo')).toBeTruthy()
+    expect(screen.getByText('Resumen del día')).toBeTruthy()
     expect(screen.getByText('Ventas hoy')).toBeTruthy()
     expect(screen.getByText('SALE-001')).toBeTruthy()
     expect(screen.getByText('INV-001')).toBeTruthy()
-    expect(screen.getByText('PUR-001')).toBeTruthy()
     expect(screen.getByText('2 clientes con saldo pendiente')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Actualizar' }))
     expect(refetch).toHaveBeenCalled()
+  })
+
+  it('renders section labels', () => {
+    renderPage()
+
+    expect(screen.getByText('Resumen de hoy')).toBeTruthy()
+    expect(screen.getByText(/Tendencias/)).toBeTruthy()
+    expect(screen.getByText(/Análisis/)).toBeTruthy()
+    expect(screen.getByText('Actividad reciente')).toBeTruthy()
   })
 
   it('renders loading, empty and error states', () => {
@@ -61,6 +69,10 @@ describe('DashboardPage', () => {
         recentInvoices: [],
         recentPurchases: [],
         recentSales: [],
+        dailySales: [],
+        dailyPurchases: [],
+        paymentMethodTotals: [],
+        saleStatusBreakdown: { completed: 0, cancelled: 0, pending: 0, failed: 0, other: 0 },
       },
       isLoading: false,
     }
@@ -85,14 +97,21 @@ function summaryData() {
       { invoiceId: 'invoice-1', invoiceNumber: 'INV-001', status: 'Issued', total: 800 },
     ],
     recentPurchases: [
-      { purchaseId: 'purchase-1', purchaseNumber: 'PUR-001', status: 'Received', supplierName: null, total: 500 },
+      { purchaseId: 'purchase-1', status: 'Received', supplierName: null, total: 500 },
     ],
     recentSales: [
-      { paymentMethod: 'Cash', saleId: 'sale-1', saleNumber: 'SALE-001', status: 'Completed', total: 1250 },
-      { paymentMethod: 'Card', saleId: 'sale-2', saleNumber: 'SALE-002', status: 'Cancelled', total: 50 },
-      { paymentMethod: 'Transfer', saleId: 'sale-3', saleNumber: 'SALE-003', status: 'Pending', total: 75 },
-      { paymentMethod: 'Cash', saleId: 'sale-4', saleNumber: 'SALE-004', status: 'Other', total: 20 },
+      { paymentMethod: 'Cash', saleId: 'sale-1', code: 'SALE-001', status: 'Completed', total: 1250 },
+      { paymentMethod: 'Card', saleId: 'sale-2', code: 'SALE-002', status: 'Cancelled', total: 50 },
+      { paymentMethod: 'Transfer', saleId: 'sale-3', code: 'SALE-003', status: 'Pending', total: 75 },
+      { paymentMethod: 'Cash', saleId: 'sale-4', code: 'SALE-004', status: 'Other', total: 20 },
     ],
     salesToday: { count: 4, totalAmount: 1250 },
+    dailySales: [],
+    dailyPurchases: [],
+    paymentMethodTotals: [
+      { method: 'Cash', count: 3, total: 1270 },
+      { method: 'Card', count: 1, total: 50 },
+    ],
+    saleStatusBreakdown: { completed: 3, cancelled: 1, pending: 0, failed: 0, other: 0 },
   }
 }

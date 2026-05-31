@@ -1,387 +1,183 @@
-import type { ReactNode } from 'react'
-import {
-  AlertTriangle,
-  ArrowRight,
-  BadgeDollarSign,
-  CircleDollarSign,
-  Loader2,
-  Package,
-  ReceiptText,
-  RefreshCw,
-  Users,
-} from 'lucide-react'
+import { AlertTriangle, ArrowRight, RefreshCw, Users } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDashboardRealtimeInvalidation, useDashboardSummary } from '@/modules/dashboard/hooks/useDashboard'
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { DashboardKpiCards } from '@/modules/dashboard/components/DashboardKpiCards'
+import {
+  AvgTicketCard,
+  DailySalesBarChart,
+  PaymentMethodChart,
+  SaleStatusChart,
+  SalesVsPurchasesChart,
+} from '@/modules/dashboard/components/DashboardCharts'
+import { DashboardTables } from '@/modules/dashboard/components/DashboardTables'
+import { buildChartData, formatDate, formatMoney } from '@/modules/dashboard/utils/dashboardFormat'
+import type { DateRangeFilter } from '@/modules/dashboard/types'
+import { cn } from '@/shared/utils/cn'
 
+const DATE_FILTERS: { label: string; value: DateRangeFilter; days: number }[] = [
+  { label: '7 días', value: '7d', days: 7 },
+  { label: '14 días', value: '14d', days: 14 },
+  { label: '30 días', value: '30d', days: 30 },
+]
+
+// ─── Section heading ──────────────────────────────────────────────────────────
+function SectionLabel({ label }: Readonly<{ label: string }>) {
+  return (
+    <div className="flex items-center gap-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </p>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const summary = useDashboardSummary()
   useDashboardRealtimeInvalidation()
 
+  const [dateFilter, setDateFilter] = useState<DateRangeFilter>('7d')
+  const selectedDays = DATE_FILTERS.find((f) => f.value === dateFilter)?.days ?? 7
+
   const data = summary.data
-
-  let recentSalesContent: ReactNode
-  if (summary.isLoading) {
-    recentSalesContent = <LoadingRows />
-  } else if (!data?.recentSales.length) {
-    recentSalesContent = <EmptyTable message="Sin ventas hoy" />
-  } else {
-    recentSalesContent = (
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px] text-sm">
-          <thead>
-            <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
-              <th className="px-4 py-2.5 text-left">Nro. Venta</th>
-              <th className="px-4 py-2.5 text-left">Método</th>
-              <th className="px-4 py-2.5 text-left">Estado</th>
-              <th className="px-4 py-2.5 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.recentSales.map((sale) => (
-              <tr
-                className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
-                key={sale.saleId}
-              >
-                <td className="px-4 py-3 font-medium text-stone-900">{sale.saleNumber}</td>
-                <td className="px-4 py-3 text-stone-600">{sale.paymentMethod}</td>
-                <td className="px-4 py-3">
-                  <SaleStatusBadge status={sale.status} />
-                </td>
-                <td className="px-4 py-3 text-right font-semibold text-stone-900">
-                  {formatMoney(sale.total)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
-  }
-
-  let recentInvoicesContent: ReactNode
-  if (summary.isLoading) {
-    recentInvoicesContent = <LoadingRows />
-  } else if (!data?.recentInvoices.length) {
-    recentInvoicesContent = <EmptyTable message="Sin facturas hoy" />
-  } else {
-    recentInvoicesContent = (
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[420px] text-sm">
-          <thead>
-            <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
-              <th className="px-4 py-2.5 text-left">Nro. Factura</th>
-              <th className="px-4 py-2.5 text-left">Estado</th>
-              <th className="px-4 py-2.5 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.recentInvoices.map((invoice) => (
-              <tr
-                className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
-                key={invoice.invoiceId}
-              >
-                <td className="px-4 py-3 font-medium text-stone-900">
-                  <Link
-                    className="font-semibold text-stone-900 underline-offset-4 transition-colors hover:text-stone-950 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-900/25"
-                    to={`/invoices/${invoice.invoiceId}`}
-                  >
-                    {invoice.invoiceNumber}
-                  </Link>
-                </td>
-                <td className="px-4 py-3">
-                  <InvoiceStatusBadge status={invoice.status} />
-                </td>
-                <td className="px-4 py-3 text-right font-semibold text-stone-900">
-                  {formatMoney(invoice.total)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
-  }
+  const chartData = buildChartData(
+    data?.dailySales ?? [],
+    data?.dailyPurchases ?? [],
+    selectedDays,
+  )
 
   return (
-    <section className="min-h-full bg-surface-subtle p-4 lg:p-6">
-      <div className="flex w-full flex-col gap-5">
+    <div className="flex min-h-full flex-col gap-8 bg-background p-6">
 
-        {/* Header */}
-        <div className="flex flex-col gap-3 pb-2 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Inicio / Resumen</p>
-          <Button
+      {/* ── Header ───────────────────────────────────────────────────────── */}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+            {formatDate()}
+          </p>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground">
+            Resumen del día
+          </h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
+            Ventas, facturas, cobros e inventario en tiempo real.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Date range filter — controls all trend charts */}
+          <div className="flex overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            {DATE_FILTERS.map((f) => (
+              <button
+                className={cn(
+                  'px-3 py-1.5 text-[12px] font-medium transition-colors focus-visible:outline-none',
+                  dateFilter === f.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+                key={f.value}
+                onClick={() => setDateFilter(f.value)}
+                type="button"
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Refresh */}
+          <button
+            aria-label="Actualizar"
+            className={cn(
+              'flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground shadow-sm transition-colors',
+              'hover:bg-muted',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25',
+              summary.isLoading && 'cursor-not-allowed opacity-50',
+            )}
             disabled={summary.isLoading}
             onClick={() => summary.refetch()}
-            size="sm"
             type="button"
-            variant="outline"
           >
-            {summary.isLoading ? (
-              <Loader2 className="animate-spin" size={15} />
-            ) : (
-              <RefreshCw size={15} />
-            )}
+            <RefreshCw
+              aria-hidden="true"
+              className={cn('shrink-0 text-muted-foreground', summary.isLoading && 'animate-spin')}
+              size={14}
+              strokeWidth={2}
+            />
             Actualizar
-          </Button>
+          </button>
         </div>
+      </header>
 
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-normal text-foreground">
-              Tu tienda de un vistazo
-            </h1>
-            <p className="mt-1 text-sm text-stone-600">
-              Resumen operativo de hoy — ventas, facturas, cobros e inventario.
-            </p>
-          </div>
-          <Button asChild variant="secondary">
-            <Link to="/reports">
-              Ver reportes
-              <ArrowRight size={14} />
-            </Link>
-          </Button>
-        </header>
+      {/* ── Error ────────────────────────────────────────────────────────── */}
+      {summary.isError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700">
+          <AlertTriangle aria-hidden="true" className="shrink-0" size={15} />
+          Error al cargar el resumen. Intenta actualizar.
+        </div>
+      )}
 
-        {/* Error state */}
-        {summary.isError && (
-          <div className="flex items-center gap-3 rounded-md bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-200">
-            <AlertTriangle size={16} />
-            Error al cargar el resumen. Intenta actualizar.
-          </div>
-        )}
+      {/* ── Sección 1: Resumen de hoy ─────────────────────────────────────── */}
+      <section aria-label="Resumen de hoy">
+        <SectionLabel label="Resumen de hoy" />
+        <div className="mt-4">
+          <DashboardKpiCards data={data} isLoading={summary.isLoading} />
+        </div>
+      </section>
 
-        {/* Metric cards */}
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            icon={CircleDollarSign}
-            iconBox="bg-emerald-50 text-emerald-700"
-            isLoading={summary.isLoading}
-            label="Ventas hoy"
-            sub={`${data?.salesToday.count ?? 0} transacciones`}
-            value={formatMoney(data?.salesToday.totalAmount ?? 0)}
-          />
-          <MetricCard
-            icon={ReceiptText}
-            iconBox="bg-stone-900 text-white"
-            isLoading={summary.isLoading}
-            label="Facturas hoy"
-            sub={`${data?.invoicesToday.count ?? 0} documentos`}
-            value={formatMoney(data?.invoicesToday.totalAmount ?? 0)}
-          />
-          <MetricCard
-            icon={BadgeDollarSign}
-            iconBox="bg-amber-50 text-amber-700"
-            isLoading={summary.isLoading}
-            label="Cuentas por cobrar"
-            sub={`${data?.receivables.customerCount ?? 0} clientes`}
-            value={formatMoney(data?.receivables.totalPending ?? 0)}
-          />
-          <MetricCard
-            icon={Package}
-            iconBox="bg-red-50 text-red-700"
-            isLoading={summary.isLoading}
-            label="Bajo stock"
-            sub="productos"
-            value={String(data?.lowStock.productCount ?? 0)}
-          />
-        </section>
+      {/* ── Sección 2: Tendencias ─────────────────────────────────────────── */}
+      <section aria-label="Tendencias">
+        <SectionLabel label={`Tendencias · últimos ${selectedDays} días`} />
+        <div className="mt-4 grid gap-4 xl:grid-cols-3">
+          <SalesVsPurchasesChart data={chartData} isLoading={summary.isLoading} />
+          <DailySalesBarChart data={chartData} isLoading={summary.isLoading} />
+        </div>
+      </section>
 
-        {/* Recent tables */}
-        <section className="grid gap-4 xl:grid-cols-2">
-          {/* Recent Sales */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="text-base font-semibold text-foreground">Ventas recientes</h2>
-              <Button asChild size="sm" variant="ghost">
-                <Link to="/reports">
-                  Ver todas
-                  <ArrowRight size={14} />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              {recentSalesContent}
-            </CardContent>
-          </Card>
+      {/* ── Sección 3: Análisis ───────────────────────────────────────────── */}
+      <section aria-label="Análisis">
+        <SectionLabel label="Análisis · últimos 30 días" />
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <PaymentMethodChart data={data} isLoading={summary.isLoading} />
+          <SaleStatusChart data={data} isLoading={summary.isLoading} />
+          <AvgTicketCard data={data} isLoading={summary.isLoading} />
+        </div>
+      </section>
 
-          {/* Recent Invoices */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="text-base font-semibold text-foreground">Facturas recientes</h2>
-              <Button asChild size="sm" variant="ghost">
-                <Link to="/invoices">
-                  Ver todas
-                  <ArrowRight size={14} />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              {recentInvoicesContent}
-            </CardContent>
-          </Card>
-        </section>
+      {/* ── Sección 4: Actividad reciente ─────────────────────────────────── */}
+      <section aria-label="Actividad reciente">
+        <SectionLabel label="Actividad reciente" />
+        <div className="mt-4">
+          <DashboardTables data={data} isLoading={summary.isLoading} />
+        </div>
+      </section>
 
-        {/* Recent Purchases */}
-        {(data?.recentPurchases.length ?? 0) > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <h2 className="text-base font-semibold text-foreground">Compras recientes</h2>
-              <Button asChild size="sm" variant="ghost">
-                <Link to="/purchases">
-                  Ver todas
-                  <ArrowRight size={14} />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px] text-sm">
-                  <thead>
-                    <tr className="border-b border-stone-100 bg-stone-50 text-xs font-semibold text-stone-500">
-                      <th className="px-4 py-2.5 text-left">Nro. Compra</th>
-                      <th className="px-4 py-2.5 text-left">Proveedor</th>
-                      <th className="px-4 py-2.5 text-left">Estado</th>
-                      <th className="px-4 py-2.5 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data!.recentPurchases.map((purchase) => (
-                      <tr
-                        className="border-b border-stone-100 last:border-0 hover:bg-stone-50/60"
-                        key={purchase.purchaseId}
-                      >
-                        <td className="px-4 py-3 font-medium text-stone-900">{purchase.purchaseNumber}</td>
-                        <td className="px-4 py-3 text-stone-600">{purchase.supplierName ?? '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-semibold text-stone-700">
-                            {purchase.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-stone-900">
-                          {formatMoney(purchase.total)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Accounts receivable alert */}
-        {(data?.receivables.customerCount ?? 0) > 0 && (
-          <div className="flex flex-col gap-3 rounded-md bg-amber-50 p-4 ring-1 ring-amber-200 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <Users className="shrink-0 text-amber-600" size={20} />
-              <div>
-                <p className="font-semibold text-amber-900">
-                  {data!.receivables.customerCount} cliente{data!.receivables.customerCount !== 1 ? 's' : ''} con saldo pendiente
-                </p>
-                <p className="text-sm text-amber-700">
-                  Total por cobrar: {formatMoney(data!.receivables.totalPending)}
-                </p>
-              </div>
+      {/* ── Alerta: cuentas por cobrar ────────────────────────────────────── */}
+      {(data?.receivables.customerCount ?? 0) > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+              <Users aria-hidden="true" className="text-amber-700" size={15} strokeWidth={2} />
             </div>
-            <Button asChild size="sm" variant="outline">
-              <Link to="/reports">
-                Ver cuentas por cobrar
-              </Link>
-            </Button>
+            <div>
+              <p className="text-[13.5px] font-semibold text-amber-900">
+                {data!.receivables.customerCount} cliente{data!.receivables.customerCount !== 1 ? 's' : ''} con saldo pendiente
+              </p>
+              <p className="text-[12.5px] text-amber-700">
+                Total por cobrar: {formatMoney(data!.receivables.totalPending)}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
-    </section>
-  )
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────
-
-type MetricCardProps = {
-  label: string
-  value: string
-  sub: string
-  icon: React.ElementType
-  iconBox: string
-  isLoading: boolean
-}
-
-function MetricCard({ label, value, sub, icon: Icon, iconBox, isLoading }: Readonly<MetricCardProps>) {
-  return (
-    <Card className="bg-white shadow-none">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-stone-700">{label}</p>
-          <span className={`flex h-8 w-8 items-center justify-center rounded-md ${iconBox}`}>
-            <Icon aria-hidden="true" size={16} />
-          </span>
+          <Link
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-[12.5px] font-medium text-amber-800 transition-colors hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
+            to="/reports"
+          >
+            Ver cuentas por cobrar
+            <ArrowRight aria-hidden="true" size={13} />
+          </Link>
         </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="h-9 w-24 animate-pulse rounded bg-stone-100" />
-        ) : (
-          <p className="text-3xl font-semibold text-foreground">{value}</p>
-        )}
-        <p className="mt-2 text-sm font-medium text-stone-500">{sub}</p>
-      </CardContent>
-    </Card>
-  )
-}
+      )}
 
-function LoadingRows() {
-  return (
-    <div className="space-y-2 p-4">
-      {[1, 2, 3].map((i) => (
-        <div className="h-9 animate-pulse rounded bg-stone-100" key={i} />
-      ))}
     </div>
   )
-}
-
-function EmptyTable({ message }: Readonly<{ message: string }>) {
-  return (
-    <div className="flex items-center justify-center py-10 text-sm font-medium text-stone-400">
-      {message}
-    </div>
-  )
-}
-
-function SaleStatusBadge({ status }: Readonly<{ status: string }>) {
-  const map: Record<string, string> = {
-    Completed: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
-    Cancelled: 'bg-red-50 text-red-700 ring-1 ring-red-200',
-    Pending: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-  }
-
-  return (
-    <span className={`rounded-md px-2 py-1 text-xs font-semibold ${map[status] ?? 'bg-stone-100 text-stone-700'}`}>
-      {status}
-    </span>
-  )
-}
-
-function InvoiceStatusBadge({ status }: Readonly<{ status: string }>) {
-  const map: Record<string, string> = {
-    Issued: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200',
-    Cancelled: 'bg-red-50 text-red-700 ring-1 ring-red-200',
-    Draft: 'bg-stone-100 text-stone-600',
-  }
-
-  return (
-    <span className={`rounded-md px-2 py-1 text-xs font-semibold ${map[status] ?? 'bg-stone-100 text-stone-700'}`}>
-      {status}
-    </span>
-  )
-}
-
-function formatMoney(amount: number): string {
-  return new Intl.NumberFormat('es-DO', {
-    currency: 'DOP',
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-    style: 'currency',
-  }).format(amount)
 }

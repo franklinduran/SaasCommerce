@@ -7,7 +7,11 @@ public sealed record DashboardSummaryResponse(
   DashboardLowStockDto LowStock,
   IReadOnlyCollection<DashboardRecentSaleDto> RecentSales,
   IReadOnlyCollection<DashboardRecentInvoiceDto> RecentInvoices,
-  IReadOnlyCollection<DashboardRecentPurchaseDto> RecentPurchases);
+  IReadOnlyCollection<DashboardRecentPurchaseDto> RecentPurchases,
+  IReadOnlyCollection<DailySalesPointDto> DailySales,
+  IReadOnlyCollection<DailyPurchasesPointDto> DailyPurchases,
+  IReadOnlyCollection<PaymentMethodTotalDto> PaymentMethodTotals,
+  SaleStatusBreakdownDto SaleStatusBreakdown);
 
 public sealed record DashboardSalesTodayDto(
   int Count,
@@ -45,3 +49,25 @@ public sealed record DashboardRecentPurchaseDto(
   string Status,
   decimal Total,
   DateTimeOffset CreatedAt);
+
+public sealed record DailySalesPointDto(
+  string Date,
+  decimal TotalSales,
+  int SaleCount);
+
+public sealed record DailyPurchasesPointDto(
+  string Date,
+  decimal TotalPurchases,
+  int PurchaseCount);
+
+public sealed record PaymentMethodTotalDto(
+  string Method,
+  int Count,
+  decimal Total);
+
+public sealed record SaleStatusBreakdownDto(
+  int Completed,
+  int Cancelled,
+  int Pending,
+  int Failed,
+  int Other);

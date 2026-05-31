@@ -94,6 +94,24 @@ public sealed class DashboardReportsEndpointTests
   }
 
   [Fact]
+  public async Task DashboardSummary_ShouldReturnAnalyticsFields_WhenBusinessHasNoData()
+  {
+    using var factory = CreateFactory();
+    var tenant = await RegisterBusinessAsync(factory, "dash-analytics");
+
+    var response = await tenant.Client.GetAsync("/api/dashboard/summary");
+    var payload = await response.Content.ReadFromJsonAsync<ApiResponse<DashboardSummaryResponse>>();
+
+    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    payload!.Data.Should().NotBeNull();
+    payload.Data!.DailyPurchases.Should().NotBeNull();
+    payload.Data.PaymentMethodTotals.Should().NotBeNull();
+    payload.Data.SaleStatusBreakdown.Should().NotBeNull();
+    payload.Data.SaleStatusBreakdown.Completed.Should().Be(0);
+    payload.Data.SaleStatusBreakdown.Cancelled.Should().Be(0);
+  }
+
+  [Fact]
   public async Task DashboardSummary_ShouldIncludeRecentInvoices()
   {
     using var factory = CreateFactory();

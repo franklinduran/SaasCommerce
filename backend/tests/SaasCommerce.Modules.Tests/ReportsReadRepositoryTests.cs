@@ -37,7 +37,7 @@ public sealed class ReportsReadRepositoryTests
     await SeedFullDatasetAsync(db);
     var repo = new EfReportsReadRepository(db);
 
-    var result = await repo.GetDashboardSummaryAsync(businessId, Today);
+    var result = await repo.GetDashboardSummaryAsync(businessId, Today, Today.AddDays(-30));
 
     result.SalesToday.Count.Should().BeGreaterThan(0);
     result.InvoicesToday.Count.Should().BeGreaterThan(0);
@@ -54,7 +54,7 @@ public sealed class ReportsReadRepositoryTests
     await using var db = CreateDbContext();
     var repo = new EfReportsReadRepository(db);
 
-    var result = await repo.GetDashboardSummaryAsync(businessId, Today);
+    var result = await repo.GetDashboardSummaryAsync(businessId, Today, Today.AddDays(-30));
 
     result.SalesToday.Count.Should().Be(0);
     result.InvoicesToday.Count.Should().Be(0);
