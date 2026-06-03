@@ -26,9 +26,10 @@ public sealed class GetDashboardSummaryHandler(
     var tenantId = new BusinessId(businessId);
     var today = clock.UtcNow.Date;
     var todayStart = new DateTimeOffset(today, TimeSpan.Zero);
-    var thirtyDaysAgo = clock.UtcNow.AddDays(-30);
+    var days = Math.Clamp(query.Days, 1, 90);
+    var nDaysAgo = clock.UtcNow.AddDays(-days);
 
-    var summary = await reports.GetDashboardSummaryAsync(tenantId, todayStart, thirtyDaysAgo, cancellationToken);
+    var summary = await reports.GetDashboardSummaryAsync(tenantId, todayStart, nDaysAgo, cancellationToken);
 
     return Result.Success(summary);
   }

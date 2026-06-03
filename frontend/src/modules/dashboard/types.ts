@@ -72,6 +72,12 @@ export type DashboardSaleStatusBreakdown = {
   other: number
 }
 
+export type DashboardTopProduct = {
+  name: string
+  totalQuantity: number
+  totalRevenue: number
+}
+
 export type DashboardSummary = {
   salesToday: DashboardSalesToday
   invoicesToday: DashboardInvoicesToday
@@ -88,6 +94,8 @@ export type DashboardSummary = {
   paymentMethodTotals: DashboardPaymentMethodTotal[]
   /** Sale status breakdown for the last 30 days */
   saleStatusBreakdown: DashboardSaleStatusBreakdown
+  /** Top 5 products by revenue for the last 30 days */
+  topProducts: DashboardTopProduct[]
 }
 
 // ── Chart / filter types ───────────────────────────────────────────────────

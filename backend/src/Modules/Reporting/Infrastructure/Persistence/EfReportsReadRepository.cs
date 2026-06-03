@@ -188,6 +188,30 @@ public sealed class EfReportsReadRepository(AppDbContext dbContext) : IReportsRe
       statusMap.Where(kv => kv.Key is not (SaleStatus.Completed or SaleStatus.Cancelled
         or SaleStatus.Received or SaleStatus.Failed)).Sum(kv => kv.Value));
 
+    var topProductsRaw = await (
+      from item in dbContext.Set<SaleItem>().AsNoTracking()
+      join sale in dbContext.Set<Sale>().AsNoTracking()
+        on item.SaleId equals sale.Id
+      join product in dbContext.Set<Product>().AsNoTracking()
+        on item.ProductId equals product.Id
+      where sale.BusinessId == businessId &&
+            sale.Status == SaleStatus.Completed &&
+            sale.CompletedAt >= thirtyDaysAgo
+      group item by new { item.ProductId, product.Name } into g
+      select new
+      {
+        g.Key.Name,
+        TotalQuantity = (int)g.Sum(i => i.Quantity),
+        TotalRevenue = g.Sum(i => i.Quantity * i.UnitPrice),
+      })
+      .OrderByDescending(x => x.TotalRevenue)
+      .Take(5)
+      .ToArrayAsync(cancellationToken);
+
+    var topProducts = topProductsRaw
+      .Select(x => new TopProductDto(x.Name, x.TotalQuantity, x.TotalRevenue))
+      .ToArray();
+
     return new DashboardSummaryResponse(
       new DashboardSalesTodayDto(salesToday?.Count ?? 0, salesToday?.Total ?? 0),
       new DashboardInvoicesTodayDto(invoicesToday?.Count ?? 0, invoicesToday?.Total ?? 0),
@@ -199,7 +223,8 @@ public sealed class EfReportsReadRepository(AppDbContext dbContext) : IReportsRe
       dailySalesPoints,
       dailyPurchasesPoints,
       paymentMethodTotals,
-      saleStatusBreakdown);
+      saleStatusBreakdown,
+      topProducts);
   }
 
   public async Task<SalesReportResponse> GetSalesReportAsync(

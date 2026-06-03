@@ -1,4 +1,4 @@
-import { BadgeDollarSign, CircleDollarSign, Package, ReceiptText } from 'lucide-react'
+import { BadgeDollarSign, CircleDollarSign, Package, ReceiptText, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { DashboardSummary } from '@/modules/dashboard/types'
 import { formatMoney } from '@/modules/dashboard/utils/dashboardFormat'
@@ -9,14 +9,25 @@ type Props = {
 }
 
 export function DashboardKpiCards({ data, isLoading }: Readonly<Props>) {
+  const salesCount = data?.salesToday.count ?? 0
+  const salesTotalAmount = data?.salesToday.totalAmount ?? 0
+  const avgTicket = salesCount > 0 ? salesTotalAmount / salesCount : 0
+
   return (
-    <section aria-label="Métricas del día" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label="Métricas del día" className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
       <KpiCard
         icon={CircleDollarSign}
         isLoading={isLoading}
         label="Ventas hoy"
-        sub={`${data?.salesToday.count ?? 0} transacciones`}
-        value={formatMoney(data?.salesToday.totalAmount ?? 0)}
+        sub={`${salesCount} transacciones`}
+        value={formatMoney(salesTotalAmount)}
+      />
+      <KpiCard
+        icon={TrendingUp}
+        isLoading={isLoading}
+        label="Ticket promedio"
+        sub="por venta hoy"
+        value={formatMoney(avgTicket)}
       />
       <KpiCard
         icon={ReceiptText}

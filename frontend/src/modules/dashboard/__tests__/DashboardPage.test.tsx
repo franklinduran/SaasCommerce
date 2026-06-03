@@ -52,7 +52,7 @@ describe('DashboardPage', () => {
 
     expect(screen.getByText('Resumen de hoy')).toBeTruthy()
     expect(screen.getByText(/Tendencias/)).toBeTruthy()
-    expect(screen.getByText(/Análisis/)).toBeTruthy()
+    expect(screen.getByText('Distribución · últimos 30 días')).toBeTruthy()
     expect(screen.getByText('Actividad reciente')).toBeTruthy()
   })
 

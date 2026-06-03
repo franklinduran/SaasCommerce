@@ -42,11 +42,11 @@ describe('useDashboard hooks', () => {
   }
 
   it('uses the dashboard summary query options', () => {
-    const { result } = renderHook(() => useDashboardSummary(), { wrapper })
+    const { result } = renderHook(() => useDashboardSummary(7), { wrapper })
 
     expect(result.current.refetch).toEqual(expect.any(Function))
-    expect(queryClient.getQueryCache().find({ queryKey: dashboardKeys.summary() })?.options.staleTime).toBe(30_000)
-    expect(queryClient.getQueryCache().find({ queryKey: dashboardKeys.summary() })?.options.refetchInterval).toBe(300_000)
+    expect(queryClient.getQueryCache().find({ queryKey: dashboardKeys.summary(7) })?.options.staleTime).toBe(30_000)
+    expect(queryClient.getQueryCache().find({ queryKey: dashboardKeys.summary(7) })?.options.refetchInterval).toBe(300_000)
   })
 
   it('subscribes to realtime dashboard events and invalidates matching payloads', () => {
@@ -57,7 +57,7 @@ describe('useDashboard hooks', () => {
     realtimeHandlers.get('payment.registered')?.({ businessId: 'other-business' })
 
     expect(onRealtimeEvent).toHaveBeenCalledTimes(6)
-    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: dashboardKeys.summary() })
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: dashboardKeys.all })
     expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(2)
 
     unmount()

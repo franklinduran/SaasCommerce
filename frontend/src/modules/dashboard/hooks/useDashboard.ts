@@ -6,15 +6,15 @@ import { offRealtimeEvent, onRealtimeEvent } from '@/shared/services/signalrClie
 
 export const dashboardKeys = {
   all: ['dashboard'] as const,
-  summary: () => ['dashboard', 'summary'] as const,
+  summary: (days: number) => ['dashboard', 'summary', days] as const,
 }
 
-export function useDashboardSummary() {
+export function useDashboardSummary(days: number) {
   return useQuery({
-    queryFn: getDashboardSummary,
-    queryKey: dashboardKeys.summary(),
-    refetchInterval: 5 * 60 * 1000, // refresh every 5 min as fallback
-    staleTime: 30 * 1000, // 30 seconds
+    queryFn: () => getDashboardSummary(days),
+    queryKey: dashboardKeys.summary(days),
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   })
 }
 
@@ -31,7 +31,7 @@ export function useDashboardRealtimeInvalidation() {
       if (payload.businessId && payload.businessId !== businessId) {
         return
       }
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.summary() })
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all })
     }
 
     onRealtimeEvent('sale.statusChanged', invalidate)

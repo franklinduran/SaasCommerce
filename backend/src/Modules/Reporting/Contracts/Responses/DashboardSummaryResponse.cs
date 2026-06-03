@@ -11,7 +11,8 @@ public sealed record DashboardSummaryResponse(
   IReadOnlyCollection<DailySalesPointDto> DailySales,
   IReadOnlyCollection<DailyPurchasesPointDto> DailyPurchases,
   IReadOnlyCollection<PaymentMethodTotalDto> PaymentMethodTotals,
-  SaleStatusBreakdownDto SaleStatusBreakdown);
+  SaleStatusBreakdownDto SaleStatusBreakdown,
+  IReadOnlyCollection<TopProductDto> TopProducts);
 
 public sealed record DashboardSalesTodayDto(
   int Count,
@@ -71,3 +72,8 @@ public sealed record SaleStatusBreakdownDto(
   int Pending,
   int Failed,
   int Other);
+
+public sealed record TopProductDto(
+  string Name,
+  int TotalQuantity,
+  decimal TotalRevenue);

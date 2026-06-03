@@ -19,11 +19,12 @@ internal static class ReportsEndpointExtensions
     app.MapGet(
       "/api/dashboard/summary",
       async (
+        int? days,
         GetDashboardSummaryHandler handler,
         ICorrelationIdProvider correlationIdProvider,
         CancellationToken cancellationToken) =>
       {
-        var result = await handler.Handle(new GetDashboardSummaryQuery(), cancellationToken);
+        var result = await handler.Handle(new GetDashboardSummaryQuery(days ?? 30), cancellationToken);
 
         return ApiHelpers.ToApiResult(result, correlationIdProvider);
       })

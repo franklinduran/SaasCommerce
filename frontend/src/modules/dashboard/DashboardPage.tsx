@@ -4,11 +4,12 @@ import { Link } from 'react-router-dom'
 import { useDashboardRealtimeInvalidation, useDashboardSummary } from '@/modules/dashboard/hooks/useDashboard'
 import { DashboardKpiCards } from '@/modules/dashboard/components/DashboardKpiCards'
 import {
-  AvgTicketCard,
+  AvgTicketTrendChart,
   DailySalesBarChart,
   PaymentMethodChart,
   SaleStatusChart,
   SalesVsPurchasesChart,
+  TopProductsChart,
 } from '@/modules/dashboard/components/DashboardCharts'
 import { DashboardTables } from '@/modules/dashboard/components/DashboardTables'
 import { buildChartData, formatDate, formatMoney } from '@/modules/dashboard/utils/dashboardFormat'
@@ -22,24 +23,25 @@ const DATE_FILTERS: { label: string; value: DateRangeFilter; days: number }[] = 
 ]
 
 // ─── Section heading ──────────────────────────────────────────────────────────
-function SectionLabel({ label }: Readonly<{ label: string }>) {
+function SectionLabel({ label, right }: Readonly<{ label: string; right?: React.ReactNode }>) {
   return (
     <div className="flex items-center gap-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         {label}
       </p>
       <div className="h-px flex-1 bg-border" />
+      {right}
     </div>
   )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function DashboardPage() {
-  const summary = useDashboardSummary()
-  useDashboardRealtimeInvalidation()
-
   const [dateFilter, setDateFilter] = useState<DateRangeFilter>('7d')
   const selectedDays = DATE_FILTERS.find((f) => f.value === dateFilter)?.days ?? 7
+
+  const summary = useDashboardSummary(selectedDays)
+  useDashboardRealtimeInvalidation()
 
   const data = summary.data
   const chartData = buildChartData(
@@ -65,48 +67,26 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Date range filter — controls all trend charts */}
-          <div className="flex overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-            {DATE_FILTERS.map((f) => (
-              <button
-                className={cn(
-                  'px-3 py-1.5 text-[12px] font-medium transition-colors focus-visible:outline-none',
-                  dateFilter === f.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-                key={f.value}
-                onClick={() => setDateFilter(f.value)}
-                type="button"
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Refresh */}
-          <button
-            aria-label="Actualizar"
-            className={cn(
-              'flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground shadow-sm transition-colors',
-              'hover:bg-muted',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25',
-              summary.isLoading && 'cursor-not-allowed opacity-50',
-            )}
-            disabled={summary.isLoading}
-            onClick={() => summary.refetch()}
-            type="button"
-          >
-            <RefreshCw
-              aria-hidden="true"
-              className={cn('shrink-0 text-muted-foreground', summary.isLoading && 'animate-spin')}
-              size={14}
-              strokeWidth={2}
-            />
-            Actualizar
-          </button>
-        </div>
+        <button
+          aria-label="Actualizar"
+          className={cn(
+            'flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[13px] font-medium text-foreground shadow-sm transition-colors',
+            'hover:bg-muted',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25',
+            summary.isLoading && 'cursor-not-allowed opacity-50',
+          )}
+          disabled={summary.isLoading}
+          onClick={() => summary.refetch()}
+          type="button"
+        >
+          <RefreshCw
+            aria-hidden="true"
+            className={cn('shrink-0 text-muted-foreground', summary.isLoading && 'animate-spin')}
+            size={14}
+            strokeWidth={2}
+          />
+          Actualizar
+        </button>
       </header>
 
       {/* ── Error ────────────────────────────────────────────────────────── */}
@@ -127,20 +107,50 @@ export function DashboardPage() {
 
       {/* ── Sección 2: Tendencias ─────────────────────────────────────────── */}
       <section aria-label="Tendencias">
-        <SectionLabel label={`Tendencias · últimos ${selectedDays} días`} />
+        <SectionLabel
+          label={`Tendencias · últimos ${selectedDays} días`}
+          right={
+            <div className="flex overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+              {DATE_FILTERS.map((f) => (
+                <button
+                  className={cn(
+                    'px-3 py-1.5 text-[12px] font-medium transition-colors focus-visible:outline-none',
+                    dateFilter === f.value
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                  key={f.value}
+                  onClick={() => setDateFilter(f.value)}
+                  type="button"
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          }
+        />
         <div className="mt-4 grid gap-4 xl:grid-cols-3">
           <SalesVsPurchasesChart data={chartData} isLoading={summary.isLoading} />
           <DailySalesBarChart data={chartData} isLoading={summary.isLoading} />
         </div>
       </section>
 
-      {/* ── Sección 3: Análisis ───────────────────────────────────────────── */}
-      <section aria-label="Análisis">
-        <SectionLabel label="Análisis · últimos 30 días" />
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <PaymentMethodChart data={data} isLoading={summary.isLoading} />
-          <SaleStatusChart data={data} isLoading={summary.isLoading} />
-          <AvgTicketCard data={data} isLoading={summary.isLoading} />
+      {/* ── Sección 3: Distribución ───────────────────────────────────────── */}
+      <section aria-label="Distribución">
+        <SectionLabel label="Distribución · últimos 30 días" />
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <PaymentMethodChart data={data} days={selectedDays} isLoading={summary.isLoading} />
+          <SaleStatusChart data={data} days={selectedDays} isLoading={summary.isLoading} />
+          <AvgTicketTrendChart
+            dailySales={data?.dailySales ?? []}
+            days={selectedDays}
+            isLoading={summary.isLoading}
+          />
+          <TopProductsChart
+            products={data?.topProducts ?? []}
+            days={selectedDays}
+            isLoading={summary.isLoading}
+          />
         </div>
       </section>
 
