@@ -93,6 +93,23 @@ export async function deactivateProduct(productId: string) {
   return response.data
 }
 
+export async function uploadProductImage(productId: string, file: File): Promise<void> {
+  const token = getAccessToken()
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`/api/catalog/products/${productId}/image`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al subir la imagen.' }))
+    throw new Error(error?.error?.message ?? error?.message ?? 'Error al subir la imagen.')
+  }
+}
+
 function getAccessToken(): string | undefined {
   return useAuthStore.getState().session?.accessToken
 }

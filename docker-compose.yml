@@ -50,12 +50,20 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-SaasCommerce}
       Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
       Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN_0:-http://localhost:5173}
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: ${MINIO_ROOT_USER:-minioadmin}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      Minio__BucketName: ${MINIO_BUCKET:-products}
+      Minio__PublicUrl: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+      Minio__UseSsl: "false"
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   worker:
@@ -88,6 +96,25 @@ services:
     depends_on:
       - api
 
+  minio:
+    image: minio/minio:latest
+    container_name: saascommerce-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres-data:
   rabbitmq-data:
+  minio-data:

@@ -94,6 +94,9 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
     builder.Property(product => product.AttributesJson)
       .HasColumnType("jsonb");
 
+    builder.Property(product => product.ImageUrl)
+      .HasMaxLength(512);
+
     builder.Property(product => product.IsActive)
       .IsRequired();
 

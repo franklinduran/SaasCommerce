@@ -126,7 +126,7 @@ describe('CustomerSelector', () => {
       />,
     )
 
-    expect(screen.getByText('Obligatorio')).toBeTruthy()
+    expect(screen.getByText('Obligatorio para fiado')).toBeTruthy()
   })
 
   it('calls onQueryChange when typing in search input', async () => {

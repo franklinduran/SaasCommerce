@@ -16,11 +16,11 @@ export function POSCartItem({
   onRemove,
 }: Readonly<POSCartItemProps>) {
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-stone-200 py-3 last:border-b-0">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-border py-3 last:border-b-0">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-stone-950">{item.name}</p>
-        <p className="mt-1 font-mono text-xs font-semibold text-stone-500">{item.sku}</p>
-        <p className="mt-2 text-sm font-semibold text-stone-700">
+        <p className="truncate text-[13px] font-semibold text-foreground">{item.name}</p>
+        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">{item.sku}</p>
+        <p className="mt-1.5 text-[13px] font-bold tracking-tight text-foreground">
           {formatMoney(item.unitPrice * item.quantity)}
         </p>
       </div>
@@ -32,9 +32,9 @@ export function POSCartItem({
           type="button"
           variant="secondary"
         >
-          <Minus aria-hidden="true" size={15} />
+          <Minus aria-hidden="true" size={13} />
         </Button>
-        <span className="flex h-9 min-w-9 items-center justify-center rounded-md bg-stone-100 px-2 text-sm font-semibold text-stone-900 ring-1 ring-stone-200">
+        <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-muted px-2 text-[13px] font-semibold text-foreground ring-1 ring-border">
           {item.quantity}
         </span>
         <Button
@@ -44,7 +44,7 @@ export function POSCartItem({
           type="button"
           variant="secondary"
         >
-          <Plus aria-hidden="true" size={15} />
+          <Plus aria-hidden="true" size={13} />
         </Button>
         <Button
           aria-label={`Quitar ${item.name}`}
@@ -53,7 +53,7 @@ export function POSCartItem({
           type="button"
           variant="ghost"
         >
-          <Trash2 aria-hidden="true" size={15} />
+          <Trash2 aria-hidden="true" size={13} />
         </Button>
       </div>
     </div>

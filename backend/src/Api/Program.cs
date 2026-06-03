@@ -3,11 +3,14 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
+using Minio;
 using SaasCommerce.Api;
 using SaasCommerce.Api.Endpoints;
+using SaasCommerce.Api.Infrastructure.Storage;
 using SaasCommerce.Api.Middleware;
 using SaasCommerce.Api.Realtime;
 using SaasCommerce.BuildingBlocks;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Auth;
 using SaasCommerce.BuildingBlocks.Application.Abstractions.Observability;
 using SaasCommerce.BuildingBlocks.Contracts.Common;
 using SaasCommerce.BuildingBlocks.Infrastructure.Auth;
@@ -16,6 +19,7 @@ using SaasCommerce.BuildingBlocks.Infrastructure.Realtime;
 using SaasCommerce.Modules;
 using SaasCommerce.Modules.Billing.Application.Invoices;
 using SaasCommerce.Modules.Catalog.Application.Categories;
+using SaasCommerce.BuildingBlocks.Application.Abstractions.Storage;
 using SaasCommerce.Modules.Catalog.Application.Products;
 using SaasCommerce.Modules.Catalog.Contracts.Requests;
 using SaasCommerce.Modules.Customers.Application.Credits;
@@ -191,6 +195,22 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+
+var minioOptions = builder.Configuration.GetSection("Minio").Get<MinioOptions>() ?? new MinioOptions();
+builder.Services.AddSingleton(minioOptions);
+
+if (!string.IsNullOrWhiteSpace(minioOptions.AccessKey))
+{
+  builder.Services.AddMinio(configureClient => configureClient
+    .WithEndpoint(minioOptions.Endpoint)
+    .WithCredentials(minioOptions.AccessKey, minioOptions.SecretKey)
+    .WithSSL(minioOptions.UseSsl));
+  builder.Services.AddScoped<IStorageService, MinioStorageService>();
+}
+else
+{
+  builder.Services.AddScoped<IStorageService, NullStorageService>();
+}
 builder.Services.AddSaasCommerceJwt(builder.Configuration, builder.Environment);
 builder.Services.AddAuthorization(options =>
 {
@@ -1009,6 +1029,68 @@ app.MapPut(
     return ApiHelpers.ToApiResult(result, correlationIdProvider);
   })
   .RequireAuthorization($"Permission:{SystemPermissions.ProductsUpdate}")
+  .WithTags(catalogTag);
+
+app.MapPost(
+  "/api/catalog/products/{id:guid}/image",
+  async (
+    Guid id,
+    IFormFile file,
+    IStorageService storageService,
+    UploadProductImageHandler handler,
+    MinioOptions minioOptions,
+    ICurrentUserService currentUser,
+    ICorrelationIdProvider correlationIdProvider,
+    CancellationToken cancellationToken) =>
+  {
+    const long maxFileSizeBytes = 5 * 1024 * 1024;
+    string[] allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (file.Length == 0 || file.Length > maxFileSizeBytes)
+    {
+      return Results.BadRequest(ApiResponse.Failure<object?>(
+        new ApiError("INVALID_FILE", "El archivo debe ser una imagen de hasta 5 MB."),
+        correlationIdProvider.CorrelationId));
+    }
+
+    if (!allowedTypes.Contains(file.ContentType.ToLowerInvariant()))
+    {
+      return Results.BadRequest(ApiResponse.Failure<object?>(
+        new ApiError("INVALID_FILE_TYPE", "Solo se permiten imagenes JPG, PNG o WebP."),
+        correlationIdProvider.CorrelationId));
+    }
+
+    if (currentUser.BusinessId is not Guid businessId)
+    {
+      return Results.Unauthorized();
+    }
+
+    var ext = file.ContentType switch
+    {
+      "image/png" => "png",
+      "image/webp" => "webp",
+      _ => "jpg"
+    };
+
+    var objectName = $"{businessId}/{id}.{ext}";
+
+    await using var stream = file.OpenReadStream();
+    var imageUrl = await storageService.UploadAsync(
+      minioOptions.BucketName,
+      objectName,
+      stream,
+      file.ContentType,
+      file.Length,
+      cancellationToken);
+
+    var result = await handler.Handle(
+      new UploadProductImageCommand(id, imageUrl),
+      cancellationToken);
+
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.ProductsUpdate}")
+  .DisableAntiforgery()
   .WithTags(catalogTag);
 
 app.MapGet(

@@ -83,6 +83,8 @@ public sealed class Product
 
   public string? AttributesJson { get; private set; }
 
+  public string? ImageUrl { get; private set; }
+
   public bool IsActive { get; private set; }
 
   public DateTimeOffset CreatedAt { get; private set; }
@@ -102,6 +104,12 @@ public sealed class Product
   {
     Validate(identity, codes, pricing, inventory);
     ApplyDetails(identity, codes, pricing, inventory, options);
+    UpdatedAt = updatedAt;
+  }
+
+  public void SetImageUrl(string? imageUrl, DateTimeOffset updatedAt)
+  {
+    ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
     UpdatedAt = updatedAt;
   }
 

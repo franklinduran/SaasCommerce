@@ -199,19 +199,21 @@ export function POSPage() {
   const customersForPOS = customers.data?.items ?? []
 
   return (
-    <section className="min-h-full bg-surface-subtle p-4 sm:p-5 lg:p-6">
+    <section className="min-h-full bg-background p-4 sm:p-5 lg:p-6">
       <div className="mx-auto grid w-full max-w-[1680px] min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:gap-5">
         <div className="space-y-5">
-          <div className="flex min-w-0 flex-col justify-between gap-3 rounded-md bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-5 lg:flex-row lg:items-end">
+          <div className="flex min-w-0 flex-col justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-5 shadow-sm sm:flex-row sm:items-center">
             <div>
-              <p className="text-sm font-semibold uppercase text-stone-500">Caja</p>
-              <h1 className="mt-1 text-2xl font-semibold text-stone-950">POS</h1>
-              <p className="mt-2 max-w-2xl text-sm font-medium text-stone-600">
-                {session?.user.fullName ?? 'Usuario'} | {branchId ? 'Sucursal activa' : 'Sin sucursal'}
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Punto de Venta
+              </p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">POS</h1>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {session?.user.fullName ?? 'Usuario'} · {branchId ? 'Sucursal activa' : 'Sin sucursal'}
               </p>
             </div>
-            <div className="rounded-md bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-800 ring-1 ring-stone-200">
-              {cart.itemCount} articulos | {formatMoney(cart.subtotal)}
+            <div className="shrink-0 rounded-xl border border-border bg-muted px-4 py-2 text-[13px] font-semibold text-foreground">
+              {cart.itemCount} art. · {formatMoney(cart.subtotal)}
             </div>
           </div>
 
@@ -337,18 +339,20 @@ function getSaleTotal(
 
 function NoCashSessionBanner() {
   return (
-    <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-4">
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+    <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+        <AlertTriangle aria-hidden="true" className="text-amber-700" size={15} strokeWidth={2} />
+      </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-amber-800">Caja cerrada</p>
-        <p className="mt-0.5 text-sm text-amber-700">
+        <p className="text-[13.5px] font-semibold text-amber-900">Caja cerrada</p>
+        <p className="mt-0.5 text-[12.5px] text-amber-700">
           No hay sesion de caja abierta. Debes abrir una caja antes de registrar ventas.
         </p>
         <Link
-          className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-900"
+          className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-[12px] font-medium text-amber-800 transition-colors hover:bg-amber-50"
           to="/cash"
         >
-          <Wallet className="h-4 w-4" />
+          <Wallet aria-hidden="true" size={12} />
           Ir a Caja
         </Link>
       </div>

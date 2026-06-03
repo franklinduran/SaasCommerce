@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
   Pencil,
   Plus,
   RefreshCw,
@@ -9,7 +10,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { ProductForm } from '@/modules/products/components/ProductForm'
 import {
   useActivateProductMutation,
@@ -17,6 +18,7 @@ import {
   useDeactivateProductMutation,
   useProductsRealtimeInvalidation,
   useProductsQuery,
+  useUploadProductImageMutation,
 } from '@/modules/products/hooks/useProducts'
 import type { Product, ProductFilters } from '@/modules/products/types'
 import {
@@ -70,6 +72,9 @@ export function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [pendingDeactivate, setPendingDeactivate] = useState<Product | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
+  const [uploadingProductId, setUploadingProductId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadImageMutation = useUploadProductImageMutation()
   const products = useProductsQuery(filters)
   const categories = useCategoriesQuery()
   const activateProduct = useActivateProductMutation()
@@ -126,6 +131,26 @@ export function ProductsPage() {
     activateProduct.mutate(product.id, {
       onSuccess: () => setSavedMessage('Producto activado correctamente.'),
     })
+  }
+
+  function handleUploadImageClick(productId: string) {
+    setUploadingProductId(productId)
+    fileInputRef.current?.click()
+  }
+
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file || !uploadingProductId) return
+
+    event.target.value = ''
+    uploadImageMutation.mutate(
+      { productId: uploadingProductId, file },
+      {
+        onSuccess: () => setSavedMessage('Imagen actualizada correctamente.'),
+        onError: (err) => setSavedMessage(`Error: ${err instanceof Error ? err.message : 'No se pudo subir la imagen.'}`),
+        onSettled: () => setUploadingProductId(null),
+      },
+    )
   }
 
   async function confirmDeactivate() {
@@ -241,6 +266,7 @@ export function ProductsPage() {
           <table className="w-full min-w-260 text-left text-sm">
             <thead className="bg-stone-50 text-xs font-semibold uppercase text-stone-600">
               <tr>
+                <th className="px-5 py-3">Imagen</th>
                 <th className="px-5 py-3">Producto</th>
                 <th className="px-5 py-3">Tipo</th>
                 <th className="px-5 py-3">SKU / Barcode</th>
@@ -249,13 +275,14 @@ export function ProductsPage() {
                 <th className="px-5 py-3">Stock</th>
                 <th className="px-5 py-3">Estado</th>
                 <th className="px-5 py-3 text-right">Acciones</th>
+                <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-200">
               {products.isLoading && <SkeletonRows />}
               {products.isError && (
                 <tr>
-                  <td className="px-5 py-10 text-center" colSpan={8}>
+                  <td className="px-5 py-10 text-center" colSpan={10}>
                     <div className="mx-auto max-w-sm space-y-3">
                       <p className="text-sm font-semibold text-red-700">No se pudo cargar el catalogo.</p>
                       <Button onClick={() => products.refetch()} variant="secondary">
@@ -268,7 +295,7 @@ export function ProductsPage() {
               )}
               {!products.isLoading && !products.isError && items.length === 0 && (
                 <tr>
-                  <td className="px-5 py-12 text-center" colSpan={8}>
+                  <td className="px-5 py-12 text-center" colSpan={10}>
                     <p className="text-sm font-semibold text-stone-700">No hay productos registrados.</p>
                     <p className="mt-1 text-sm font-medium text-stone-500">
                       Crea el primer producto para comenzar a preparar ventas e inventario.
@@ -278,6 +305,19 @@ export function ProductsPage() {
               )}
               {items.map((product) => (
                 <tr className="bg-white hover:bg-stone-50" key={product.id}>
+                  <td className="px-5 py-4">
+                    {product.imageUrl ? (
+                      <img
+                        alt={product.name}
+                        className="h-10 w-10 rounded-lg object-cover ring-1 ring-stone-200"
+                        src={product.imageUrl}
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-100 ring-1 ring-stone-200">
+                        <ImagePlus aria-hidden="true" className="text-stone-400" size={14} />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-5 py-4">
                     <p className="font-semibold text-stone-950">{product.name}</p>
                     <p className="mt-1 text-xs font-medium text-stone-500">{product.description ?? 'Sin descripcion'}</p>
@@ -316,6 +356,19 @@ export function ProductsPage() {
                         {product.isActive ? 'Desactivar' : 'Activar'}
                       </Button>
                     </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Button
+                      disabled={uploadImageMutation.isPending && uploadingProductId === product.id}
+                      onClick={() => handleUploadImageClick(product.id)}
+                      size="sm"
+                      title="Subir imagen"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <ImagePlus size={14} />
+                      Imagen
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -365,6 +418,15 @@ export function ProductsPage() {
         </div>
       </Card>
 
+      <input
+        accept="image/jpeg,image/png,image/webp"
+        aria-hidden="true"
+        className="hidden"
+        onChange={handleFileSelected}
+        ref={fileInputRef}
+        type="file"
+      />
+
       {drawerMode && (
         <Drawer onClose={closeDrawer} size="xl" subtitle="Catalogo" title={drawerTitle}>
           <ProductForm
@@ -412,7 +474,7 @@ const skeletonRowIds = [
 function SkeletonRows() {
   return skeletonRowIds.map((id) => (
     <tr key={id}>
-      <td className="px-5 py-4" colSpan={8}>
+      <td className="px-5 py-4" colSpan={10}>
         <div className="h-4 w-full rounded bg-stone-100" />
       </td>
     </tr>

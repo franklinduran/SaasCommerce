@@ -28,6 +28,7 @@ export type Product = {
   allowNegativeStock: boolean
   variantName: string | null
   attributesJson: string | null
+  imageUrl: string | null
   isActive: boolean
 }
 

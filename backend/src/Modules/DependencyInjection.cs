@@ -99,6 +99,7 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<CreateCategoryHandler>();
     services.AddScoped<UpdateCategoryHandler>();
     services.AddScoped<GetCategoriesHandler>();
+    services.AddScoped<UploadProductImageHandler>();
 
     // Inventory
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();

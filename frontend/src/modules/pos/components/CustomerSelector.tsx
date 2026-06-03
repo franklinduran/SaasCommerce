@@ -1,6 +1,6 @@
 import { Search, UserRound } from 'lucide-react'
 import type { Customer } from '@/modules/pos/types/posTypes'
-import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
+import { cn } from '@/shared/utils/cn'
 import {
   Select,
   SelectContent,
@@ -31,31 +31,39 @@ export function CustomerSelector({
   selectedCustomerId,
 }: Readonly<CustomerSelectorProps>) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-stone-100 text-stone-900">
-          <UserRound aria-hidden="true" size={18} />
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+          <UserRound aria-hidden="true" className="text-muted-foreground" size={15} strokeWidth={2} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-stone-950">Cliente</h2>
-          <p className="text-sm font-medium text-stone-600">{isCreditPayment ? 'Obligatorio' : 'Opcional'}</p>
+          <h2 className="text-[13.5px] font-semibold text-foreground">Cliente</h2>
+          <p className={cn('text-[12px]', isCreditPayment ? 'font-semibold text-amber-700' : 'text-muted-foreground')}>
+            {isCreditPayment ? 'Obligatorio para fiado' : 'Opcional'}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </div>
+
+      <div className="space-y-3 p-4">
         <label className="relative block">
           <Search
             aria-hidden="true"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
-            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            size={14}
           />
           <input
             aria-label="Buscar clientes"
-            className="h-10 w-full min-w-0 rounded-md bg-white pl-9 pr-3 text-sm font-medium text-stone-900 shadow-[0_0_0_1px_rgb(214_211_209)] outline-none transition placeholder:text-stone-400 focus:shadow-[0_0_0_1px_rgb(28_25_23)] focus:ring-2 focus:ring-stone-900/15"
+            className={cn(
+              'h-9 w-full min-w-0 rounded-xl border border-border bg-background pl-8 pr-3 text-[13px] font-medium text-foreground outline-none transition',
+              'placeholder:text-muted-foreground',
+              'focus:border-ring focus:ring-2 focus:ring-ring/20',
+            )}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Nombre o telefono"
             value={query}
           />
         </label>
+
         <Select
           disabled={isLoading || isError}
           value={selectedCustomerId ?? '_'}
@@ -71,33 +79,39 @@ export function CustomerSelector({
             ))}
           </SelectContent>
         </Select>
+
         {selectedCustomerId && (
           <SelectedCustomerCredit
             customer={customers.find((customer) => customer.id === selectedCustomerId)}
           />
         )}
+
         {isError && (
-          <p className="text-sm font-semibold text-red-700">No se pudieron cargar clientes.</p>
+          <p className="text-[12.5px] font-semibold text-destructive">
+            No se pudieron cargar clientes.
+          </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
 function SelectedCustomerCredit({ customer }: Readonly<{ customer?: Customer }>) {
-  if (!customer) {
-    return null
-  }
+  if (!customer) return null
 
   const creditLimit = customer.creditLimit ?? 0
   const limit = creditLimit === 0 ? 'Sin limite' : formatMoney(creditLimit)
 
   return (
-    <div className="rounded-md bg-stone-50 p-3 text-sm font-semibold text-stone-700 ring-1 ring-stone-200">
-      <p>Balance: {formatMoney(customer.currentBalance ?? 0)}</p>
-      <p className="mt-1">Limite: {limit}</p>
+    <div className="rounded-xl bg-muted p-3 text-[12.5px] font-medium text-muted-foreground ring-1 ring-border">
+      <p>
+        Balance: <span className="font-semibold text-foreground">{formatMoney(customer.currentBalance ?? 0)}</span>
+      </p>
+      <p className="mt-1">
+        Limite: <span className="font-semibold text-foreground">{limit}</span>
+      </p>
       {customer.creditStatus === 'Blocked' && (
-        <p className="mt-2 text-red-700">Credito bloqueado</p>
+        <p className="mt-2 font-semibold text-destructive">Credito bloqueado</p>
       )}
     </div>
   )

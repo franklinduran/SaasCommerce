@@ -39,6 +39,7 @@ internal static class ProductResponseMapper
       product.AllowNegativeStock,
       product.VariantName,
       product.AttributesJson,
+      product.ImageUrl,
       product.IsActive);
   }
 }

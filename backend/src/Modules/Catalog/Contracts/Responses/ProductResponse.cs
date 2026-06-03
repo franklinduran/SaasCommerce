@@ -30,4 +30,5 @@ public sealed record ProductResponse(
   bool AllowNegativeStock,
   string? VariantName,
   string? AttributesJson,
+  string? ImageUrl,
   bool IsActive);

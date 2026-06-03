@@ -8,6 +8,7 @@ import {
   getCategories,
   getProducts,
   updateProduct,
+  uploadProductImage,
 } from '@/modules/products/services/productService'
 import type { ProductFilters, UpdateProductRequest } from '@/modules/products/types'
 import { offRealtimeEvent, onRealtimeEvent } from '@/shared/services/signalrClient'
@@ -67,6 +68,19 @@ export function useDeactivateProductMutation() {
     mutationFn: deactivateProduct,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
+
+export function useUploadProductImageMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ productId, file }: { productId: string; file: File }) =>
+      uploadProductImage(productId, file),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['pos-products'] })
     },
   })
 }

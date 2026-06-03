@@ -1,7 +1,6 @@
 import { ShoppingCart } from 'lucide-react'
 import { POSCartItem } from '@/modules/pos/components/POSCartItem'
 import type { POSCartItem as POSCartItemType } from '@/modules/pos/types/posTypes'
-import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 
 type POSCartProps = {
   itemCount: number
@@ -21,25 +20,26 @@ export function POSCart({
   subtotal,
 }: Readonly<POSCartProps>) {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-md bg-stone-100 text-stone-900">
-            <ShoppingCart aria-hidden="true" size={18} />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <ShoppingCart aria-hidden="true" className="text-muted-foreground" size={15} strokeWidth={2} />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-stone-950">Carrito</h2>
-            <p className="text-sm font-medium text-stone-600">{itemCount} articulos</p>
+            <h2 className="text-[13.5px] font-semibold text-foreground">Carrito</h2>
+            <p className="text-[12px] text-muted-foreground">{itemCount} articulos</p>
           </div>
         </div>
-        <p className="text-right text-base font-semibold text-stone-950">{formatMoney(subtotal)}</p>
-      </CardHeader>
-      <CardContent>
+        <p className="text-[15px] font-bold tracking-tight text-foreground">{formatMoney(subtotal)}</p>
+      </div>
+
+      <div className="p-4">
         {items.length === 0 ? (
-          <div className="flex min-h-40 flex-col items-center justify-center rounded-md bg-stone-50 p-6 text-center ring-1 ring-stone-200">
-            <ShoppingCart aria-hidden="true" className="text-stone-500" size={26} />
-            <p className="mt-3 text-sm font-semibold text-stone-800">Carrito vacio</p>
-            <p className="mt-1 text-sm font-medium text-stone-500">
+          <div className="flex min-h-36 flex-col items-center justify-center rounded-xl bg-muted p-6 text-center">
+            <ShoppingCart aria-hidden="true" className="text-muted-foreground/50" size={24} />
+            <p className="mt-3 text-[13px] font-semibold text-foreground">Carrito vacio</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">
               Agrega productos para iniciar la venta.
             </p>
           </div>
@@ -56,8 +56,8 @@ export function POSCart({
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 

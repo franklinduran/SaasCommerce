@@ -1,6 +1,5 @@
 import { ReceiptText } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/shared/components/ui/card'
 
 type SaleSummaryProps = {
   disabled: boolean
@@ -20,42 +19,45 @@ export function SaleSummary({
   validationMessage,
 }: Readonly<SaleSummaryProps>) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-stone-100 text-stone-900">
-          <ReceiptText aria-hidden="true" size={18} />
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+          <ReceiptText aria-hidden="true" className="text-muted-foreground" size={15} strokeWidth={2} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-stone-950">Resumen</h2>
-          <p className="text-sm font-medium text-stone-600">{itemCount} articulos</p>
+          <h2 className="text-[13.5px] font-semibold text-foreground">Resumen</h2>
+          <p className="text-[12px] text-muted-foreground">{itemCount} articulos</p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2 rounded-md bg-stone-50 p-4 ring-1 ring-stone-200">
-          <div className="flex items-center justify-between gap-3 text-sm font-medium text-stone-600">
+      </div>
+
+      <div className="space-y-4 p-4">
+        <div className="space-y-2 rounded-xl bg-muted p-4">
+          <div className="flex items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
             <span>Subtotal visual</span>
-            <span className="font-semibold text-stone-900">{formatMoney(subtotal)}</span>
+            <span className="font-semibold text-foreground">{formatMoney(subtotal)}</span>
           </div>
-          <div className="flex items-center justify-between gap-3 text-base font-semibold text-stone-950">
+          <div className="flex items-center justify-between gap-3 text-[14px] font-bold tracking-tight text-foreground">
             <span>Total estimado</span>
             <span>{formatMoney(subtotal)}</span>
           </div>
         </div>
+
         {validationMessage && (
-          <p className="rounded-md bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 ring-1 ring-amber-200">
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 ring-1 ring-amber-200">
             {validationMessage}
           </p>
         )}
+
         <Button
-          className="h-12 w-full"
+          className="h-11 w-full"
           disabled={disabled}
           onClick={onProcessSale}
           type="button"
         >
-          {isSubmitting ? 'Procesando venta' : 'Procesar venta'}
+          {isSubmitting ? 'Procesando venta…' : 'Procesar venta'}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
