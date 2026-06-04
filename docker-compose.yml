@@ -104,15 +104,16 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
+      - "9002:9000"
       - "9001:9001"
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   postgres-data:
