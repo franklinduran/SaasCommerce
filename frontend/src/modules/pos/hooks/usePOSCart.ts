@@ -6,6 +6,7 @@ export function usePOSCart() {
   const addItem = usePOSCartStore((state) => state.addItem)
   const increaseQuantity = usePOSCartStore((state) => state.increaseQuantity)
   const decreaseQuantity = usePOSCartStore((state) => state.decreaseQuantity)
+  const setQuantity = usePOSCartStore((state) => state.setQuantity)
   const removeItem = usePOSCartStore((state) => state.removeItem)
   const clearCart = usePOSCartStore((state) => state.clearCart)
   const subtotal = useMemo(() => calculateCartSubtotal(items), [items])
@@ -22,6 +23,7 @@ export function usePOSCart() {
     itemCount,
     items,
     removeItem,
+    setQuantity,
     subtotal,
   }
 }

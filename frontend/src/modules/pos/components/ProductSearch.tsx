@@ -1,5 +1,4 @@
 import { RefreshCw, Search } from 'lucide-react'
-import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 
 type ProductSearchProps = {
@@ -16,33 +15,46 @@ export function ProductSearch({
   query,
 }: Readonly<ProductSearchProps>) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
+    <div className="flex gap-2">
       <label className="relative block min-w-0 flex-1">
         <Search
           aria-hidden="true"
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          size={16}
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+          size={15}
         />
         <input
           aria-label="Buscar productos"
           className={cn(
-            'h-10 w-full min-w-0 rounded-xl border border-border bg-card pl-9 pr-3 text-[13px] font-medium text-foreground shadow-sm outline-none transition',
-            'placeholder:text-muted-foreground',
-            'focus:border-ring focus:ring-2 focus:ring-ring/20',
+            'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white pl-9 pr-3.5',
+            'text-sm font-medium text-gray-900 outline-none transition',
+            'placeholder:font-normal placeholder:text-gray-400',
+            'hover:border-gray-300',
+            'focus:border-primary focus:ring-2 focus:ring-primary/15',
           )}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Buscar por nombre o SKU"
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Buscar por nombre o SKU…"
           value={query}
         />
       </label>
-      <Button disabled={isFetching} onClick={onRefresh} type="button" variant="secondary">
+
+      <button
+        aria-label="Actualizar productos"
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition',
+          'hover:border-gray-300 hover:text-gray-900',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+        )}
+        disabled={isFetching}
+        onClick={onRefresh}
+        type="button"
+      >
         <RefreshCw
           aria-hidden="true"
           className={cn('shrink-0', isFetching && 'animate-spin')}
           size={15}
         />
-        Actualizar
-      </Button>
+      </button>
     </div>
   )
 }

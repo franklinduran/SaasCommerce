@@ -1,4 +1,3 @@
-import { ReceiptText } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 
 type SaleSummaryProps = {
@@ -19,44 +18,46 @@ export function SaleSummary({
   validationMessage,
 }: Readonly<SaleSummaryProps>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-          <ReceiptText aria-hidden="true" className="text-muted-foreground" size={15} strokeWidth={2} />
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Resumen
+        </p>
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          {itemCount} artículos
         </span>
-        <div>
-          <h2 className="text-[13.5px] font-semibold text-foreground">Resumen</h2>
-          <p className="text-[12px] text-muted-foreground">{itemCount} articulos</p>
+      </div>
+
+      {/* Totals */}
+      <div className="mt-3 space-y-1.5">
+        <div className="flex items-center justify-between gap-3 text-[13px] text-muted-foreground">
+          <span>Subtotal</span>
+          <span className="tabular-nums font-medium text-foreground">{formatMoney(subtotal)}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3 text-[15px] font-bold tracking-tight text-foreground">
+          <span>Total</span>
+          <span className="tabular-nums">{formatMoney(subtotal)}</span>
         </div>
       </div>
 
-      <div className="space-y-4 p-4">
-        <div className="space-y-2 rounded-xl bg-muted p-4">
-          <div className="flex items-center justify-between gap-3 text-[12.5px] text-muted-foreground">
-            <span>Subtotal visual</span>
-            <span className="font-semibold text-foreground">{formatMoney(subtotal)}</span>
-          </div>
-          <div className="flex items-center justify-between gap-3 text-[14px] font-bold tracking-tight text-foreground">
-            <span>Total estimado</span>
-            <span>{formatMoney(subtotal)}</span>
-          </div>
-        </div>
+      {/* Validation */}
+      {validationMessage && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 ring-1 ring-amber-200">
+          {validationMessage}
+        </p>
+      )}
 
-        {validationMessage && (
-          <p className="rounded-xl bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 ring-1 ring-amber-200">
-            {validationMessage}
-          </p>
-        )}
-
-        <Button
-          className="h-11 w-full"
-          disabled={disabled}
-          onClick={onProcessSale}
-          type="button"
-        >
-          {isSubmitting ? 'Procesando venta…' : 'Procesar venta'}
-        </Button>
-      </div>
+      {/* CTA */}
+      <Button
+        className="mt-4 h-11 w-full"
+        disabled={disabled}
+        onClick={onProcessSale}
+        type="button"
+      >
+        {isSubmitting ? 'Procesando…' : 'Procesar venta'}
+      </Button>
     </div>
   )
 }

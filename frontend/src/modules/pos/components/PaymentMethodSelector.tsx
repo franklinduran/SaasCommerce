@@ -20,36 +20,36 @@ export function PaymentMethodSelector({
   value,
 }: Readonly<PaymentMethodSelectorProps>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-          <Banknote aria-hidden="true" className="text-muted-foreground" size={15} strokeWidth={2} />
-        </span>
-        <div>
-          <h2 className="text-[13.5px] font-semibold text-foreground">Pago</h2>
-          <p className="text-[12px] text-muted-foreground">Metodo de pago</p>
-        </div>
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Método de pago
+        </p>
+        <div className="h-px flex-1 bg-border" />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 p-4">
+      {/* Content */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {methods.map((method) => {
           const Icon = method.icon
-          const isSelected = value === method.value
+          const active = value === method.value
 
           return (
             <button
-              aria-pressed={isSelected}
+              aria-pressed={active}
               className={cn(
-                'flex h-10 items-center justify-center gap-2 rounded-xl text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25',
-                isSelected
+                'flex h-9 items-center justify-center gap-2 rounded-lg text-[13px] font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25',
+                active
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
+                  : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
               )}
               key={method.value}
               onClick={() => onChange(method.value)}
               type="button"
             >
-              <Icon aria-hidden="true" size={14} strokeWidth={2} />
+              <Icon aria-hidden="true" size={13} strokeWidth={2} />
               {method.label}
             </button>
           )

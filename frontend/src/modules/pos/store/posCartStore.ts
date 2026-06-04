@@ -6,6 +6,7 @@ type POSCartState = {
   addItem: (item: POSCartItem) => void
   increaseQuantity: (productId: string) => void
   decreaseQuantity: (productId: string) => void
+  setQuantity: (productId: string, quantity: number) => void
   removeItem: (productId: string) => void
   clearCart: () => void
 }
@@ -45,6 +46,18 @@ export const usePOSCartStore = create<POSCartState>()((set) => ({
         )
         .filter((item) => item.quantity > 0),
     })),
+  setQuantity: (productId, quantity) =>
+    set((state) => {
+      const validated = Math.trunc(quantity)
+      if (validated <= 0) {
+        return { items: state.items.filter((item) => item.productId !== productId) }
+      }
+      return {
+        items: state.items.map((item) =>
+          item.productId === productId ? { ...item, quantity: validated } : item,
+        ),
+      }
+    }),
   removeItem: (productId) =>
     set((state) => ({
       items: state.items.filter((item) => item.productId !== productId),

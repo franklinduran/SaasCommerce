@@ -199,84 +199,106 @@ export function POSPage() {
   const customersForPOS = customers.data?.items ?? []
 
   return (
-    <section className="min-h-full bg-background p-4 sm:p-5 lg:p-6">
-      <div className="mx-auto grid w-full max-w-[1680px] min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] xl:gap-5">
-        <div className="space-y-5">
-          <div className="flex min-w-0 flex-col justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-5 shadow-sm sm:flex-row sm:items-center">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Punto de Venta
-              </p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">POS</h1>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                {session?.user.fullName ?? 'Usuario'} · {branchId ? 'Sucursal activa' : 'Sin sucursal'}
-              </p>
-            </div>
-            <div className="shrink-0 rounded-xl border border-border bg-muted px-4 py-2 text-[13px] font-semibold text-foreground">
-              {cart.itemCount} art. · {formatMoney(cart.subtotal)}
-            </div>
+    <div className="flex h-full bg-background">
+
+      {/* ── Left: productos ── */}
+      <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+
+        {/* Header */}
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+            Punto de Venta
+          </p>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground">POS</h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
+            {session?.user.fullName ?? 'Usuario'} · {branchId ? 'Sucursal activa' : 'Sin sucursal'}
+          </p>
+        </header>
+
+        {/* Buscador */}
+        <ProductSearch
+          isFetching={products.isFetching}
+          onQueryChange={setProductQuery}
+          onRefresh={() => products.refetch()}
+          query={productQuery}
+        />
+
+        {/* Grid de productos */}
+        <ProductGrid
+          isError={products.isError}
+          isLoading={products.isLoading}
+          onAddProduct={handleAddProduct}
+          onRetry={() => products.refetch()}
+          products={productsForPOS}
+        />
+      </div>
+
+      {/* ── Right: panel lateral (igual que el sidebar de la app) ── */}
+      <aside className="hidden w-[360px] shrink-0 flex-col divide-y divide-gray-100 overflow-y-auto border-l border-gray-200 bg-white xl:flex">
+
+          {/* Carrito */}
+          <div className="px-5 py-5">
+            <POSCart
+              itemCount={cart.itemCount}
+              items={cart.items}
+              onDecrease={cart.decreaseQuantity}
+              onIncrease={cart.increaseQuantity}
+              onRemove={cart.removeItem}
+              onSetQuantity={cart.setQuantity}
+              subtotal={cart.subtotal}
+            />
           </div>
 
-          <ProductSearch
-            isFetching={products.isFetching}
-            onQueryChange={setProductQuery}
-            onRefresh={() => products.refetch()}
-            query={productQuery}
-          />
+          {/* Cliente */}
+          <div className="px-5 py-5">
+            <CustomerSelector
+              customers={customersForPOS}
+              isCreditPayment={paymentMethod === 'Credit'}
+              isError={customers.isError}
+              isLoading={customers.isLoading}
+              onCustomerChange={setSelectedCustomerId}
+              onQueryChange={setCustomerQuery}
+              query={customerQuery}
+              selectedCustomerId={selectedCustomerId}
+            />
+          </div>
 
-          <ProductGrid
-            isError={products.isError}
-            isLoading={products.isLoading}
-            onAddProduct={handleAddProduct}
-            onRetry={() => products.refetch()}
-            products={productsForPOS}
-          />
-        </div>
+          {/* Método de pago */}
+          <div className="px-5 py-5">
+            <PaymentMethodSelector onChange={setPaymentMethod} value={paymentMethod} />
+          </div>
 
-        <aside className="space-y-5 xl:sticky xl:top-5 xl:self-start">
-          <POSCart
-            itemCount={cart.itemCount}
-            items={cart.items}
-            onDecrease={cart.decreaseQuantity}
-            onIncrease={cart.increaseQuantity}
-            onRemove={cart.removeItem}
-            subtotal={cart.subtotal}
-          />
+          {/* Alerta caja cerrada */}
+          {!cashLoading && !hasOpenCashSession && (
+            <div className="px-5 py-4">
+              <NoCashSessionBanner />
+            </div>
+          )}
 
-          <CustomerSelector
-            customers={customersForPOS}
-            isCreditPayment={paymentMethod === 'Credit'}
-            isError={customers.isError}
-            isLoading={customers.isLoading}
-            onCustomerChange={setSelectedCustomerId}
-            onQueryChange={setCustomerQuery}
-            query={customerQuery}
-            selectedCustomerId={selectedCustomerId}
-          />
+          {/* Resumen + CTA */}
+          <div className="px-5 py-5">
+            <SaleSummary
+              disabled={createSaleMutation.isPending || !branchId || !hasOpenCashSession}
+              isSubmitting={createSaleMutation.isPending}
+              itemCount={cart.itemCount}
+              onProcessSale={handleProcessSale}
+              subtotal={cart.subtotal}
+              validationMessage={validationMessage}
+            />
+          </div>
 
-          <PaymentMethodSelector onChange={setPaymentMethod} value={paymentMethod} />
-
-          {!cashLoading && !hasOpenCashSession && <NoCashSessionBanner />}
-
-          <SaleSummary
-            disabled={createSaleMutation.isPending || !branchId || !hasOpenCashSession}
-            isSubmitting={createSaleMutation.isPending}
-            itemCount={cart.itemCount}
-            onProcessSale={handleProcessSale}
-            subtotal={cart.subtotal}
-            validationMessage={validationMessage}
-          />
-
-          <SaleStatusPanel
-            errorMessage={saleErrorMessage}
-            reason={currentSale?.reason}
-            saleId={currentSale?.saleId ?? null}
-            status={panelStatus}
-            total={currentSale?.total}
-          />
-        </aside>
-      </div>
-    </section>
+          {/* Estado de venta */}
+          <div className="px-5 py-5">
+            <SaleStatusPanel
+              errorMessage={saleErrorMessage}
+              reason={currentSale?.reason}
+              saleId={currentSale?.saleId ?? null}
+              status={panelStatus}
+              total={currentSale?.total}
+            />
+          </div>
+      </aside>
+    </div>
   )
 }
 
@@ -339,20 +361,18 @@ function getSaleTotal(
 
 function NoCashSessionBanner() {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-        <AlertTriangle aria-hidden="true" className="text-amber-700" size={15} strokeWidth={2} />
-      </div>
+    <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+      <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0 text-amber-600" size={14} strokeWidth={2} />
       <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-semibold text-amber-900">Caja cerrada</p>
-        <p className="mt-0.5 text-[12.5px] text-amber-700">
-          No hay sesion de caja abierta. Debes abrir una caja antes de registrar ventas.
+        <p className="text-[12.5px] font-semibold text-amber-900">Caja cerrada</p>
+        <p className="mt-0.5 text-[12px] text-amber-700">
+          Abre una sesión de caja para registrar ventas.
         </p>
         <Link
-          className="mt-2 inline-flex h-7 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 text-[12px] font-medium text-amber-800 transition-colors hover:bg-amber-50"
+          className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-amber-700 hover:text-amber-900 focus-visible:outline-none"
           to="/cash"
         >
-          <Wallet aria-hidden="true" size={12} />
+          <Wallet aria-hidden="true" size={11} />
           Ir a Caja
         </Link>
       </div>

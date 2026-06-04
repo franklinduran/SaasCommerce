@@ -389,7 +389,7 @@ describe('POSPage', () => {
     renderPOSPage()
 
     await screen.findByText('Cafe molido')
-    const refreshBtn = screen.getByRole('button', { name: 'Actualizar' })
+    const refreshBtn = screen.getByRole('button', { name: 'Actualizar productos' })
     expect(refreshBtn).toBeTruthy()
 
     const user = userEvent.setup()

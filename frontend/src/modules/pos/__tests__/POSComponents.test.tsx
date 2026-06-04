@@ -126,7 +126,7 @@ describe('CustomerSelector', () => {
       />,
     )
 
-    expect(screen.getByText('Obligatorio para fiado')).toBeTruthy()
+    expect(screen.getByText('Obligatorio')).toBeTruthy()
   })
 
   it('calls onQueryChange when typing in search input', async () => {
@@ -181,8 +181,8 @@ describe('CustomerSelector', () => {
       />,
     )
 
-    expect(screen.getByText(/Balance/)).toBeTruthy()
-    expect(screen.getByText(/Limite/)).toBeTruthy()
+    expect(screen.getByText('Balance')).toBeTruthy()
+    expect(screen.getByText('Límite')).toBeTruthy()
   })
 
   it('shows Sin limite when creditLimit is zero', () => {
@@ -200,7 +200,7 @@ describe('CustomerSelector', () => {
       />,
     )
 
-    expect(screen.getByText(/Sin limite/)).toBeTruthy()
+    expect(screen.getByText('Sin límite')).toBeTruthy()
   })
 
   it('shows Credito bloqueado badge for blocked customer', () => {
@@ -218,7 +218,7 @@ describe('CustomerSelector', () => {
       />,
     )
 
-    expect(screen.getByText('Credito bloqueado')).toBeTruthy()
+    expect(screen.getByText('Crédito bloqueado')).toBeTruthy()
   })
 })
 

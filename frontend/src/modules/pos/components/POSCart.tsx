@@ -8,6 +8,7 @@ type POSCartProps = {
   onDecrease: (productId: string) => void
   onIncrease: (productId: string) => void
   onRemove: (productId: string) => void
+  onSetQuantity: (productId: string, quantity: number) => void
   subtotal: number
 }
 
@@ -17,34 +18,34 @@ export function POSCart({
   onDecrease,
   onIncrease,
   onRemove,
+  onSetQuantity,
   subtotal,
 }: Readonly<POSCartProps>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-            <ShoppingCart aria-hidden="true" className="text-muted-foreground" size={15} strokeWidth={2} />
-          </span>
-          <div>
-            <h2 className="text-[13.5px] font-semibold text-foreground">Carrito</h2>
-            <p className="text-[12px] text-muted-foreground">{itemCount} articulos</p>
-          </div>
-        </div>
-        <p className="text-[15px] font-bold tracking-tight text-foreground">{formatMoney(subtotal)}</p>
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Carrito
+        </p>
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+          {itemCount} art. · {formatMoney(subtotal)}
+        </span>
       </div>
 
-      <div className="p-4">
+      {/* Content */}
+      <div className="mt-4">
         {items.length === 0 ? (
-          <div className="flex min-h-36 flex-col items-center justify-center rounded-xl bg-muted p-6 text-center">
-            <ShoppingCart aria-hidden="true" className="text-muted-foreground/50" size={24} />
-            <p className="mt-3 text-[13px] font-semibold text-foreground">Carrito vacio</p>
-            <p className="mt-1 text-[12px] text-muted-foreground">
+          <div className="flex min-h-[100px] flex-col items-center justify-center gap-2 rounded-xl bg-muted py-6 text-center">
+            <ShoppingCart aria-hidden="true" className="text-muted-foreground/40" size={22} />
+            <p className="text-[13px] font-semibold text-foreground">Carrito vacio</p>
+            <p className="text-[12px] text-muted-foreground">
               Agrega productos para iniciar la venta.
             </p>
           </div>
         ) : (
-          <div className="max-h-[360px] overflow-y-auto pr-1">
+          <div className="max-h-[320px] overflow-y-auto">
             {items.map((item) => (
               <POSCartItem
                 item={item}
@@ -52,6 +53,7 @@ export function POSCart({
                 onDecrease={onDecrease}
                 onIncrease={onIncrease}
                 onRemove={onRemove}
+                onSetQuantity={onSetQuantity}
               />
             ))}
           </div>

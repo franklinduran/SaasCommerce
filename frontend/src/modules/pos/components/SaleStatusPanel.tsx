@@ -21,44 +21,54 @@ export function SaleStatusPanel({
 }: Readonly<SaleStatusPanelProps>) {
   const details = statusDetails[status]
   const StatusIcon = details.icon
+  const isSpinning = status === 'Submitting' || status === 'Processing' || status === 'Received'
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-        <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', details.iconBg)}>
-          <StatusIcon
-            aria-hidden="true"
-            className={cn(details.iconColor, (status === 'Submitting' || status === 'Processing') && 'animate-spin')}
-            size={15}
-            strokeWidth={2}
-          />
-        </span>
-        <div>
-          <h2 className="text-[13.5px] font-semibold text-foreground">Estado de venta</h2>
-          <p className="text-[12px] text-muted-foreground">{details.caption}</p>
-        </div>
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Estado de venta
+        </p>
+        <div className="h-px flex-1 bg-border" />
       </div>
 
-      <div className="space-y-3 p-4">
-        <div className={cn('rounded-xl px-4 py-3 ring-1', details.boxClassName)}>
-          <p className="text-[13px] font-semibold">{details.title}</p>
-          {saleId && (
-            <p className="mt-1 break-all font-mono text-[10.5px] font-medium opacity-70">
-              {saleId}
-            </p>
-          )}
-          {typeof total === 'number' && (
-            <p className="mt-2 text-[13px] font-semibold">Total: {formatMoney(total)}</p>
-          )}
-          {reason && <p className="mt-2 text-[12.5px]">{reason}</p>}
-        </div>
-
-        {errorMessage && (
-          <p className="rounded-xl bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700 ring-1 ring-red-200">
-            {errorMessage}
+      {/* Status row */}
+      <div className="mt-3 flex items-center gap-2.5">
+        <StatusIcon
+          aria-hidden="true"
+          className={cn(details.iconColor, isSpinning && 'animate-spin')}
+          size={15}
+          strokeWidth={2}
+        />
+        <div className="min-w-0 flex-1">
+          <p className={cn('text-[13px] font-semibold', details.textColor)}>
+            {details.title}
           </p>
+          <p className="text-[11.5px] text-muted-foreground">{details.caption}</p>
+        </div>
+        {typeof total === 'number' && (
+          <span className="shrink-0 text-[13px] font-bold tabular-nums text-foreground">
+            {formatMoney(total)}
+          </span>
         )}
       </div>
+
+      {saleId && (
+        <p className="mt-1.5 break-all font-mono text-[10.5px] text-muted-foreground/60">
+          {saleId}
+        </p>
+      )}
+
+      {reason && (
+        <p className="mt-1.5 text-[12.5px] text-muted-foreground">{reason}</p>
+      )}
+
+      {errorMessage && (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700 ring-1 ring-red-200">
+          {errorMessage}
+        </p>
+      )}
     </div>
   )
 }
@@ -66,68 +76,60 @@ export function SaleStatusPanel({
 const statusDetails: Record<
   PanelStatus,
   {
-    boxClassName: string
     caption: string
     icon: typeof CircleDashed
-    iconBg: string
     iconColor: string
+    textColor: string
     title: string
   }
 > = {
   Idle: {
-    boxClassName: 'bg-muted text-muted-foreground ring-border',
     caption: 'Sin venta activa',
     icon: CircleDashed,
-    iconBg: 'bg-muted',
-    iconColor: 'text-muted-foreground',
+    iconColor: 'text-muted-foreground/50',
+    textColor: 'text-muted-foreground',
     title: 'Lista para procesar',
   },
   Submitting: {
-    boxClassName: 'bg-sky-50 text-sky-800 ring-sky-200',
     caption: 'Enviando al servidor',
     icon: Loader2,
-    iconBg: 'bg-sky-50',
-    iconColor: 'text-sky-700',
+    iconColor: 'text-sky-600',
+    textColor: 'text-sky-700',
     title: 'Procesando venta',
   },
   Received: {
-    boxClassName: 'bg-sky-50 text-sky-800 ring-sky-200',
     caption: 'Recibida por servidor',
     icon: Loader2,
-    iconBg: 'bg-sky-50',
-    iconColor: 'text-sky-700',
+    iconColor: 'text-sky-600',
+    textColor: 'text-sky-700',
     title: 'Venta recibida',
   },
   Processing: {
-    boxClassName: 'bg-sky-50 text-sky-800 ring-sky-200',
     caption: 'Procesando',
     icon: Loader2,
-    iconBg: 'bg-sky-50',
-    iconColor: 'text-sky-700',
+    iconColor: 'text-sky-600',
+    textColor: 'text-sky-700',
     title: 'Procesando venta',
   },
   Completed: {
-    boxClassName: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-    caption: 'Finalizada',
+    caption: 'Finalizada con éxito',
     icon: CheckCircle2,
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-700',
+    iconColor: 'text-emerald-600',
+    textColor: 'text-emerald-700',
     title: 'Venta completada',
   },
   Failed: {
-    boxClassName: 'bg-red-50 text-red-800 ring-red-200',
-    caption: 'Requiere revision',
+    caption: 'Requiere revisión',
     icon: XCircle,
-    iconBg: 'bg-red-50',
-    iconColor: 'text-red-700',
+    iconColor: 'text-red-500',
+    textColor: 'text-red-700',
     title: 'Venta fallida',
   },
   Cancelled: {
-    boxClassName: 'bg-amber-50 text-amber-800 ring-amber-200',
     caption: 'Cancelada',
     icon: XCircle,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-700',
+    iconColor: 'text-amber-500',
+    textColor: 'text-amber-700',
     title: 'Venta cancelada',
   },
 }
