@@ -8,7 +8,7 @@ import { CustomerSelector } from '@/modules/pos/components/CustomerSelector'
 import { PaymentMethodSelector } from '@/modules/pos/components/PaymentMethodSelector'
 import { POSCart } from '@/modules/pos/components/POSCart'
 import { ProductGrid } from '@/modules/pos/components/ProductGrid'
-import { ProductSearch } from '@/modules/pos/components/ProductSearch'
+import { ProductSearch, type ProductViewMode } from '@/modules/pos/components/ProductSearch'
 import { SaleStatusPanel } from '@/modules/pos/components/SaleStatusPanel'
 import { SaleSummary } from '@/modules/pos/components/SaleSummary'
 import { useCreateSaleMutation } from '@/modules/pos/hooks/useCreateSale'
@@ -46,13 +46,32 @@ export function POSPage() {
   const hasOpenCashSession = !cashLoading && cashSession !== null && cashSession !== undefined
   const queryClient = useQueryClient()
   const [productQuery, setProductQuery] = useState('')
+  const [productPage, setProductPage] = useState(1)
   const [customerQuery, setCustomerQuery] = useState('')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
   const [saleErrorMessage, setSaleErrorMessage] = useState<string | null>(null)
   const [currentSale, setCurrentSale] = useState<CurrentSale | null>(null)
-  const products = useProductsForPOS(productQuery)
+  const [productView, setProductView] = useState<ProductViewMode>(() => {
+    try {
+      const saved = localStorage.getItem('pos:productView')
+      return saved === 'list' ? 'list' : 'grid'
+    } catch {
+      return 'grid'
+    }
+  })
+
+  function handleViewChange(view: ProductViewMode) {
+    setProductView(view)
+    try { localStorage.setItem('pos:productView', view) } catch { /* ignore */ }
+  }
+
+  function handleQueryChange(query: string) {
+    setProductQuery(query)
+    setProductPage(1)
+  }
+  const products = useProductsForPOS(productQuery, productPage)
   const customers = useCustomersForPOS(customerQuery)
   const createSaleMutation = useCreateSaleMutation()
   const cart = usePOSCart()
@@ -215,21 +234,28 @@ export function POSPage() {
           </p>
         </header>
 
-        {/* Buscador */}
+        {/* Buscador + toggle de vista */}
         <ProductSearch
           isFetching={products.isFetching}
-          onQueryChange={setProductQuery}
+          onQueryChange={handleQueryChange}
           onRefresh={() => products.refetch()}
+          onViewChange={handleViewChange}
           query={productQuery}
+          view={productView}
         />
 
-        {/* Grid de productos */}
+        {/* Productos */}
         <ProductGrid
           isError={products.isError}
           isLoading={products.isLoading}
           onAddProduct={handleAddProduct}
+          onNextPage={() => setProductPage((p) => p + 1)}
+          onPrevPage={() => setProductPage((p) => Math.max(1, p - 1))}
           onRetry={() => products.refetch()}
+          page={productPage}
           products={productsForPOS}
+          totalPages={products.data?.totalPages ?? 1}
+          view={productView}
         />
       </div>
 

@@ -23,11 +23,15 @@ export const createSaleSchema = z.object({
     .min(1),
 })
 
-export async function getProductsForPOS(query: string): Promise<POSProductListResponse> {
+export async function getProductsForPOS(
+  query: string,
+  page = 1,
+  pageSize = 25,
+): Promise<POSProductListResponse> {
   const params = new URLSearchParams({
     isActive: 'true',
-    page: '1',
-    pageSize: '25',
+    page: String(page),
+    pageSize: String(pageSize),
     sortBy: 'name',
     sortDirection: 'asc',
   })

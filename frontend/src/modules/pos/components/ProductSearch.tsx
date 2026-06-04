@@ -1,21 +1,28 @@
-import { RefreshCw, Search } from 'lucide-react'
+import { LayoutGrid, List, RefreshCw, Search } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
+
+export type ProductViewMode = 'grid' | 'list'
 
 type ProductSearchProps = {
   isFetching: boolean
   onQueryChange: (query: string) => void
   onRefresh: () => void
+  onViewChange: (view: ProductViewMode) => void
   query: string
+  view: ProductViewMode
 }
 
 export function ProductSearch({
   isFetching,
   onQueryChange,
   onRefresh,
+  onViewChange,
   query,
+  view,
 }: Readonly<ProductSearchProps>) {
   return (
     <div className="flex gap-2">
+      {/* Search input */}
       <label className="relative block min-w-0 flex-1">
         <Search
           aria-hidden="true"
@@ -37,6 +44,24 @@ export function ProductSearch({
         />
       </label>
 
+      {/* View toggle — segmented control */}
+      <div className="flex h-10 overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <ViewButton
+          active={view === 'grid'}
+          aria-label="Vista en tarjetas"
+          icon={LayoutGrid}
+          onClick={() => onViewChange('grid')}
+        />
+        <ViewButton
+          active={view === 'list'}
+          aria-label="Vista en lista"
+          className="border-l border-gray-200"
+          icon={List}
+          onClick={() => onViewChange('list')}
+        />
+      </div>
+
+      {/* Refresh */}
       <button
         aria-label="Actualizar productos"
         className={cn(
@@ -56,5 +81,37 @@ export function ProductSearch({
         />
       </button>
     </div>
+  )
+}
+
+function ViewButton({
+  active,
+  className,
+  icon: Icon,
+  onClick,
+  ...rest
+}: Readonly<{
+  active: boolean
+  'aria-label': string
+  className?: string
+  icon: typeof LayoutGrid
+  onClick: () => void
+}>) {
+  return (
+    <button
+      className={cn(
+        'flex h-10 w-10 items-center justify-center transition',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/20',
+        active
+          ? 'bg-primary text-white'
+          : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700',
+        className,
+      )}
+      onClick={onClick}
+      type="button"
+      {...rest}
+    >
+      <Icon aria-hidden="true" size={15} strokeWidth={2} />
+    </button>
   )
 }
