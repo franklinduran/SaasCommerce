@@ -118,7 +118,7 @@ public sealed class CsvReportExportServiceTests
     var business = new Business(businessId, "Biz", Today);
     business.AddBranch(branchId, "Main", "MAIN", Today, isMain: true);
     db.Add(business);
-    db.Add(new Customer(customerId, businessId, "Cliente \"Especial\"", "8095550199", "c@t.com", Today));
+    db.Add(new Customer(customerId, businessId, "Cliente", "Especial", "8095550199", "c@t.com", Today));
     var sale = Sale.Create(Guid.NewGuid(), businessId, branchId, userId,
       [new SaleLine(productId, 1, 100)], "Cash", Today);
     sale.AssignCustomer(customerId);
@@ -142,7 +142,7 @@ public sealed class CsvReportExportServiceTests
     business.AddBranch(branchId, "Main", "MAIN", Today, isMain: true);
     db.Add(business);
 
-    db.Add(new Customer(customerId, businessId, "Cliente Test", "8095550101", "c@test.com", Today));
+    db.Add(new Customer(customerId, businessId, "Cliente", "Test", "8095550101", "c@test.com", Today));
 
     db.Add(new Supplier(supplierId, businessId, "Proveedor Test",
       new SupplierContactInfo(null, null, null, null), Today));

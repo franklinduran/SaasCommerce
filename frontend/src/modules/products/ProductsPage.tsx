@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  Images,
   ImagePlus,
   Pencil,
   Plus,
@@ -18,6 +19,7 @@ import {
   useDeactivateProductMutation,
   useProductsRealtimeInvalidation,
   useProductsQuery,
+  useSeedProductImagesMutation,
   useUploadProductImageMutation,
 } from '@/modules/products/hooks/useProducts'
 import type { Product, ProductFilters } from '@/modules/products/types'
@@ -73,6 +75,7 @@ export function ProductsPage() {
   const [pendingDeactivate, setPendingDeactivate] = useState<Product | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null)
+  const seedImagesMutation = useSeedProductImagesMutation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadImageMutation = useUploadProductImageMutation()
   const products = useProductsQuery(filters)
@@ -176,6 +179,27 @@ export function ProductsPage() {
               endpoint="/api/products/export"
               filename={`productos_${new Date().toISOString().slice(0, 10)}.csv`}
             />
+          )}
+          {import.meta.env.DEV && (
+            <Button
+              disabled={seedImagesMutation.isPending}
+              onClick={() =>
+                seedImagesMutation.mutate(undefined, {
+                  onSuccess: (result) =>
+                    setSavedMessage(
+                      result.updated > 0
+                        ? `${result.updated} imágenes pobladas correctamente.`
+                        : 'Todos los productos ya tienen imagen.',
+                    ),
+                  onError: () => setSavedMessage('Error al poblar imágenes. ¿MinIO está corriendo?'),
+                })
+              }
+              type="button"
+              variant="secondary"
+            >
+              <Images size={16} />
+              {seedImagesMutation.isPending ? 'Poblando…' : 'Poblar imágenes'}
+            </Button>
           )}
           <Button onClick={openCreateDrawer}>
             <Plus size={16} />

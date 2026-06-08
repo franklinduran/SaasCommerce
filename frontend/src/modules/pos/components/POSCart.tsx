@@ -46,7 +46,7 @@ export function POSCart({
           </div>
         ) : (
           <div className="max-h-[320px] overflow-y-auto">
-            {items.map((item) => (
+            {[...items].reverse().map((item) => (
               <POSCartItem
                 item={item}
                 key={item.productId}

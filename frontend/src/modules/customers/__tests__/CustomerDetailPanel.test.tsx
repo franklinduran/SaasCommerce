@@ -111,14 +111,15 @@ describe('CustomerDetailPanel', () => {
     expect(screen.getByText('RD$ 5,000.00')).toBeTruthy()
     expect(screen.getByText(/Movimientos 1/)).toBeTruthy()
 
-    await user.clear(screen.getByLabelText('Nombre completo'))
-    await user.type(screen.getByLabelText('Nombre completo'), 'Maria Nueva')
+    await user.clear(screen.getByLabelText('Nombre *'))
+    await user.type(screen.getByLabelText('Nombre *'), 'Maria Nueva')
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
 
     expect(updateMutate).toHaveBeenCalledWith(
       {
         email: 'maria@test.com',
-        fullName: 'Maria Nueva',
+        firstName: 'Maria Nueva',
+        lastName: 'Cliente',
         isActive: true,
         phone: '8090000000',
       },
@@ -182,7 +183,7 @@ describe('CustomerDetailPanel', () => {
     vi.mocked(useCustomerDetail).mockReturnValue({ data: customer(), isLoading: false } as ReturnType<typeof useCustomerDetail>)
     rerender(<CustomerDetailPanel customerId="customer-1" onClose={onClose} />)
 
-    await userEvent.clear(screen.getByLabelText('Nombre completo'))
+    await userEvent.clear(screen.getByLabelText('Nombre *'))
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByText('El nombre es obligatorio.')).toBeTruthy()
   })
@@ -197,6 +198,8 @@ function customer(overrides: Partial<Customer> = {}): Customer {
     currentBalance: 1500,
     deactivatedAt: null,
     email: 'maria@test.com',
+    firstName: 'Maria',
+    lastName: 'Cliente',
     fullName: 'Maria Cliente',
     id: 'customer-1',
     isActive: true,

@@ -6,6 +6,9 @@ namespace SaasCommerce.Api.Infrastructure.Storage;
 
 public sealed class MinioStorageService(IMinioClient minio, MinioOptions options) : IStorageService
 {
+  public Task EnsureBucketAsync(string bucketName, CancellationToken cancellationToken = default)
+    => EnsureBucketExistsAsync(bucketName, cancellationToken);
+
   public async Task<string> UploadAsync(
     string bucketName,
     string objectName,

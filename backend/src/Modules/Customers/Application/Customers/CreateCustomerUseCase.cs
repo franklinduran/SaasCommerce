@@ -42,7 +42,8 @@ public sealed class CreateCustomerUseCase(
       customer = new Customer(
         Guid.NewGuid(),
         new BusinessId(businessId),
-        command.FullName,
+        command.FirstName,
+        command.LastName,
         command.Phone,
         command.Email,
         clock.UtcNow);

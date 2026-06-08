@@ -6,6 +6,7 @@ import type {
   ProductListResponse,
   UpdateProductRequest,
 } from '@/modules/products/types'
+import { buildApiUrl } from '@/shared/services/apiConfig'
 import { httpClient } from '@/shared/services/httpClient'
 
 export async function getProducts(filters: ProductFilters): Promise<ProductListResponse> {
@@ -93,12 +94,21 @@ export async function deactivateProduct(productId: string) {
   return response.data
 }
 
+export async function seedProductImages(): Promise<{ updated: number; total: number }> {
+  const response = await httpClient<{ updated: number; total: number }>(
+    '/api/admin/seed-product-images',
+    { accessToken: getAccessToken(), method: 'POST' },
+  )
+  return response.data!
+}
+
 export async function uploadProductImage(productId: string, file: File): Promise<void> {
   const token = getAccessToken()
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await fetch(`/api/catalog/products/${productId}/image`, {
+  const url = buildApiUrl(`/api/catalog/products/${productId}/image`)
+  const response = await fetch(url, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,

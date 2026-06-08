@@ -14,6 +14,8 @@ export type POSCartItem = {
 export type Customer = {
   id: string
   businessId: string
+  firstName: string
+  lastName: string
   fullName: string
   phone: string | null
   email: string | null

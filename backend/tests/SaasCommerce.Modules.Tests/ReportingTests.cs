@@ -373,7 +373,8 @@ public sealed class ReportingTests
       BusinessId businessId, DateTimeOffset today, DateTimeOffset thirtyDaysAgo, CancellationToken cancellationToken = default)
       => Task.FromResult(new DashboardSummaryResponse(
         SalesToday, InvoicesToday, Receivables, LowStock,
-        RecentSales, RecentInvoices, RecentPurchases, DailySales));
+        RecentSales, RecentInvoices, RecentPurchases, DailySales,
+        [], [], new SaleStatusBreakdownDto(0, 0, 0, 0, 0), []));
 
     public Task<SalesReportResponse> GetSalesReportAsync(
       BusinessId businessId, SalesReportCriteria criteria, CancellationToken cancellationToken = default)

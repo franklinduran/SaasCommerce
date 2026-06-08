@@ -27,30 +27,31 @@ export function CreateCustomerDialog({
   onSubmit,
   open,
 }: Readonly<CreateCustomerDialogProps>) {
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   function resetState() {
-    setFullName('')
+    setFirstName('')
+    setLastName('')
     setPhone('')
     setEmail('')
     setError(null)
   }
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) {
-      resetState()
-    }
+    if (!nextOpen) resetState()
     onOpenChange(nextOpen)
   }
 
   function handleSubmit() {
     const payload = {
       email: email.trim() || null,
-      fullName: fullName.trim(),
+      firstName: firstName.trim(),
       isActive: true,
+      lastName: lastName.trim(),
       phone: phone.trim() || null,
     }
     const validation = customerSchema.safeParse(payload)
@@ -81,10 +82,7 @@ export function CreateCustomerDialog({
 
         <form
           className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault()
-            handleSubmit()
-          }}
+          onSubmit={(e) => { e.preventDefault(); handleSubmit() }}
         >
           {error && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200">
@@ -92,20 +90,32 @@ export function CreateCustomerDialog({
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="fullName">Nombre completo</Label>
-            <Input
-              disabled={isSubmitting}
-              id="fullName"
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Maria Sanchez"
-              value={fullName}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName">Nombre *</Label>
+              <Input
+                disabled={isSubmitting}
+                id="firstName"
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="María"
+                value={firstName}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName">Apellido *</Label>
+              <Input
+                disabled={isSubmitting}
+                id="lastName"
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Rodríguez"
+                value={lastName}
+              />
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="phone">Telefono</Label>
+              <Label htmlFor="phone">Teléfono</Label>
               <Input
                 disabled={isSubmitting}
                 id="phone"

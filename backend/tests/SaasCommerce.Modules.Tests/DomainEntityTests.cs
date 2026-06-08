@@ -133,14 +133,14 @@ public sealed class DomainEntityTests
   [Fact]
   public void Customer_Ctor_ShouldThrow_WhenIdEmpty()
   {
-    var act = () => new Customer(Guid.Empty, Biz, "Ana", null, null, Now);
+    var act = () => new Customer(Guid.Empty, Biz, "Ana", "Lopez", null, null, Now);
     act.Should().Throw<ArgumentException>();
   }
 
   [Fact]
   public void Customer_Ctor_ShouldThrow_WhenNameTooLong()
   {
-    var act = () => new Customer(Guid.NewGuid(), Biz, new string('a', 200), null, null, Now);
+    var act = () => new Customer(Guid.NewGuid(), Biz, new string('a', 200), "Lopez", null, null, Now);
     act.Should().Throw<ArgumentOutOfRangeException>();
   }
 
@@ -149,7 +149,7 @@ public sealed class DomainEntityTests
   [InlineData("1234567890123456789012345")] // too long
   public void Customer_Ctor_ShouldThrow_WhenPhoneInvalid(string phone)
   {
-    var act = () => new Customer(Guid.NewGuid(), Biz, "Ana", phone, null, Now);
+    var act = () => new Customer(Guid.NewGuid(), Biz, "Ana", "Lopez", phone, null, Now);
     act.Should().Throw<ArgumentException>();
   }
 
@@ -159,36 +159,38 @@ public sealed class DomainEntityTests
   [InlineData("endsbad@")]
   public void Customer_Ctor_ShouldThrow_WhenEmailInvalid(string email)
   {
-    var act = () => new Customer(Guid.NewGuid(), Biz, "Ana", null, email, Now);
+    var act = () => new Customer(Guid.NewGuid(), Biz, "Ana", "Lopez", null, email, Now);
     act.Should().Throw<ArgumentException>();
   }
 
   [Fact]
   public void Customer_Ctor_ShouldNormalizePhoneAndEmail()
   {
-    var c = new Customer(Guid.NewGuid(), Biz, "  Ana  ", "(809) 555-0101", "ANA@TEST.COM", Now);
+    var c = new Customer(Guid.NewGuid(), Biz, "  Ana  ", "Lopez", "(809) 555-0101", "ANA@TEST.COM", Now);
     c.Phone.Should().Be("8095550101");
     c.Email.Should().Be("ana@test.com");
-    c.FullName.Should().Be("Ana");
-    c.SearchName.Should().Be("ANA");
+    c.FirstName.Should().Be("Ana");
+    c.LastName.Should().Be("Lopez");
+    c.FullName.Should().Be("Ana Lopez");
+    c.SearchName.Should().Be("ANA LOPEZ");
   }
 
   [Fact]
   public void Customer_Update_ShouldDeactivate_WhenIsActiveFalse()
   {
-    var c = new Customer(Guid.NewGuid(), Biz, "Ana", null, null, Now);
-    c.Update("Ana Maria", "8095550102", "a@b.com", isActive: false, Now);
+    var c = new Customer(Guid.NewGuid(), Biz, "Ana", "Lopez", null, null, Now);
+    c.Update("Ana Maria", "Lopez", "8095550102", "a@b.com", isActive: false, Now);
     c.IsActive.Should().BeFalse();
     c.DeactivatedAt.Should().Be(Now);
-    c.FullName.Should().Be("Ana Maria");
+    c.FullName.Should().Be("Ana Maria Lopez");
   }
 
   [Fact]
   public void Customer_Update_ShouldReactivate_WhenIsActiveTrue()
   {
-    var c = new Customer(Guid.NewGuid(), Biz, "Ana", null, null, Now);
+    var c = new Customer(Guid.NewGuid(), Biz, "Ana", "Lopez", null, null, Now);
     c.Deactivate(Now);
-    c.Update("Ana", null, null, isActive: true, Now);
+    c.Update("Ana", "Lopez", null, null, isActive: true, Now);
     c.IsActive.Should().BeTrue();
     c.DeactivatedAt.Should().BeNull();
   }
@@ -196,7 +198,7 @@ public sealed class DomainEntityTests
   [Fact]
   public void Customer_Deactivate_ShouldBeNoop_WhenAlreadyInactive()
   {
-    var c = new Customer(Guid.NewGuid(), Biz, "Ana", null, null, Now);
+    var c = new Customer(Guid.NewGuid(), Biz, "Ana", "Lopez", null, null, Now);
     c.Deactivate(Now);
     var firstDeactivatedAt = c.DeactivatedAt;
     c.Deactivate(Now.AddDays(1));

@@ -11,7 +11,8 @@ public sealed class Customer
   public Customer(
     Guid id,
     BusinessId businessId,
-    string fullName,
+    string firstName,
+    string lastName,
     string? phone,
     string? email,
     DateTimeOffset createdAt)
@@ -21,20 +22,24 @@ public sealed class Customer
       throw new ArgumentException("Customer id is required.", nameof(id));
     }
 
-    Validate(fullName, phone, email);
+    Validate(firstName, lastName, phone, email);
 
     Id = id;
     BusinessId = businessId;
     CreatedAt = createdAt;
     IsActive = true;
-    ApplyDetails(fullName, phone, email);
+    ApplyDetails(firstName, lastName, phone, email);
   }
 
   public Guid Id { get; private set; }
 
   public BusinessId BusinessId { get; private set; }
 
-  public string FullName { get; private set; } = string.Empty;
+  public string FirstName { get; private set; } = string.Empty;
+
+  public string LastName { get; private set; } = string.Empty;
+
+  public string FullName => $"{FirstName} {LastName}".Trim();
 
   public string SearchName { get; private set; } = string.Empty;
 
@@ -51,14 +56,15 @@ public sealed class Customer
   public DateTimeOffset? DeactivatedAt { get; private set; }
 
   public void Update(
-    string fullName,
+    string firstName,
+    string lastName,
     string? phone,
     string? email,
     bool isActive,
     DateTimeOffset updatedAt)
   {
-    Validate(fullName, phone, email);
-    ApplyDetails(fullName, phone, email);
+    Validate(firstName, lastName, phone, email);
+    ApplyDetails(firstName, lastName, phone, email);
 
     if (isActive)
     {
@@ -85,21 +91,28 @@ public sealed class Customer
     UpdatedAt = deactivatedAt;
   }
 
-  private void ApplyDetails(string fullName, string? phone, string? email)
+  private void ApplyDetails(string firstName, string lastName, string? phone, string? email)
   {
-    FullName = fullName.Trim();
+    FirstName = firstName.Trim();
+    LastName = lastName.Trim();
     SearchName = FullName.ToUpperInvariant();
     Phone = NormalizePhone(phone);
     Email = NormalizeEmail(email);
   }
 
-  private static void Validate(string fullName, string? phone, string? email)
+  private static void Validate(string firstName, string lastName, string? phone, string? email)
   {
-    ArgumentException.ThrowIfNullOrWhiteSpace(fullName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
 
-    if (fullName.Trim().Length > CustomerRules.FullNameMaxLength)
+    if (firstName.Trim().Length > CustomerRules.FirstNameMaxLength)
     {
-      throw new ArgumentOutOfRangeException(nameof(fullName), "Customer name is too long.");
+      throw new ArgumentOutOfRangeException(nameof(firstName), "First name is too long.");
+    }
+
+    if (lastName.Trim().Length > CustomerRules.LastNameMaxLength)
+    {
+      throw new ArgumentOutOfRangeException(nameof(lastName), "Last name is too long.");
     }
 
     var normalizedPhone = NormalizePhone(phone);
@@ -141,8 +154,9 @@ public sealed class Customer
 
 public static class CustomerRules
 {
-  public const int FullNameMaxLength = 160;
-  public const int SearchNameMaxLength = 160;
+  public const int FirstNameMaxLength = 80;
+  public const int LastNameMaxLength = 80;
+  public const int SearchNameMaxLength = 162; // FirstName + space + LastName
   public const int PhoneMaxLength = 20;
   public const int PhoneMinLength = 7;
   public const int EmailMaxLength = 320;

@@ -1,7 +1,8 @@
 namespace SaasCommerce.Modules.Customers.Contracts.Requests;
 
 public sealed record UpdateCustomerRequest(
-  string FullName,
+  string FirstName,
+  string LastName,
   string? Phone,
   string? Email,
   bool IsActive = true);

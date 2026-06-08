@@ -39,7 +39,8 @@ public sealed class CustomersSalesApiWorkflowTests
       scenario.UnitOfWork);
 
     var result = await useCase.ExecuteAsync(new CreateCustomerCommand(
-      "Maria Perez",
+      "Maria",
+      "Perez",
       "809-555-0102",
       "MARIA@EXAMPLE.COM"));
 
@@ -60,7 +61,7 @@ public sealed class CustomersSalesApiWorkflowTests
       scenario.Clock,
       scenario.UnitOfWork);
 
-    var result = await useCase.ExecuteAsync(new CreateCustomerCommand("", null, null));
+    var result = await useCase.ExecuteAsync(new CreateCustomerCommand("", "", null, null));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(CustomerErrors.InvalidCustomer);
@@ -86,7 +87,8 @@ public sealed class CustomersSalesApiWorkflowTests
     var customer = new Customer(
       Guid.NewGuid(),
       new BusinessId(otherBusiness),
-      "Cliente Otro Negocio",
+      "Cliente",
+      "Otro Negocio",
       null,
       null,
       Now);
@@ -112,7 +114,8 @@ public sealed class CustomersSalesApiWorkflowTests
 
     var result = await useCase.ExecuteAsync(new UpdateCustomerCommand(
       customer.Id,
-      "Maria Perez Actualizada",
+      "Maria",
+      "Perez Actualizada",
       "8295550102",
       "maria.actualizada@example.com",
       true));
@@ -620,7 +623,8 @@ public sealed class CustomersSalesApiWorkflowTests
       var customer = new Customer(
         Guid.NewGuid(),
         new BusinessId(BusinessId),
-        "Maria Perez",
+        "Maria",
+        "Perez",
         "8095550102",
         "maria@example.com",
         Now);

@@ -2,6 +2,8 @@ namespace SaasCommerce.BuildingBlocks.Application.Abstractions.Storage;
 
 public interface IStorageService
 {
+  Task EnsureBucketAsync(string bucketName, CancellationToken cancellationToken = default);
+
   Task<string> UploadAsync(
     string bucketName,
     string objectName,

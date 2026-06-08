@@ -232,7 +232,7 @@ public sealed class ReportsReadRepositoryTests
     business.AddBranch(branchId, "Main", "MAIN", Today, isMain: true);
     db.Add(business);
 
-    var customer = new Customer(customerId, businessId, "Cliente Test", "8095550101", "cliente@test.com", Today);
+    var customer = new Customer(customerId, businessId, "Cliente", "Test", "8095550101", "cliente@test.com", Today);
     db.Add(customer);
 
     var supplier = new Supplier(

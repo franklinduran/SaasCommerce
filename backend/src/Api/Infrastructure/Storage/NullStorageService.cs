@@ -4,6 +4,9 @@ namespace SaasCommerce.Api.Infrastructure.Storage;
 
 public sealed class NullStorageService : IStorageService
 {
+  public Task EnsureBucketAsync(string bucketName, CancellationToken cancellationToken = default)
+    => Task.CompletedTask;
+
   public Task<string> UploadAsync(
     string bucketName,
     string objectName,

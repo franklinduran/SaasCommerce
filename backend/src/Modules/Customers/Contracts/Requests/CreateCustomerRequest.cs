@@ -1,6 +1,7 @@
 namespace SaasCommerce.Modules.Customers.Contracts.Requests;
 
 public sealed record CreateCustomerRequest(
-  string FullName,
+  string FirstName,
+  string LastName,
   string? Phone,
   string? Email);

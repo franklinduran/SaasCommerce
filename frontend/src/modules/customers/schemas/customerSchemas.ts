@@ -1,7 +1,8 @@
 import { z } from 'zod'
 
 export const customerSchema = z.object({
-  fullName: z.string().trim().min(1, 'El nombre es obligatorio.'),
+  firstName: z.string().trim().min(1, 'El nombre es obligatorio.'),
+  lastName: z.string().trim().min(1, 'El apellido es obligatorio.'),
   phone: z.string().trim().nullable().optional(),
   email: z.string().trim().nullable().optional(),
   isActive: z.boolean().optional(),

@@ -45,7 +45,8 @@ public sealed class UpdateCustomerUseCase(
     try
     {
       customer.Update(
-        command.FullName,
+        command.FirstName,
+        command.LastName,
         command.Phone,
         command.Email,
         command.IsActive,

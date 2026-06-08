@@ -7,6 +7,7 @@ import {
   deactivateProduct,
   getCategories,
   getProducts,
+  seedProductImages,
   updateProduct,
   uploadProductImage,
 } from '@/modules/products/services/productService'
@@ -68,6 +69,18 @@ export function useDeactivateProductMutation() {
     mutationFn: deactivateProduct,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+  })
+}
+
+export function useSeedProductImagesMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: seedProductImages,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['pos-products'] })
     },
   })
 }

@@ -51,12 +51,15 @@ type CustomerDetailPanelProps = {
 type CustomerProfileForm = {
   customerId: string
   email: string
-  fullName: string
+  firstName: string
+  lastName: string
   phone: string
 }
 
 type CustomerProfileSource = {
   email?: string | null
+  firstName: string
+  lastName: string
   fullName: string
   id: string
   phone?: string | null
@@ -87,7 +90,8 @@ function toProfileForm(data: CustomerProfileSource): CustomerProfileForm {
   return {
     customerId: data.id,
     email: data.email ?? '',
-    fullName: data.fullName,
+    firstName: data.firstName,
+    lastName: data.lastName,
     phone: data.phone ?? '',
   }
 }
@@ -102,7 +106,8 @@ function getCurrentProfile(profileForm: CustomerProfileForm, data: CustomerProfi
 
 function hasProfileChanges(profile: CustomerProfileForm, data: CustomerProfileSource) {
   return (
-    profile.fullName !== data.fullName ||
+    profile.firstName !== data.firstName ||
+    profile.lastName !== data.lastName ||
     profile.phone !== (data.phone ?? '') ||
     profile.email !== (data.email ?? '')
   )
@@ -138,7 +143,8 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
   const [profileForm, setProfileForm] = useState<CustomerProfileForm>({
     customerId: '',
     email: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
     phone: '',
   })
 
@@ -168,8 +174,9 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
   function handleSaveProfile() {
     const payload = {
       email: currentProfile.email.trim() || null,
-      fullName: currentProfile.fullName.trim(),
+      firstName: currentProfile.firstName.trim(),
       isActive: data.isActive,
+      lastName: currentProfile.lastName.trim(),
       phone: currentProfile.phone.trim() || null,
     }
     const validation = customerSchema.safeParse(payload)
@@ -310,15 +317,27 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="fullName">Nombre completo</Label>
+                <Label htmlFor="firstName">Nombre *</Label>
                 <Input
-                  id="fullName"
-                  onChange={(e) => updateProfileForm({ fullName: e.target.value })}
-                  value={currentProfile.fullName}
+                  id="firstName"
+                  onChange={(e) => updateProfileForm({ firstName: e.target.value })}
+                  placeholder="María"
+                  value={currentProfile.firstName}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="phone">Telefono</Label>
+                <Label htmlFor="lastName">Apellido *</Label>
+                <Input
+                  id="lastName"
+                  onChange={(e) => updateProfileForm({ lastName: e.target.value })}
+                  placeholder="Rodríguez"
+                  value={currentProfile.lastName}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="phone">Teléfono</Label>
                 <Input
                   id="phone"
                   onChange={(e) => updateProfileForm({ phone: e.target.value })}
@@ -326,16 +345,16 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
                   value={currentProfile.phone}
                 />
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Correo electronico</Label>
-              <Input
-                id="email"
-                onChange={(e) => updateProfileForm({ email: e.target.value })}
-                placeholder="cliente@correo.com"
-                type="email"
-                value={currentProfile.email}
-              />
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Correo electrónico</Label>
+                <Input
+                  id="email"
+                  onChange={(e) => updateProfileForm({ email: e.target.value })}
+                  placeholder="cliente@correo.com"
+                  type="email"
+                  value={currentProfile.email}
+                />
+              </div>
             </div>
             {formError && (
               <p className="text-sm font-semibold text-red-700">{formError}</p>

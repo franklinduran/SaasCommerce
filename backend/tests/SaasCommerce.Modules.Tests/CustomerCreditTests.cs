@@ -260,7 +260,7 @@ public sealed class CustomerCreditTests
       => new(Customers, Credits, CurrentUser, Realtime, Clock, UnitOfWork);
 
     public Customer CreateCustomer()
-      => new(CustomerId, new BusinessId(BusinessId), "Cliente Fiado", "8095550000", null, Now);
+      => new(CustomerId, new BusinessId(BusinessId), "Cliente", "Fiado", "8095550000", null, Now);
 
     public CustomerCreditAccount CreateAccount(decimal creditLimit)
       => new(Guid.NewGuid(), new BusinessId(BusinessId), CustomerId, creditLimit, Now);

@@ -195,6 +195,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+builder.Services.AddHttpClient();
 
 var minioOptions = builder.Configuration.GetSection("Minio").Get<MinioOptions>() ?? new MinioOptions();
 builder.Services.AddSingleton(minioOptions);
@@ -508,7 +509,7 @@ app.MapPost(
     CancellationToken cancellationToken) =>
   {
     var result = await useCase.ExecuteAsync(
-      new CreateCustomerCommand(request.FullName, request.Phone, request.Email),
+      new CreateCustomerCommand(request.FirstName, request.LastName, request.Phone, request.Email),
       cancellationToken);
 
     return ApiHelpers.ToApiResult(
@@ -567,7 +568,7 @@ app.MapPut(
     CancellationToken cancellationToken) =>
   {
     var result = await useCase.ExecuteAsync(
-      new UpdateCustomerCommand(id, request.FullName, request.Phone, request.Email, request.IsActive),
+      new UpdateCustomerCommand(id, request.FirstName, request.LastName, request.Phone, request.Email, request.IsActive),
       cancellationToken);
 
     return ApiHelpers.ToApiResult(result, correlationIdProvider);
@@ -1523,6 +1524,19 @@ if (app.Environment.IsDevelopment())
 {
   await ProgramHelpers.MigrateDatabaseAsync(app.Services);
   await app.Services.SeedDevelopmentDataAsync();
+}
+
+// Ensure MinIO bucket exists on startup (idempotent, no-op when MinIO is not configured)
+await using var minioScope = app.Services.CreateAsyncScope();
+var storageService = minioScope.ServiceProvider.GetRequiredService<IStorageService>();
+try
+{
+  await storageService.EnsureBucketAsync(minioOptions.BucketName);
+}
+catch (Exception ex)
+{
+  var startupLogger = minioScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+  startupLogger.LogWarning(ex, "Could not initialize MinIO bucket '{Bucket}'. Images will not be stored.", minioOptions.BucketName);
 }
 
 await app.RunAsync();

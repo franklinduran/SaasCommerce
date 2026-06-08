@@ -215,7 +215,7 @@ public sealed class CustomerQueryUseCaseTests
   // ── Helpers / Stubs ──────────────────────────────────────────────────────
 
   private Customer MakeCustomer()
-    => new(customerId, new BusinessId(businessId), "Cliente Test", "8095550000", "c@test.com", Now);
+    => new(customerId, new BusinessId(businessId), "Cliente", "Test", "8095550000", "c@test.com", Now);
 
   private static FakeUser Authed(Guid bid)
     => new() { BusinessId = bid, UserId = Guid.NewGuid(), BranchId = Guid.NewGuid(), IsAuthenticated = true };

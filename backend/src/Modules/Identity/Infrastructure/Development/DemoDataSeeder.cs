@@ -105,11 +105,11 @@ public static class DemoDataSeeder
 
     var customers = new[]
     {
-      new Customer(Guid.NewGuid(), businessId, "María Altagracia Rodríguez", "8094561234", null, now),
-      new Customer(Guid.NewGuid(), businessId, "Juan Carlos Pérez Sánchez", "8492345678", null, now),
-      new Customer(Guid.NewGuid(), businessId, "Ana Belkis Martínez", "8097894321", null, now),
-      new Customer(Guid.NewGuid(), businessId, "Pedro Rafael González", "8295678901", null, now),
-      new Customer(Guid.NewGuid(), businessId, "Carmen Yolanda Díaz", "8093456789", null, now),
+      new Customer(Guid.NewGuid(), businessId, "María Altagracia", "Rodríguez", "8094561234", null, now),
+      new Customer(Guid.NewGuid(), businessId, "Juan Carlos", "Pérez Sánchez", "8492345678", null, now),
+      new Customer(Guid.NewGuid(), businessId, "Ana Belkis", "Martínez", "8097894321", null, now),
+      new Customer(Guid.NewGuid(), businessId, "Pedro Rafael", "González", "8295678901", null, now),
+      new Customer(Guid.NewGuid(), businessId, "Carmen Yolanda", "Díaz", "8093456789", null, now),
     };
 
     // ── 4. Suppliers ──────────────────────────────────────────────────────────

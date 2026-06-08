@@ -13,7 +13,7 @@ public sealed class ExportCustomersCsvHandler(
 {
   private static readonly IReadOnlyList<string> Headers =
   [
-    "Nombre", "Teléfono", "Email", "Activo", "Creado"
+    "Nombre", "Apellido", "Nombre Completo", "Teléfono", "Email", "Activo", "Creado"
   ];
 
   public async Task<Result<byte[]>> Handle(
@@ -32,6 +32,8 @@ public sealed class ExportCustomersCsvHandler(
 
     var rows = items.Select(c => (IReadOnlyCollection<string?>)
     [
+      c.FirstName,
+      c.LastName,
       c.FullName,
       c.Phone,
       c.Email,

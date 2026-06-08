@@ -21,9 +21,15 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
       .HasConversion(id => id.Value, value => new BusinessId(value))
       .IsRequired();
 
-    builder.Property(customer => customer.FullName)
-      .HasMaxLength(CustomerRules.FullNameMaxLength)
+    builder.Property(customer => customer.FirstName)
+      .HasMaxLength(CustomerRules.FirstNameMaxLength)
       .IsRequired();
+
+    builder.Property(customer => customer.LastName)
+      .HasMaxLength(CustomerRules.LastNameMaxLength)
+      .IsRequired();
+
+    builder.Ignore(customer => customer.FullName);
 
     builder.Property(customer => customer.SearchName)
       .HasMaxLength(CustomerRules.SearchNameMaxLength)
@@ -41,7 +47,6 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
     builder.Property(customer => customer.CreatedAt)
       .IsRequired();
 
-    builder.HasIndex(customer => new { customer.BusinessId, customer.FullName });
     builder.HasIndex(customer => new { customer.BusinessId, customer.SearchName });
     builder.HasIndex(customer => new { customer.BusinessId, customer.IsActive });
   }

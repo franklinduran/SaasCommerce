@@ -11,6 +11,7 @@ public interface ICreateCustomerUseCase
 }
 
 public sealed record CreateCustomerCommand(
-  string FullName,
+  string FirstName,
+  string LastName,
   string? Phone,
   string? Email);

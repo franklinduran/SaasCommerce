@@ -3,6 +3,8 @@ export type CustomerCreditStatus = 'Active' | 'Blocked' | 'Closed'
 export type Customer = {
   id: string
   businessId: string
+  firstName: string
+  lastName: string
   fullName: string
   phone: string | null
   email: string | null
@@ -35,7 +37,8 @@ export type CustomerFilters = {
 }
 
 export type CustomerUpsertRequest = {
-  fullName: string
+  firstName: string
+  lastName: string
   phone?: string | null
   email?: string | null
   isActive?: boolean

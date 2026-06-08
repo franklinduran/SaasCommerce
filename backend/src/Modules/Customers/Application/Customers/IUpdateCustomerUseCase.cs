@@ -12,7 +12,8 @@ public interface IUpdateCustomerUseCase
 
 public sealed record UpdateCustomerCommand(
   Guid CustomerId,
-  string FullName,
+  string FirstName,
+  string LastName,
   string? Phone,
   string? Email,
   bool IsActive);

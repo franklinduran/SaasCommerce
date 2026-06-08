@@ -15,6 +15,8 @@ internal static class CustomerResponseMapper
     return new CustomerResponse(
       customer.Id,
       customer.BusinessId.Value,
+      customer.FirstName,
+      customer.LastName,
       customer.FullName,
       customer.Phone,
       customer.Email,

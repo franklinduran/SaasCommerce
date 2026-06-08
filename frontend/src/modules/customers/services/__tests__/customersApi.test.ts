@@ -57,8 +57,8 @@ describe('customersApi', () => {
   })
 
   it('sends create, update, deactivate and credit mutation payloads', async () => {
-    await createCustomer({ email: 'ana@test.com', fullName: 'Ana Cliente', phone: '8090000000' })
-    await updateCustomer('customer-1', { fullName: 'Ana Editada', isActive: false, phone: null })
+    await createCustomer({ email: 'ana@test.com', firstName: 'Ana', lastName: 'Cliente', phone: '8090000000' })
+    await updateCustomer('customer-1', { firstName: 'Ana', lastName: 'Editada', isActive: false, phone: null })
     await deactivateCustomer('customer-1')
     await registerCustomerPayment({ amount: 125, customerId: 'customer-1', note: ' pago ' })
     await blockCustomerCredit('customer-1')
@@ -70,14 +70,16 @@ describe('customersApi', () => {
     }))
     expect(JSON.parse(vi.mocked(httpClient).mock.calls[0][1]!.body as string)).toEqual({
       email: 'ana@test.com',
-      fullName: 'Ana Cliente',
+      firstName: 'Ana',
+      lastName: 'Cliente',
       phone: '8090000000',
     })
     expect(httpClient).toHaveBeenNthCalledWith(2, '/api/customers/customer-1', expect.objectContaining({
       method: 'PUT',
     }))
     expect(JSON.parse(vi.mocked(httpClient).mock.calls[1][1]!.body as string)).toEqual({
-      fullName: 'Ana Editada',
+      firstName: 'Ana',
+      lastName: 'Editada',
       isActive: false,
       phone: null,
     })
