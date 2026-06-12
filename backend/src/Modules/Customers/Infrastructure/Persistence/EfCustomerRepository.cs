@@ -43,7 +43,7 @@ public sealed class EfCustomerRepository(AppDbContext dbContext) : ICustomerRepo
     CancellationToken cancellationToken = default)
     => await Customers(businessId)
       .AsNoTracking()
-      .OrderBy(customer => customer.FullName)
+      .OrderBy(customer => customer.SearchName)
       .Take(10_000)
       .ToArrayAsync(cancellationToken);
 
@@ -60,7 +60,6 @@ public sealed class EfCustomerRepository(AppDbContext dbContext) : ICustomerRepo
       var term = criteria.Query.Trim();
       var normalizedTerm = term.ToUpperInvariant();
       query = query.Where(customer =>
-        customer.FullName.Contains(term) ||
         customer.SearchName.Contains(normalizedTerm) ||
         customer.Phone != null && customer.Phone.Contains(term) ||
         customer.Email != null && customer.Email.Contains(term));
@@ -84,7 +83,7 @@ public sealed class EfCustomerRepository(AppDbContext dbContext) : ICustomerRepo
       (CustomerSortOption.CreatedAt, _) =>
         query.OrderBy(customer => customer.CreatedAt),
       (CustomerSortOption.FullName, CustomerSortDirection.Desc) =>
-        query.OrderByDescending(customer => customer.FullName),
-      _ => query.OrderBy(customer => customer.FullName)
+        query.OrderByDescending(customer => customer.SearchName),
+      _ => query.OrderBy(customer => customer.SearchName)
     };
 }
