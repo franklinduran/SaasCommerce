@@ -6,11 +6,13 @@ using SaasCommerce.Modules.Sales.Contracts.Events.V1;
 using SaasCommerce.Modules.Sales.Domain;
 using SaasCommerce.SharedKernel;
 using SaasCommerce.SharedKernel.Tenancy;
+using SaasCommerce.Modules.Sales.Application.Cart;
 
 namespace SaasCommerce.Modules.Sales.Application.Sales;
 
 public sealed class CompleteSaleUseCase(
   ISaleRepository sales,
+  IPosCartRepository cartRepo,
   IRealtimeNotifier realtime,
   IClock clock,
   IUnitOfWork unitOfWork) : ICompleteSaleUseCase
@@ -48,6 +50,16 @@ public sealed class CompleteSaleUseCase(
     catch (InvalidOperationException)
     {
       return Result.Failure(SalesErrors.InvalidSaleState);
+    }
+
+    // Clear the user's server-side POS cart so the frontend cart is empty after success
+    var cart = await cartRepo.GetAsync(new BusinessId(saleCompleted.BusinessId), saleCompleted.UserId, cancellationToken);
+    if (cart is not null)
+    {
+      var cartItems = cart.Items.ToList();
+      cart.Clear(clock.UtcNow);
+      foreach (var item in cartItems)
+        await cartRepo.RemoveItemAsync(item, cancellationToken);
     }
 
     await unitOfWork.SaveChangesAsync(cancellationToken);

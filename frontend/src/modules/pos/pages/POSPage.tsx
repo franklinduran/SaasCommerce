@@ -82,7 +82,7 @@ export function POSPage() {
       const reason =
         'reason' in payload ? payload.reason : payload.failureReason ?? payload.cancellationReason
 
-      setCurrentSale((current) => {
+setCurrentSale((current) => {
         const total = getSaleTotal(payload, current)
 
         return {
@@ -200,10 +200,14 @@ export function POSPage() {
     try {
       const sale = await createSaleMutation.mutateAsync(request)
 
+      // Don't apply the API status directly: the Worker may fire a spurious
+      // "Failed / not in a processable state" event moments later (race condition).
+      // Instead, record the saleId in Received state so SignalR or the polling
+      // hook (useSaleStatusSync) delivers the authoritative final status.
       setCurrentSale({
-        reason: sale.failureReason ?? sale.cancellationReason,
         saleId: sale.saleId,
-        status: sale.status,
+        status: 'Received',
+        reason: null,
         total: sale.total,
       })
     } catch (error) {
@@ -216,6 +220,7 @@ export function POSPage() {
     : currentSale?.status ?? 'Idle'
   const productsForPOS = products.data?.items ?? []
   const customersForPOS = customers.data?.items ?? []
+  const cartQuantities = new Map(cart.items.map((item) => [item.productId, item.quantity]))
 
   return (
     <div className="flex h-full bg-background">
@@ -246,6 +251,7 @@ export function POSPage() {
 
         {/* Productos */}
         <ProductGrid
+          cartQuantities={cartQuantities}
           isError={products.isError}
           isLoading={products.isLoading}
           onAddProduct={handleAddProduct}

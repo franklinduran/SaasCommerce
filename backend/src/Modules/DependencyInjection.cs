@@ -63,6 +63,7 @@ using SaasCommerce.Modules.Sales.Application.CashRegisters;
 using SaasCommerce.Modules.Sales.Application.Expenses;
 using SaasCommerce.Modules.Sales.Application.DailyClosings;
 using SaasCommerce.Modules.Sales.Application.Profitability;
+using SaasCommerce.Modules.Sales.Application.Cart;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Infrastructure.Persistence;
 using SaasCommerce.Modules.Settings.Application;
@@ -100,6 +101,8 @@ public static class ModulesServiceCollectionExtensions
     services.AddScoped<UpdateCategoryHandler>();
     services.AddScoped<GetCategoriesHandler>();
     services.AddScoped<UploadProductImageHandler>();
+    services.AddScoped<IPosCartRepository, EfPosCartRepository>();
+    services.AddScoped<PosCartHandler>();
 
     // Inventory
     services.AddScoped<IInventoryRepository, EfInventoryRepository>();

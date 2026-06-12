@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 
 type ProductGridProps = {
+  cartQuantities: ReadonlyMap<string, number>
   isError: boolean
   isLoading: boolean
   onAddProduct: (product: POSProduct) => void
@@ -18,6 +19,7 @@ type ProductGridProps = {
 }
 
 export function ProductGrid({
+  cartQuantities,
   isError,
   isLoading,
   onAddProduct,
@@ -68,9 +70,9 @@ export function ProductGrid({
   return (
     <div className="flex flex-col gap-4">
       {view === 'grid' ? (
-        <GridView onAdd={onAddProduct} products={products} />
+        <GridView cartQuantities={cartQuantities} onAdd={onAddProduct} products={products} />
       ) : (
-        <ListView onAdd={onAddProduct} products={products} />
+        <ListView cartQuantities={cartQuantities} onAdd={onAddProduct} products={products} />
       )}
 
       {showPagination && (
@@ -147,24 +149,36 @@ function Pagination({
 // ─── Card grid ─────────────────────────────────────────────────────────────────
 
 function GridView({
+  cartQuantities,
   onAdd,
   products,
-}: Readonly<{ onAdd: (p: POSProduct) => void; products: POSProduct[] }>) {
+}: Readonly<{ cartQuantities: ReadonlyMap<string, number>; onAdd: (p: POSProduct) => void; products: POSProduct[] }>) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {products.map((product) => (
-        <ProductCard key={product.id} onAdd={onAdd} product={product} />
+        <ProductCard
+          cartQty={cartQuantities.get(product.id) ?? 0}
+          key={product.id}
+          onAdd={onAdd}
+          product={product}
+        />
       ))}
     </div>
   )
 }
 
 function ProductCard({
+  cartQty,
   onAdd,
   product,
-}: Readonly<{ onAdd: (p: POSProduct) => void; product: POSProduct }>) {
+}: Readonly<{ cartQty: number; onAdd: (p: POSProduct) => void; product: POSProduct }>) {
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md">
+      {cartQty > 0 && (
+        <span className="absolute right-2 top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold tabular-nums text-white shadow-sm">
+          {cartQty}
+        </span>
+      )}
       <ProductImage imageUrl={product.imageUrl} name={product.name} />
 
       <div className="flex flex-1 flex-col gap-3 p-4">
@@ -213,9 +227,10 @@ function ProductCard({
 // ─── Table list ────────────────────────────────────────────────────────────────
 
 function ListView({
+  cartQuantities,
   onAdd,
   products,
-}: Readonly<{ onAdd: (p: POSProduct) => void; products: POSProduct[] }>) {
+}: Readonly<{ cartQuantities: ReadonlyMap<string, number>; onAdd: (p: POSProduct) => void; products: POSProduct[] }>) {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
       {/* Table header */}
@@ -236,7 +251,12 @@ function ListView({
       {/* Table rows */}
       <div className="divide-y divide-gray-100">
         {products.map((product) => (
-          <ProductRow key={product.id} onAdd={onAdd} product={product} />
+          <ProductRow
+            cartQty={cartQuantities.get(product.id) ?? 0}
+            key={product.id}
+            onAdd={onAdd}
+            product={product}
+          />
         ))}
       </div>
     </div>
@@ -244,14 +264,23 @@ function ListView({
 }
 
 function ProductRow({
+  cartQty,
   onAdd,
   product,
-}: Readonly<{ onAdd: (p: POSProduct) => void; product: POSProduct }>) {
+}: Readonly<{ cartQty: number; onAdd: (p: POSProduct) => void; product: POSProduct }>) {
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/70">
-      {/* Thumbnail */}
-      <div className="hidden shrink-0 sm:block">
+    <div className={cn(
+      'grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/70',
+      cartQty > 0 && 'bg-primary/[0.03]',
+    )}>
+      {/* Thumbnail + cart badge */}
+      <div className="relative hidden shrink-0 sm:block">
         <ProductThumbnail imageUrl={product.imageUrl} name={product.name} />
+        {cartQty > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold tabular-nums text-white shadow-sm">
+            {cartQty}
+          </span>
+        )}
       </div>
 
       {/* Name + SKU */}

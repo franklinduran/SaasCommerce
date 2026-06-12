@@ -39,8 +39,10 @@ using SaasCommerce.Modules.Tenancy.Contracts.Requests;
 using SaasCommerce.Modules.Purchasing.Application.Purchases;
 using SaasCommerce.Modules.Purchasing.Application.Suppliers;
 using SaasCommerce.Modules.Purchasing.Contracts.Requests;
+using SaasCommerce.Modules.Sales.Application.Cart;
 using SaasCommerce.Modules.Sales.Application.Sales;
 using SaasCommerce.Modules.Sales.Contracts.Requests;
+using SaasCommerce.Modules.Sales.Contracts.Responses;
 using SaasCommerce.SharedKernel;
 using Serilog;
 
@@ -690,6 +692,58 @@ app.MapPost(
   })
   .RequireAuthorization($"Permission:{SystemPermissions.AccountsReceivableRegisterPayment}")
   .WithTags(customersTag);
+
+// ── POS Cart ─────────────────────────────────────────────────────────────────
+
+app.MapGet(
+  "/api/pos/cart",
+  async (PosCartHandler handler, ICorrelationIdProvider correlationIdProvider, CancellationToken ct) =>
+  {
+    var result = await handler.Handle(new GetPosCartQuery(), ct);
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCreate}")
+  .WithTags(salesTag);
+
+app.MapPost(
+  "/api/pos/cart/items",
+  async (AddCartItemRequest req, PosCartHandler handler, ICorrelationIdProvider correlationIdProvider, CancellationToken ct) =>
+  {
+    var result = await handler.Handle(new AddCartItemCommand(req.ProductId, req.Quantity), ct);
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCreate}")
+  .WithTags(salesTag);
+
+app.MapPut(
+  "/api/pos/cart/items/{productId:guid}",
+  async (Guid productId, SetCartItemQuantityRequest req, PosCartHandler handler, ICorrelationIdProvider correlationIdProvider, CancellationToken ct) =>
+  {
+    var result = await handler.Handle(new SetCartItemQuantityCommand(productId, req.Quantity), ct);
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCreate}")
+  .WithTags(salesTag);
+
+app.MapDelete(
+  "/api/pos/cart/items/{productId:guid}",
+  async (Guid productId, PosCartHandler handler, ICorrelationIdProvider correlationIdProvider, CancellationToken ct) =>
+  {
+    var result = await handler.Handle(new RemoveCartItemCommand(productId), ct);
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCreate}")
+  .WithTags(salesTag);
+
+app.MapDelete(
+  "/api/pos/cart",
+  async (PosCartHandler handler, ICorrelationIdProvider correlationIdProvider, CancellationToken ct) =>
+  {
+    var result = await handler.Handle(new ClearCartCommand(), ct);
+    return ApiHelpers.ToApiResult(result, correlationIdProvider);
+  })
+  .RequireAuthorization($"Permission:{SystemPermissions.SalesCreate}")
+  .WithTags(salesTag);
 
 app.MapPost(
   "/api/sales",

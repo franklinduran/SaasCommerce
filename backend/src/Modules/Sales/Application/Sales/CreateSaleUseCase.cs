@@ -157,21 +157,22 @@ public sealed class CreateSaleUseCase(
     }
 
     var sale = saleResult.Value;
-    var saleCreated = await context.SaleEvents.AddSaleCreatedAsync(
+
+    // Write SaleCreatedEventV1 to outbox — this is the trigger for the saga
+    await context.SaleEvents.AddSaleCreatedAsync(
       sale,
       ctx.BusinessId,
       branchId,
       ctx.UserId,
       cancellationToken);
 
+    // Persist the sale record and the outbox event atomically
     await context.Sales.AddAsync(sale, cancellationToken);
     await context.UnitOfWork.SaveChangesAsync(cancellationToken);
-    await context.SaleEvents.NotifyStatusChangedAsync(
-      saleCreated,
-      SaleStatus.Received,
-      null,
-      cancellationToken);
 
+    // Return immediately with Received status.
+    // The saga (SaleStateMachine) handles stock validation, inventory
+    // deduction, payment registration, and completion asynchronously.
     return Result.Success(SaleResponseMapper.ToResponse(sale));
   }
 

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { POSCartItem } from '@/modules/pos/types/posTypes'
 
 type POSCartState = {
@@ -11,59 +12,68 @@ type POSCartState = {
   clearCart: () => void
 }
 
-export const usePOSCartStore = create<POSCartState>()((set) => ({
-  items: [],
-  addItem: (item) =>
-    set((state) => {
-      const quantity = Math.max(1, Math.trunc(item.quantity || 1))
-      const existingItem = state.items.find((current) => current.productId === item.productId)
+export const usePOSCartStore = create<POSCartState>()(
+  persist(
+    (set) => ({
+      items: [],
+      addItem: (item) =>
+        set((state) => {
+          const quantity = Math.max(1, Math.trunc(item.quantity || 1))
+          const existingItem = state.items.find((current) => current.productId === item.productId)
 
-      if (existingItem) {
-        return {
-          items: state.items.map((current) =>
-            current.productId === item.productId
-              ? { ...current, quantity: current.quantity + quantity }
-              : current,
+          if (existingItem) {
+            return {
+              items: state.items.map((current) =>
+                current.productId === item.productId
+                  ? { ...current, quantity: current.quantity + quantity }
+                  : current,
+              ),
+            }
+          }
+
+          return {
+            items: [...state.items, { ...item, quantity }],
+          }
+        }),
+      increaseQuantity: (productId) =>
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item,
           ),
-        }
-      }
-
-      return {
-        items: [...state.items, { ...item, quantity }],
-      }
+        })),
+      decreaseQuantity: (productId) =>
+        set((state) => ({
+          items: state.items
+            .map((item) =>
+              item.productId === productId ? { ...item, quantity: item.quantity - 1 } : item,
+            )
+            .filter((item) => item.quantity > 0),
+        })),
+      setQuantity: (productId, quantity) =>
+        set((state) => {
+          const validated = Math.trunc(quantity)
+          if (validated <= 0) {
+            return { items: state.items.filter((item) => item.productId !== productId) }
+          }
+          return {
+            items: state.items.map((item) =>
+              item.productId === productId ? { ...item, quantity: validated } : item,
+            ),
+          }
+        }),
+      removeItem: (productId) =>
+        set((state) => ({
+          items: state.items.filter((item) => item.productId !== productId),
+        })),
+      clearCart: () => set({ items: [] }),
     }),
-  increaseQuantity: (productId) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item,
-      ),
-    })),
-  decreaseQuantity: (productId) =>
-    set((state) => ({
-      items: state.items
-        .map((item) =>
-          item.productId === productId ? { ...item, quantity: item.quantity - 1 } : item,
-        )
-        .filter((item) => item.quantity > 0),
-    })),
-  setQuantity: (productId, quantity) =>
-    set((state) => {
-      const validated = Math.trunc(quantity)
-      if (validated <= 0) {
-        return { items: state.items.filter((item) => item.productId !== productId) }
-      }
-      return {
-        items: state.items.map((item) =>
-          item.productId === productId ? { ...item, quantity: validated } : item,
-        ),
-      }
-    }),
-  removeItem: (productId) =>
-    set((state) => ({
-      items: state.items.filter((item) => item.productId !== productId),
-    })),
-  clearCart: () => set({ items: [] }),
-}))
+    {
+      name: 'pos-cart',
+      storage: createJSONStorage(() => sessionStorage), // persiste en la sesión, no en disco
+      partialize: (state) => ({ items: state.items }),
+    },
+  ),
+)
 
 export function calculateCartSubtotal(items: POSCartItem[]) {
   return items.reduce((total, item) => total + item.unitPrice * item.quantity, 0)
