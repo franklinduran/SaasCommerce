@@ -74,7 +74,7 @@ export function CreateCustomerDialog({
             <div>
               <DialogTitle>Crear cliente</DialogTitle>
               <DialogDescription>
-                Captura los datos basicos para empezar a vender o registrar fiados.
+                Captura los datos basicos para empezar a vender o registrar ventas a crédito.
               </DialogDescription>
             </div>
           </div>

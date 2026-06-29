@@ -52,7 +52,7 @@ function movementLabel(type: CustomerCreditMovement['type']) {
   return {
     Adjustment: 'Ajuste',
     Cancellation: 'Reverso',
-    Debit: 'Fiado',
+    Debit: 'Crédito',
     Payment: 'Abono',
   }[type]
 }

@@ -1,30 +1,26 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, Wallet } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { z } from 'zod'
-import { useCurrentCashSession } from '@/modules/cash/hooks/useCash'
+import { cashQueryKeys, useCurrentCashSession } from '@/modules/cash/hooks/useCash'
+import { CashSessionWidget } from '@/modules/pos/components/CashSessionWidget'
 import { CustomerSelector } from '@/modules/pos/components/CustomerSelector'
 import { PaymentMethodSelector } from '@/modules/pos/components/PaymentMethodSelector'
 import { POSCart } from '@/modules/pos/components/POSCart'
 import { ProductGrid } from '@/modules/pos/components/ProductGrid'
 import { ProductSearch, type ProductViewMode } from '@/modules/pos/components/ProductSearch'
-import { SaleStatusPanel } from '@/modules/pos/components/SaleStatusPanel'
 import { SaleSummary } from '@/modules/pos/components/SaleSummary'
 import { useCreateSaleMutation } from '@/modules/pos/hooks/useCreateSale'
 import { useCurrentBranchForPOS } from '@/modules/pos/hooks/useCurrentBranchForPOS'
 import { useCustomersForPOS } from '@/modules/pos/hooks/useCustomersForPOS'
 import { usePOSCart } from '@/modules/pos/hooks/usePOSCart'
 import { useProductsForPOS } from '@/modules/pos/hooks/useProductsForPOS'
-import { useSaleStatusSync } from '@/modules/pos/hooks/useSaleStatusSync'
 import { useSaleStatusSubscription } from '@/modules/pos/hooks/useSaleStatusSubscription'
 import { createSaleSchema } from '@/modules/pos/services/salesApi'
 import type {
   CreateSaleRequest,
   PaymentMethod,
   POSProduct,
-  SaleResponse,
-  SaleStatus,
   SaleStatusChangedNotification,
 } from '@/modules/pos/types/posTypes'
 import { useAuthStore } from '@/modules/auth/authStore'
@@ -34,7 +30,7 @@ import { offRealtimeEvent, onRealtimeEvent } from '@/shared/services/signalrClie
 type CurrentSale = {
   reason: string | null
   saleId: string
-  status: SaleStatus
+  status: SaleStatusChangedNotification['status']
   total: number | null
 }
 
@@ -51,7 +47,6 @@ export function POSPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash')
   const [validationMessage, setValidationMessage] = useState<string | null>(null)
-  const [saleErrorMessage, setSaleErrorMessage] = useState<string | null>(null)
   const [currentSale, setCurrentSale] = useState<CurrentSale | null>(null)
   const [productView, setProductView] = useState<ProductViewMode>(() => {
     try {
@@ -78,42 +73,35 @@ export function POSPage() {
   const clearCart = cart.clearCart
 
   const applySaleStatus = useCallback(
-    (payload: SaleStatusChangedNotification | SaleResponse) => {
-      const reason =
-        'reason' in payload ? payload.reason : payload.failureReason ?? payload.cancellationReason
+    (payload: SaleStatusChangedNotification) => {
+      const { reason } = payload
 
-setCurrentSale((current) => {
-        const total = getSaleTotal(payload, current)
-
-        return {
-          reason,
-          saleId: payload.saleId,
-          status: payload.status,
-          total,
-        }
-      })
+      setCurrentSale((current) => ({
+        reason,
+        saleId: payload.saleId,
+        status: payload.status,
+        total: current?.saleId === payload.saleId ? current.total : null,
+      }))
 
       if (payload.status === 'Completed') {
-        clearCart()
-        setSaleErrorMessage(null)
+        toast.success('Venta completada', {
+          description: 'El pago fue registrado y el inventario actualizado.',
+        })
         queryClient.invalidateQueries({ queryKey: ['pos-products'] })
+        queryClient.invalidateQueries({ queryKey: cashQueryKeys.currentSession })
       }
 
       if (payload.status === 'Failed') {
-        setSaleErrorMessage(reason ?? 'La venta fallo durante el procesamiento.')
+        toast.error('Venta fallida', {
+          description: reason ?? 'Error durante el procesamiento. Revisa el inventario.',
+        })
       }
     },
-    [clearCart, queryClient],
+    [queryClient],
   )
 
   useSaleStatusSubscription({
     onStatusChanged: applySaleStatus,
-    saleId: currentSale?.saleId ?? null,
-  })
-
-  useSaleStatusSync({
-    enabled: Boolean(currentSale && !isTerminalSaleStatus(currentSale.status)),
-    onSaleLoaded: applySaleStatus,
     saleId: currentSale?.saleId ?? null,
   })
 
@@ -146,12 +134,10 @@ setCurrentSale((current) => {
     if (validationMessage === 'El carrito esta vacio.') {
       setValidationMessage(null)
     }
-    setSaleErrorMessage(null)
   }
 
   async function handleProcessSale() {
     setValidationMessage(null)
-    setSaleErrorMessage(null)
 
     if (!branchId) {
       setValidationMessage('No hay sucursal activa para procesar la venta.')
@@ -171,7 +157,7 @@ setCurrentSale((current) => {
     const selectedCustomer = customersForPOS.find((customer) => customer.id === selectedCustomerId)
 
     if (paymentMethod === 'Credit' && !selectedCustomer) {
-      setValidationMessage('Selecciona un cliente para vender fiado.')
+      setValidationMessage('Selecciona un cliente para ventas a crédito.')
       return
     }
 
@@ -200,10 +186,16 @@ setCurrentSale((current) => {
     try {
       const sale = await createSaleMutation.mutateAsync(request)
 
-      // Don't apply the API status directly: the Worker may fire a spurious
-      // "Failed / not in a processable state" event moments later (race condition).
-      // Instead, record the saleId in Received state so SignalR or the polling
-      // hook (useSaleStatusSync) delivers the authoritative final status.
+      toast.success('Orden enviada', {
+        description: `RD$ ${sale.total.toLocaleString('es-DO', { minimumFractionDigits: 2 })} — registrada y en proceso.`,
+      })
+
+      // Sale is in the DB — clear cart and reset form immediately so the
+      // cashier can start the next sale without waiting for the saga.
+      clearCart()
+      setSelectedCustomerId(null)
+      setValidationMessage(null)
+      queryClient.invalidateQueries({ queryKey: cashQueryKeys.currentSession })
       setCurrentSale({
         saleId: sale.saleId,
         status: 'Received',
@@ -211,13 +203,12 @@ setCurrentSale((current) => {
         total: sale.total,
       })
     } catch (error) {
-      setSaleErrorMessage(getSaleErrorMessage(error))
+      toast.error('Error al procesar la venta', {
+        description: getSaleErrorMessage(error),
+      })
     }
   }
 
-  const panelStatus = createSaleMutation.isPending
-    ? 'Submitting'
-    : currentSale?.status ?? 'Idle'
   const productsForPOS = products.data?.items ?? []
   const customersForPOS = customers.data?.items ?? []
   const cartQuantities = new Map(cart.items.map((item) => [item.productId, item.quantity]))
@@ -300,13 +291,6 @@ setCurrentSale((current) => {
             <PaymentMethodSelector onChange={setPaymentMethod} value={paymentMethod} />
           </div>
 
-          {/* Alerta caja cerrada */}
-          {!cashLoading && !hasOpenCashSession && (
-            <div className="px-5 py-4">
-              <NoCashSessionBanner />
-            </div>
-          )}
-
           {/* Resumen + CTA */}
           <div className="px-5 py-5">
             <SaleSummary
@@ -319,15 +303,9 @@ setCurrentSale((current) => {
             />
           </div>
 
-          {/* Estado de venta */}
+          {/* Estado de caja */}
           <div className="px-5 py-5">
-            <SaleStatusPanel
-              errorMessage={saleErrorMessage}
-              reason={currentSale?.reason}
-              saleId={currentSale?.saleId ?? null}
-              status={panelStatus}
-              total={currentSale?.total}
-            />
+            <CashSessionWidget />
           </div>
       </aside>
     </div>
@@ -372,43 +350,5 @@ function getSaleErrorMessage(error: unknown): string {
   return error.message ?? 'No se pudo crear la venta.'
 }
 
-function isTerminalSaleStatus(status: SaleStatus) {
-  return status === 'Completed' || status === 'Failed' || status === 'Cancelled'
-}
 
-function getSaleTotal(
-  payload: SaleStatusChangedNotification | SaleResponse,
-  current: CurrentSale | null,
-) {
-  if ('total' in payload) {
-    return payload.total
-  }
-
-  if (current?.saleId === payload.saleId) {
-    return current.total
-  }
-
-  return null
-}
-
-function NoCashSessionBanner() {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
-      <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0 text-amber-600" size={14} strokeWidth={2} />
-      <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] font-semibold text-amber-900">Caja cerrada</p>
-        <p className="mt-0.5 text-[12px] text-amber-700">
-          Abre una sesión de caja para registrar ventas.
-        </p>
-        <Link
-          className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-amber-700 hover:text-amber-900 focus-visible:outline-none"
-          to="/cash"
-        >
-          <Wallet aria-hidden="true" size={11} />
-          Ir a Caja
-        </Link>
-      </div>
-    </div>
-  )
-}
 

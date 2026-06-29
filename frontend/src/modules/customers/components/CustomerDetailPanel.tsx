@@ -404,7 +404,7 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
         >
           <div className="grid gap-2 sm:grid-cols-2">
             <ActionRow
-              description={isBlocked ? 'Restaura la posibilidad de generar fiados.' : 'Impide nuevos fiados al cliente.'}
+              description={isBlocked ? 'Restaura la posibilidad de vender a crédito.' : 'Impide nuevas ventas a crédito al cliente.'}
               icon={isBlocked ? <RotateCcw size={16} /> : <Ban size={16} />}
               label={isBlocked ? 'Desbloquear credito' : 'Bloquear credito'}
               tone={isBlocked ? 'default' : 'warning'}
@@ -461,7 +461,7 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
           <AlertDialogHeader>
             <AlertDialogTitle>Bloquear credito</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong>{data.fullName}</strong> no podra generar nuevos fiados hasta que desbloquees el credito.
+              <strong>{data.fullName}</strong> no podra realizar nuevas ventas a crédito hasta que desbloquees el credito.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

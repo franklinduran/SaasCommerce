@@ -12,7 +12,7 @@ const methods: { icon: LucideIcon; label: string; value: PaymentMethod }[] = [
   { icon: Banknote, label: 'Efectivo', value: 'Cash' },
   { icon: Landmark, label: 'Transferencia', value: 'Transfer' },
   { icon: CreditCard, label: 'Tarjeta', value: 'Card' },
-  { icon: WalletCards, label: 'Fiado', value: 'Credit' },
+  { icon: WalletCards, label: 'Crédito', value: 'Credit' },
 ]
 
 export function PaymentMethodSelector({

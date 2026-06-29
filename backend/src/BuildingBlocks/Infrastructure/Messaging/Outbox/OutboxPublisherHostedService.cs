@@ -7,14 +7,15 @@ namespace SaasCommerce.BuildingBlocks.Infrastructure.Messaging.Outbox;
 
 public sealed class OutboxPublisherHostedService(
   IServiceScopeFactory scopeFactory,
+  OutboxTrigger trigger,
   IOptions<OutboxPublisherOptions> options,
   ILogger<OutboxPublisherHostedService> logger) : BackgroundService
 {
-  private static readonly Action<ILogger, int, double, Exception?> LogStarted =
-    LoggerMessage.Define<int, double>(
+  private static readonly Action<ILogger, int, int, Exception?> LogStarted =
+    LoggerMessage.Define<int, int>(
       LogLevel.Information,
       new EventId(2210, nameof(LogStarted)),
-      "Outbox publisher started. BatchSize={BatchSize} PollingIntervalSeconds={PollingIntervalSeconds}");
+      "Outbox publisher started. BatchSize={BatchSize} FallbackIntervalMs={FallbackIntervalMs}");
   private static readonly Action<ILogger, Exception?> LogIterationFailed =
     LoggerMessage.Define(
       LogLevel.Error,
@@ -28,28 +29,40 @@ public sealed class OutboxPublisherHostedService(
 
   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
   {
-    var pollingInterval = TimeSpan.FromSeconds(Math.Max(1, options.Value.PollingIntervalSeconds));
+    var opts = options.Value;
+    // PollingIntervalMs is now the emergency fallback only — normal wakeup is
+    // via OutboxTrigger (in-process) or OutboxNotificationHostedService (pg_notify).
+    // Default to 30 s so the fallback almost never fires under normal operation.
+    var fallbackMs = opts.PollingIntervalSeconds.HasValue
+      ? opts.PollingIntervalSeconds.Value * 1000
+      : Math.Max(50, opts.PollingIntervalMs);
 
-    LogStarted(
-      logger,
-      options.Value.BatchSize,
-      pollingInterval.TotalSeconds,
-      null);
+    LogStarted(logger, opts.BatchSize, fallbackMs, null);
 
-    using var timer = new PeriodicTimer(pollingInterval);
+    // Drain any messages that accumulated before this process started.
+    await PublishPendingAsync(stoppingToken).ConfigureAwait(false);
 
     while (!stoppingToken.IsCancellationRequested)
     {
-      await PublishPendingAsync(stoppingToken).ConfigureAwait(false);
-
       try
       {
-        await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false);
+        // Wake immediately when EfUnitOfWork signals a same-process DB write.
+        // The fallback timer handles cross-process messages (e.g. API writes to the
+        // outbox table but only the Worker runs this publisher).
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        cts.CancelAfter(fallbackMs);
+        await trigger.Reader.ReadAsync(cts.Token).ConfigureAwait(false);
       }
       catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
       {
         break;
       }
+      catch (OperationCanceledException)
+      {
+        // Fallback timer expired — poll for cross-process pending messages.
+      }
+
+      await PublishPendingAsync(stoppingToken).ConfigureAwait(false);
     }
   }
 
@@ -59,12 +72,11 @@ public sealed class OutboxPublisherHostedService(
     {
       await using var scope = scopeFactory.CreateAsyncScope();
       var publisher = scope.ServiceProvider.GetRequiredService<OutboxPublisher>();
-
       await publisher.PublishPendingAsync(cancellationToken).ConfigureAwait(false);
     }
-    catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
     {
-      LogIterationCanceled(logger, exception);
+      LogIterationCanceled(logger, null);
     }
     catch (Exception exception)
     {

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { cashApi } from '@/modules/cash/services/cashApi'
+import { offRealtimeEvent, onRealtimeEvent } from '@/shared/services/signalrClient'
 import type {
   CloseCashSessionRequest,
   OpenCashSessionRequest,
@@ -16,9 +18,25 @@ export function useCurrentCashSession() {
   return useQuery({
     queryFn: cashApi.getCurrentSession,
     queryKey: cashQueryKeys.currentSession,
-    staleTime: 1000 * 30, // 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 30,
   })
+}
+
+export function useCashSessionRealtimeInvalidation() {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: cashQueryKeys.currentSession })
+    }
+
+    const events = ['cash.session.opened', 'cash.session.closed', 'cash.movement.registered']
+    events.forEach((e) => onRealtimeEvent(e, invalidate))
+
+    return () => {
+      events.forEach((e) => offRealtimeEvent(e, invalidate))
+    }
+  }, [queryClient])
 }
 
 export function useCashSession(id: string) {

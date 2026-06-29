@@ -110,7 +110,7 @@ export function CustomersPage() {
             </p>
             <h2 className="mt-1 text-2xl font-semibold text-stone-950">Clientes</h2>
             <p className="mt-1.5 max-w-2xl text-sm font-medium text-stone-600">
-              Administra clientes, fiados, abonos y balances pendientes del negocio.
+              Administra clientes, créditos, abonos y balances pendientes del negocio.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -295,7 +295,7 @@ function ListEmpty({ hasFilters, onCreate }: Readonly<{ hasFilters: boolean; onC
       </div>
       <p className="text-sm font-semibold text-stone-900">Aun no hay clientes</p>
       <p className="max-w-xs text-xs font-medium text-stone-500">
-        Crea el primer cliente para empezar a gestionar fiados y abonos.
+        Crea el primer cliente para empezar a gestionar créditos y abonos.
       </p>
       <Button onClick={onCreate} size="sm" type="button">
         <UserPlus size={14} />

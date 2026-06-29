@@ -13,7 +13,6 @@ export function useDashboardSummary(days: number) {
   return useQuery({
     queryFn: () => getDashboardSummary(days),
     queryKey: dashboardKeys.summary(days),
-    refetchInterval: 5 * 60 * 1000,
     staleTime: 30 * 1000,
   })
 }

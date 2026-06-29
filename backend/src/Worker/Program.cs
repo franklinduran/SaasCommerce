@@ -70,6 +70,7 @@ builder.Services.AddBuildingBlocks(
         repository.UsePostgres();
       });
   });
+builder.Services.AddHostedService<OutboxNotificationHostedService>();
 builder.Services.AddHostedService<OutboxPublisherHostedService>();
 builder.Services.AddHostedService<Worker>();
 

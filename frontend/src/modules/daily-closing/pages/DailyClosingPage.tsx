@@ -274,11 +274,11 @@ export function DailyClosingPage() {
           {(preview.newCreditsCount > 0 || preview.creditPaymentsReceived > 0) && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-semibold">Créditos (Fiados)</CardTitle>
+                <CardTitle className="text-sm font-semibold">Créditos</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-2 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs font-medium text-stone-500">Nuevos fiados</p>
+                  <p className="text-xs font-medium text-stone-500">Nuevos créditos</p>
                   <p className="mt-0.5 text-sm font-semibold text-stone-900">
                     {preview.newCreditsCount} · {formatCurrency(preview.newCreditsAmount)}
                   </p>

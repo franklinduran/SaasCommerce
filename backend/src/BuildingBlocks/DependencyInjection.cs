@@ -30,9 +30,17 @@ public static class BuildingBlocksServiceCollectionExtensions
 
     services.AddHttpContextAccessor();
     services.AddSignalR();
-    services.AddDbContext<AppDbContext>(options => ConfigureDbContext(options, configuration));
+    services.AddSingleton<OutboxTrigger>();
+    services.AddSingleton<OutboxTriggerInterceptor>();
+    services.AddSingleton<OutboxTransactionInterceptor>();
+    services.AddDbContext<AppDbContext>((sp, options) =>
+    {
+      ConfigureDbContext(options, configuration);
+      options.AddInterceptors(
+        sp.GetRequiredService<OutboxTriggerInterceptor>(),
+        sp.GetRequiredService<OutboxTransactionInterceptor>());
+    });
     services.Configure<OutboxPublisherOptions>(configuration.GetSection("OutboxPublisher"));
-
     services.AddScoped<IUnitOfWork, EfUnitOfWork>();
     services.AddScoped<IEventBus, MassTransitEventBus>();
     services.AddScoped<IInboxStore, EfInboxStore>();

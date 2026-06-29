@@ -237,10 +237,10 @@ describe('POSPage', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
     // Switch to credit payment
-    await user.click(screen.getByRole('button', { name: 'Fiado' }))
+    await user.click(screen.getByRole('button', { name: 'Crédito' }))
     await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
 
-    expect(await screen.findByText('Selecciona un cliente para vender fiado.')).toBeTruthy()
+    expect(await screen.findByText('Selecciona un cliente para ventas a crédito.')).toBeTruthy()
   })
 
   it('shows subscription limit message when SUBSCRIPTION_LIMIT_REACHED', async () => {
@@ -347,7 +347,7 @@ describe('POSPage', () => {
     renderPOSPage()
 
     await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
-    await user.click(screen.getByRole('button', { name: 'Fiado' }))
+    await user.click(screen.getByRole('button', { name: 'Crédito' }))
     await user.click(await screen.findByRole('combobox', { name: 'Seleccionar cliente' }))
     await user.click(await screen.findByRole('option', { name: 'Juan Morales' }))
     await user.click(screen.getByRole('button', { name: 'Procesar venta' }))
@@ -377,7 +377,7 @@ describe('POSPage', () => {
     renderPOSPage()
 
     await user.click(await screen.findByRole('button', { name: 'Agregar Cafe molido' }))
-    await user.click(screen.getByRole('button', { name: 'Fiado' }))
+    await user.click(screen.getByRole('button', { name: 'Crédito' }))
     await user.click(await screen.findByRole('combobox', { name: 'Seleccionar cliente' }))
     await user.click(await screen.findByRole('option', { name: 'Ana Lopez' }))
     await user.click(screen.getByRole('button', { name: 'Procesar venta' }))

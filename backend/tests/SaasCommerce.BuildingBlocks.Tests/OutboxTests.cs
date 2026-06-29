@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -120,6 +121,7 @@ public sealed class OutboxTests
       .BuildServiceProvider(true);
     var service = new OutboxPublisherHostedService(
       provider.GetRequiredService<IServiceScopeFactory>(),
+      new OutboxTrigger(),
       Options.Create(new OutboxPublisherOptions { BatchSize = 10, PollingIntervalSeconds = 60 }),
       NullLogger<OutboxPublisherHostedService>.Instance);
 
@@ -134,6 +136,67 @@ public sealed class OutboxTests
 
     message.Status.Should().Be(OutboxMessageStatus.Published);
     message.Attempts.Should().Be(1);
+  }
+
+  [Fact]
+  public async Task EfUnitOfWorkShouldSignalOutboxTriggerWhenSaveChangesCompletes()
+  {
+    await using var dbContext = CreateDbContext();
+    var trigger = new OutboxTrigger();
+    var unitOfWork = new EfUnitOfWork(dbContext, trigger, NullLogger<EfUnitOfWork>.Instance);
+    var signaled = false;
+
+    var readerTask = Task.Run(async () =>
+    {
+      using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+      try
+      {
+        await trigger.Reader.ReadAsync(cts.Token);
+        signaled = true;
+      }
+      catch (OperationCanceledException)
+      {
+        // Signal not received within timeout.
+      }
+    });
+
+    await unitOfWork.SaveChangesAsync();
+    await readerTask;
+
+    signaled.Should().BeTrue("trigger must be signaled after SaveChangesAsync so the outbox publisher wakes up");
+  }
+
+  [Fact]
+  public async Task EfUnitOfWorkShouldNotThrowWhenProviderIsNotNpgsql()
+  {
+    // InMemory provider — pg_notify must be skipped silently.
+    await using var dbContext = CreateDbContext();
+    var trigger = new OutboxTrigger();
+    var unitOfWork = new EfUnitOfWork(dbContext, trigger, NullLogger<EfUnitOfWork>.Instance);
+
+    var act = () => unitOfWork.SaveChangesAsync();
+
+    await act.Should().NotThrowAsync("pg_notify must be skipped for non-PostgreSQL databases");
+  }
+
+  [Fact]
+  public async Task OutboxNotificationHostedServiceShouldReturnImmediatelyWhenNoConnectionString()
+  {
+    var config = new ConfigurationBuilder().Build();
+    var trigger = new OutboxTrigger();
+    var service = new OutboxNotificationHostedService(
+      config,
+      trigger,
+      NullLogger<OutboxNotificationHostedService>.Instance);
+
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+    // Should complete without hanging because there is no connection string.
+    var executeTask = service.StartAsync(cts.Token);
+    await executeTask;
+    await service.StopAsync(CancellationToken.None);
+
+    // If we reach here without the task hanging, the early-return path works correctly.
   }
 
   private static OutboxPublisher CreatePublisher(
@@ -164,6 +227,70 @@ public sealed class OutboxTests
       Guid.NewGuid(),
       new DateTimeOffset(2026, 5, 16, 8, 0, 0, TimeSpan.Zero),
       "stage-7-ping");
+
+  [Fact]
+  public async Task OutboxTriggerInterceptorShouldSignalTriggerAfterSaveChangesAsync()
+  {
+    var trigger = new OutboxTrigger();
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+      .UseInMemoryDatabase(Guid.NewGuid().ToString("D"))
+      .AddInterceptors(new OutboxTriggerInterceptor(trigger))
+      .Options;
+    await using var dbContext = new AppDbContext(options);
+    var clock = Substitute.For<IClock>();
+    clock.UtcNow.Returns(DateTimeOffset.UtcNow);
+    var writer = new EfOutboxWriter(dbContext, clock);
+    await writer.AddAsync(CreatePingEvent());
+    var signaled = false;
+
+    var readerTask = Task.Run(async () =>
+    {
+      using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+      try
+      {
+        await trigger.Reader.ReadAsync(cts.Token);
+        signaled = true;
+      }
+      catch (OperationCanceledException)
+      {
+        // Signal not received within timeout.
+      }
+    });
+
+    await dbContext.SaveChangesAsync();
+    await readerTask;
+
+    signaled.Should().BeTrue("the interceptor must fire the outbox trigger after every SaveChangesAsync so saga transitions wake the publisher immediately");
+  }
+
+  [Fact]
+  public void OutboxTransactionInterceptorShouldSignalTriggerOnSyncCommit()
+  {
+    // The saga uses ConcurrencyMode.Pessimistic which wraps each state transition in an
+    // explicit PostgreSQL transaction. SaveChangesAsync flushes within the open transaction
+    // (rows invisible to other connections), then MassTransit calls CommitAsync. The
+    // DbTransactionInterceptor fires *after* that commit — publisher now sees the rows.
+    var trigger = new OutboxTrigger();
+    var interceptor = new OutboxTransactionInterceptor(trigger);
+
+    interceptor.TransactionCommitted(null!, null!);
+
+    trigger.Reader.TryRead(out _).Should().BeTrue(
+      "TransactionCommitted must signal the outbox trigger so the publisher wakes up " +
+      "after the saga transaction is visible to other DB connections");
+  }
+
+  [Fact]
+  public async Task OutboxTransactionInterceptorShouldSignalTriggerOnAsyncCommit()
+  {
+    var trigger = new OutboxTrigger();
+    var interceptor = new OutboxTransactionInterceptor(trigger);
+
+    await interceptor.TransactionCommittedAsync(null!, null!);
+
+    trigger.Reader.TryRead(out _).Should().BeTrue(
+      "the async override must also signal the trigger after transaction commit");
+  }
 
   private static AppDbContext CreateDbContext()
   {

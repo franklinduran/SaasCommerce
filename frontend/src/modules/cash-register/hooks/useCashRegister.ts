@@ -19,7 +19,6 @@ export function useActiveCashRegister() {
     queryKey: cashRegisterQueryKeys.active,
     queryFn: cashRegisterApi.getActive,
     staleTime: 1000 * 30,
-    refetchOnWindowFocus: true,
   })
 }
 

@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import type { GetNotificationsParams } from '@/modules/notifications/services/notificationsApi'
 import { notificationsApi } from '@/modules/notifications/services/notificationsApi'
+import { offRealtimeEvent, onRealtimeEvent } from '@/shared/services/signalrClient'
 
 export const notificationQueryKeys = {
   all: ['notifications'] as const,
@@ -12,7 +14,7 @@ export function useNotifications(params: GetNotificationsParams = {}) {
   return useQuery({
     queryKey: notificationQueryKeys.list(params),
     queryFn: () => notificationsApi.getNotifications(params),
-    staleTime: 1000 * 30, // 30s
+    staleTime: 1000 * 30,
   })
 }
 
@@ -20,9 +22,33 @@ export function useUnreadNotificationCount() {
   return useQuery({
     queryKey: notificationQueryKeys.unreadCount,
     queryFn: notificationsApi.getUnreadCount,
-    staleTime: 1000 * 60, // 1 min
-    refetchInterval: 1000 * 60, // poll every minute
+    staleTime: 1000 * 60,
   })
+}
+
+// Invalidates the unread count when any backend event that creates a notification fires.
+export function useNotificationsRealtimeInvalidation() {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: notificationQueryKeys.unreadCount })
+    }
+
+    const events = [
+      'inventory.lowStockDetected',
+      'sale.failed',
+      'cashRegister.differenceDetected',
+      'betaFeedback.created',
+      'betaFeedback.statusChanged',
+    ]
+
+    events.forEach((e) => onRealtimeEvent(e, invalidate))
+
+    return () => {
+      events.forEach((e) => offRealtimeEvent(e, invalidate))
+    }
+  }, [queryClient])
 }
 
 export function useMarkNotificationRead() {
