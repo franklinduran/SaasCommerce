@@ -783,6 +783,7 @@ app.MapGet(
       new ListSalesQuery(
         request.BranchId,
         request.Status,
+        request.PaymentMethod,
         request.Query,
         request.DateFrom,
         request.DateTo,

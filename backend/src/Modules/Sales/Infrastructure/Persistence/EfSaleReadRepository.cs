@@ -71,7 +71,8 @@ public sealed class EfSaleReadRepository(AppDbContext dbContext) : ISaleReadRepo
     CancellationToken cancellationToken = default)
   {
     var criteria = new SaleSearchCriteria(
-      null, null, null, dateFrom, dateTo,
+      BranchId: null, Status: null, PaymentMethod: null, Query: null,
+      DateFrom: dateFrom, DateTo: dateTo,
       Page: 1, PageSize: int.MaxValue,
       SortBy: SaleSortOption.CreatedAt, SortDirection: SaleSortDirection.Asc);
 
@@ -173,6 +174,11 @@ public sealed class EfSaleReadRepository(AppDbContext dbContext) : ISaleReadRepo
         Enum.TryParse<SaleStatus>(criteria.Status, true, out var status))
     {
       query = query.Where(sale => sale.Status == status);
+    }
+
+    if (!string.IsNullOrWhiteSpace(criteria.PaymentMethod))
+    {
+      query = query.Where(sale => sale.PaymentMethod == criteria.PaymentMethod);
     }
 
     if (criteria.DateFrom.HasValue)

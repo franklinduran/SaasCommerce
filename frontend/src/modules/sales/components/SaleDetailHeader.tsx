@@ -1,7 +1,7 @@
 import { AlertTriangle, CalendarClock, CreditCard, MapPin, UserRound } from 'lucide-react'
 import { SaleStatusBadge } from '@/modules/sales/components/SaleStatusBadge'
 import type { SaleDetail } from '@/modules/sales/types/salesTypes'
-import { formatCurrency, formatDateTime } from '@/modules/sales/utils/formatSales'
+import { formatCurrency, formatDateTime, formatPaymentMethod } from '@/modules/sales/utils/formatSales'
 
 export function SaleDetailHeader({ sale }: Readonly<{ sale: SaleDetail }>) {
   const failureMessage = sale.status === 'Failed' ? sale.failureReason : null
@@ -27,7 +27,7 @@ export function SaleDetailHeader({ sale }: Readonly<{ sale: SaleDetail }>) {
         <SaleFact icon={CalendarClock} label="Fecha" value={formatDateTime(sale.createdAt)} />
         <SaleFact icon={UserRound} label="Cliente" value={sale.customerName ?? 'Consumidor final'} />
         <SaleFact icon={MapPin} label="Sucursal" value={sale.branchName ?? 'Sucursal no disponible'} />
-        <SaleFact icon={CreditCard} label="Metodo" value={sale.paymentMethod} />
+        <SaleFact icon={CreditCard} label="Método" value={formatPaymentMethod(sale.paymentMethod)} />
       </div>
 
       {(failureMessage || cancellationMessage) && (

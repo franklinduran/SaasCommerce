@@ -3,6 +3,7 @@ import type { SaleDetail } from '@/modules/sales/types/salesTypes'
 import {
   formatCurrency,
   formatDateTime,
+  formatPaymentMethod,
   formatQuantity,
 } from '@/modules/sales/utils/formatSales'
 
@@ -57,7 +58,7 @@ export function SaleReceipt({
         <ReceiptRow label="Venta" value={sale.code} />
         <ReceiptRow label="Fecha" value={formatDateTime(sale.createdAt)} />
         <ReceiptRow label="Cliente" value={sale.customerName ?? 'Consumidor final'} />
-        <ReceiptRow label="Metodo" value={sale.paymentMethod} />
+        <ReceiptRow label="Método" value={formatPaymentMethod(sale.paymentMethod)} />
         <div className="flex items-center justify-between gap-4">
           <span className="font-medium text-stone-600">Estado</span>
           <SaleStatusBadge status={sale.status} />

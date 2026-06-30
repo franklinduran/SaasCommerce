@@ -51,6 +51,7 @@ public sealed class ListSalesUseCase(
     var criteria = new SaleSearchCriteria(
       query.BranchId,
       query.Status,
+      query.PaymentMethod,
       query.Query,
       query.DateFrom,
       query.DateTo,

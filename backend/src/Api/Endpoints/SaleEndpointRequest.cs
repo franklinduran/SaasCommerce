@@ -6,6 +6,8 @@ internal sealed class SaleEndpointRequest
 
   public string? Status { get; init; }
 
+  public string? PaymentMethod { get; init; }
+
   public string? Query { get; init; }
 
   public DateTimeOffset? DateFrom { get; init; }

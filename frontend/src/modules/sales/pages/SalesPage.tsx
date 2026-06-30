@@ -7,15 +7,16 @@ import { useSales, useSaleStatusInvalidation } from '@/modules/sales/hooks/useSa
 import type { SalesFilters as SalesFiltersState } from '@/modules/sales/types/salesTypes'
 import { CsvExportButton } from '@/shared/components/CsvExportButton'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardHeader } from '@/shared/components/ui/card'
 import { useHasPermission } from '@/shared/hooks/usePermissions'
 import { Permission } from '@/shared/types/permissions'
+import { cn } from '@/shared/utils/cn'
 
 const initialFilters: SalesFiltersState = {
   dateFrom: '',
   dateTo: '',
   page: 1,
   pageSize: 10,
+  paymentMethod: '',
   query: '',
   status: '',
 }
@@ -34,9 +35,10 @@ export function SalesPage() {
   const hasActiveFilters =
     Boolean(filters.dateFrom) ||
     Boolean(filters.dateTo) ||
+    Boolean(filters.paymentMethod) ||
     Boolean(filters.query.trim()) ||
     Boolean(filters.status)
-  const visibleSaleIds = useMemo(() => items.map((sale) => sale.id), [items])
+  const visibleSaleIds = useMemo(() => items.map((s) => s.id), [items])
   const emptyMessage = hasActiveFilters
     ? 'No hay ventas que coincidan con los filtros.'
     : 'No hay ventas registradas.'
@@ -44,28 +46,27 @@ export function SalesPage() {
   useSaleStatusInvalidation(visibleSaleIds)
 
   function updateFilters(next: Partial<SalesFiltersState>) {
-    setFilters((current) => ({
-      ...current,
-      ...next,
-      page: next.page ?? 1,
-    }))
-  }
-
-  function resetFilters() {
-    setFilters(initialFilters)
+    setFilters((prev) => ({ ...prev, ...next, page: next.page ?? 1 }))
   }
 
   return (
-    <section className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-stone-500">Ventas</p>
-          <h2 className="mt-1 text-2xl font-semibold text-stone-950">Historial de ventas</h2>
-          <p className="mt-2 max-w-2xl text-sm font-medium text-stone-600">
-            Consulta ventas, revisa estados y abre recibos simples.
+    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-6">
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+            Ventas
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+            Historial de ventas
+          </h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
+            Consulta, filtra y descarga el registro de ventas del negocio.
+          </p>
+        </header>
+
+        <div className="flex shrink-0 items-center gap-2 pt-0.5">
           {canExportSales && (
             <CsvExportButton
               endpoint="/api/sales/export"
@@ -76,39 +77,50 @@ export function SalesPage() {
               }}
             />
           )}
-          <Button asChild>
+          <Button asChild size="sm" variant="secondary">
             <Link to="/pos">
-              <ShoppingCart size={16} />
+              <ShoppingCart size={14} />
               Abrir POS
             </Link>
           </Button>
         </div>
       </div>
 
-      <Card className="rounded-md">
-        <CardHeader>
-          <SalesFilters
-            disabled={sales.isFetching}
-            filters={filters}
-            onChange={updateFilters}
-            onReset={resetFilters}
-            onRetry={() => sales.refetch()}
-          />
-        </CardHeader>
-      </Card>
+      {/* ── Table card ── */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
 
-      <Card className="overflow-hidden rounded-md">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-stone-950">Listado de ventas</h3>
-            <p className="text-sm font-medium text-stone-600">{totalItems} ventas encontradas</p>
+        {/* Toolbar: filtros + conteo + refresh */}
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3 border-b border-gray-100 px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <SalesFilters
+              disabled={sales.isFetching}
+              filters={filters}
+              onChange={updateFilters}
+              onReset={() => setFilters(initialFilters)}
+            />
           </div>
-          <Button disabled={sales.isFetching} onClick={() => sales.refetch()} variant="ghost">
-            <RefreshCw size={16} />
-            Reintentar
-          </Button>
-        </CardHeader>
 
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="text-[12px] font-medium tabular-nums text-muted-foreground">
+              {sales.isLoading ? '—' : `${totalItems} ${totalItems === 1 ? 'venta' : 'ventas'}`}
+            </span>
+            <button
+              aria-label="Actualizar ventas"
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white',
+                'text-gray-500 transition hover:border-gray-300 hover:text-gray-800',
+                'disabled:cursor-not-allowed disabled:opacity-40',
+              )}
+              disabled={sales.isFetching}
+              onClick={() => sales.refetch()}
+              type="button"
+            >
+              <RefreshCw className={sales.isFetching ? 'animate-spin' : ''} size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* Tabla */}
         <SalesTable
           emptyMessage={emptyMessage}
           isError={sales.isError}
@@ -117,45 +129,58 @@ export function SalesPage() {
           sales={items}
         />
 
-        <div className="flex flex-col gap-4 border-t border-stone-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-sm font-medium text-stone-600">
-            <span>Pagina {filters.page} de {totalPages || 1}</span>
-            <span aria-hidden="true" className="px-1">/</span>
-            <span>{totalItems} registros</span>
+        {/* Pie: paginación */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-3">
+          <p className="text-[12px] font-medium text-muted-foreground">
+            Página <span className="font-semibold text-gray-800">{filters.page}</span> de{' '}
+            <span className="font-semibold text-gray-800">{totalPages || 1}</span>
           </p>
-          <div className="flex flex-wrap items-center gap-3">
+
+          <div className="flex items-center gap-2">
             <select
-              className="h-9 rounded-md bg-white px-3 text-sm font-semibold text-stone-900 shadow-sm ring-1 ring-stone-200 outline-none"
-              onChange={(event) => updateFilters({ pageSize: Number(event.target.value) })}
+              className={cn(
+                'h-8 rounded-lg border border-gray-200 bg-white px-2.5',
+                'text-[12px] font-medium text-gray-800 outline-none transition hover:border-gray-300',
+              )}
+              onChange={(e) => updateFilters({ pageSize: Number(e.target.value) })}
               value={filters.pageSize}
             >
-              {pageSizes.map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize} por pagina
-                </option>
+              {pageSizes.map((n) => (
+                <option key={n} value={n}>{n} / pág.</option>
               ))}
             </select>
-            <Button
-              disabled={!canGoPrevious}
-              onClick={() => updateFilters({ page: filters.page - 1 })}
-              size="sm"
-              variant="secondary"
-            >
-              <ChevronLeft size={15} />
-              Anterior
-            </Button>
-            <Button
-              disabled={!canGoNext}
-              onClick={() => updateFilters({ page: filters.page + 1 })}
-              size="sm"
-              variant="secondary"
-            >
-              Siguiente
-              <ChevronRight size={15} />
-            </Button>
+
+            <div className="flex items-center gap-1">
+              <button
+                className={cn(
+                  'flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3',
+                  'text-[12px] font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900',
+                  'disabled:cursor-not-allowed disabled:opacity-35',
+                )}
+                disabled={!canGoPrevious}
+                onClick={() => updateFilters({ page: filters.page - 1 })}
+                type="button"
+              >
+                <ChevronLeft size={13} />
+                Ant.
+              </button>
+              <button
+                className={cn(
+                  'flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3',
+                  'text-[12px] font-medium text-gray-700 transition hover:border-gray-300 hover:text-gray-900',
+                  'disabled:cursor-not-allowed disabled:opacity-35',
+                )}
+                disabled={!canGoNext}
+                onClick={() => updateFilters({ page: filters.page + 1 })}
+                type="button"
+              >
+                Sig.
+                <ChevronRight size={13} />
+              </button>
+            </div>
           </div>
         </div>
-      </Card>
-    </section>
+      </div>
+    </div>
   )
 }

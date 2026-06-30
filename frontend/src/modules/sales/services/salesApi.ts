@@ -56,6 +56,10 @@ export async function getSales(filters: SalesFilters): Promise<SaleListResponse>
     params.set('status', filters.status)
   }
 
+  if (filters.paymentMethod) {
+    params.set('paymentMethod', filters.paymentMethod)
+  }
+
   if (filters.query.trim().length > 0) {
     params.set('query', filters.query.trim())
   }

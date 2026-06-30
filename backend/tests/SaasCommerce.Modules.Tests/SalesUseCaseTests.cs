@@ -35,7 +35,7 @@ public sealed class SalesUseCaseTests
   {
     var uc = new ListSalesUseCase(new StubSaleReadRepo(), Anonymous());
 
-    var result = await uc.ExecuteAsync(new ListSalesQuery(null, null, null, null, null, 1, 10, null, null));
+    var result = await uc.ExecuteAsync(new ListSalesQuery(null, null, null, null, null, null, 1, 10, null, null));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(SalesErrors.UserContextRequired);
@@ -46,7 +46,7 @@ public sealed class SalesUseCaseTests
   {
     var uc = new ListSalesUseCase(new StubSaleReadRepo(), Authed());
 
-    var result = await uc.ExecuteAsync(new ListSalesQuery(null, null, null, null, null, 0, 10, null, null));
+    var result = await uc.ExecuteAsync(new ListSalesQuery(null, null, null, null, null, null, 0, 10, null, null));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(SalesErrors.InvalidSale);
@@ -58,7 +58,7 @@ public sealed class SalesUseCaseTests
     var uc = new ListSalesUseCase(new StubSaleReadRepo(), Authed());
 
     var result = await uc.ExecuteAsync(
-      new ListSalesQuery(null, "NotAStatus", null, null, null, 1, 10, null, null));
+      new ListSalesQuery(null, "NotAStatus", null, null, null, null, 1, 10, null, null));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(SalesErrors.InvalidSale);
@@ -70,7 +70,7 @@ public sealed class SalesUseCaseTests
     var uc = new ListSalesUseCase(new StubSaleReadRepo(), Authed());
 
     var result = await uc.ExecuteAsync(
-      new ListSalesQuery(null, null, null, null, null, 1, 10, "Nope", null));
+      new ListSalesQuery(null, null, null, null, null, null, 1, 10, "Nope", null));
 
     result.IsFailure.Should().BeTrue();
     result.Error.Should().Be(SalesErrors.InvalidSale);
@@ -84,7 +84,7 @@ public sealed class SalesUseCaseTests
     var uc = new ListSalesUseCase(repo, Authed());
 
     var result = await uc.ExecuteAsync(
-      new ListSalesQuery(branchId, "Completed", "abc", Now.AddDays(-1), Now, 1, 25, "Total", "Asc"));
+      new ListSalesQuery(branchId, "Completed", null, "abc", Now.AddDays(-1), Now, 1, 25, "Total", "Asc"));
 
     result.IsSuccess.Should().BeTrue();
     result.Value.Items.Should().ContainSingle();

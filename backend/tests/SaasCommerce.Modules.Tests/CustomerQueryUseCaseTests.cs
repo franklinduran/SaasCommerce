@@ -257,6 +257,9 @@ public sealed class CustomerQueryUseCaseTests
     public Task<IReadOnlyCollection<Customer>> ExportAllAsync(BusinessId businessId, CancellationToken cancellationToken = default)
       => Task.FromResult<IReadOnlyCollection<Customer>>(
         items.Where(c => c.BusinessId == businessId).ToArray());
+
+    public Task<bool> ExistsByCedulaAsync(BusinessId businessId, string cedula, Guid? excludeCustomerId = null, CancellationToken cancellationToken = default)
+      => Task.FromResult(false);
   }
 
   private sealed class StubCreditRepo : ICustomerCreditRepository

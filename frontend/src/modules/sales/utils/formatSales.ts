@@ -1,3 +1,14 @@
+const paymentMethodLabels: Record<string, string> = {
+  Cash: 'Efectivo',
+  Transfer: 'Transferencia',
+  Card: 'Tarjeta',
+  Credit: 'Crédito',
+}
+
+export function formatPaymentMethod(value: string): string {
+  return paymentMethodLabels[value] ?? value
+}
+
 export function formatCurrency(value: number): string {
   return value.toLocaleString('es-DO', {
     currency: 'DOP',

@@ -62,6 +62,11 @@ public sealed class EfSaleRepository(AppDbContext dbContext) : ISaleRepository
       query = query.Where(sale => sale.Status == status);
     }
 
+    if (!string.IsNullOrWhiteSpace(criteria.PaymentMethod))
+    {
+      query = query.Where(sale => sale.PaymentMethod == criteria.PaymentMethod);
+    }
+
     if (criteria.DateFrom.HasValue)
     {
       query = query.Where(sale => sale.CreatedAt >= criteria.DateFrom.Value);

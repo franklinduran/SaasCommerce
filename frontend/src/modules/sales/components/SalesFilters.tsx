@@ -1,7 +1,5 @@
-import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
-import type { SalesFilters, SaleStatus } from '@/modules/sales/types/salesTypes'
-import { Button } from '@/shared/components/ui/button'
-import { Input } from '@/shared/components/ui/input'
+import { RotateCcw, Search } from 'lucide-react'
+import type { PaymentMethodFilter, SalesFilters, SaleStatus } from '@/modules/sales/types/salesTypes'
 import {
   Select,
   SelectContent,
@@ -9,6 +7,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { cn } from '@/shared/utils/cn'
+
+const paymentMethodOptions: Array<{ label: string; value: string }> = [
+  { label: 'Todos los métodos', value: '_' },
+  { label: 'Efectivo',          value: 'Cash' },
+  { label: 'Transferencia',     value: 'Transfer' },
+  { label: 'Tarjeta',           value: 'Card' },
+  { label: 'Crédito',           value: 'Credit' },
+]
 
 const statusOptions: Array<{ label: string; value: string }> = [
   { label: 'Todos los estados', value: '_' },
@@ -19,12 +26,19 @@ const statusOptions: Array<{ label: string; value: string }> = [
   { label: 'Cancelada',         value: 'Cancelled' },
 ]
 
+const inputClass = cn(
+  'h-8 w-full rounded-lg border border-gray-200 bg-white px-3',
+  'text-[13px] font-medium text-gray-900 outline-none transition',
+  'placeholder:font-normal placeholder:text-gray-400',
+  'hover:border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/15',
+  'disabled:cursor-not-allowed disabled:opacity-50',
+)
+
 type SalesFiltersProps = {
   disabled?: boolean
   filters: SalesFilters
   onChange: (filters: Partial<SalesFilters>) => void
   onReset: () => void
-  onRetry: () => void
 }
 
 export function SalesFilters({
@@ -32,76 +46,107 @@ export function SalesFilters({
   filters,
   onChange,
   onReset,
-  onRetry,
 }: Readonly<SalesFiltersProps>) {
   return (
-    <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(220px,1fr)_160px_160px_180px_auto_auto] lg:items-end">
-      <label className="block min-w-0 space-y-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Busqueda</span>
-        <span className="flex h-10 min-w-0 items-center gap-2 rounded-md bg-white px-3 shadow-[0_0_0_1px_rgb(214_211_209)]">
-          <Search aria-hidden="true" className="text-stone-500" size={16} />
-          <input
-            className="w-full bg-transparent text-sm font-medium text-stone-900 outline-none placeholder:text-stone-400"
-            disabled={disabled}
-            onChange={(event) => onChange({ query: event.target.value })}
-            placeholder="Cliente, codigo o venta"
-            value={filters.query}
-          />
-        </span>
-      </label>
+    <div className="flex flex-wrap items-center gap-2">
 
-      <label className="block min-w-0 space-y-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Fecha desde</span>
-        <Input
-          aria-label="Fecha desde"
+      {/* Search */}
+      <span className={cn(
+        'flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 transition',
+        'w-full sm:w-56',
+        'hover:border-gray-300 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15',
+        disabled && 'cursor-not-allowed opacity-50',
+      )}>
+        <Search aria-hidden="true" className="shrink-0 text-gray-400" size={13} />
+        <input
+          aria-label="Buscar ventas"
+          className="w-full bg-transparent text-[13px] font-medium text-gray-900 outline-none placeholder:font-normal placeholder:text-gray-400 disabled:cursor-not-allowed"
           disabled={disabled}
-          onChange={(event) => onChange({ dateFrom: event.target.value })}
-          type="date"
-          value={filters.dateFrom}
+          onChange={(e) => onChange({ query: e.target.value })}
+          placeholder="Cliente, código…"
+          value={filters.query}
         />
-      </label>
+      </span>
 
-      <label className="block min-w-0 space-y-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Fecha hasta</span>
-        <Input
-          aria-label="Fecha hasta"
-          disabled={disabled}
-          onChange={(event) => onChange({ dateTo: event.target.value })}
-          type="date"
-          value={filters.dateTo}
-        />
-      </label>
+      {/* Date from */}
+      <input
+        aria-label="Fecha desde"
+        className={cn(inputClass, 'w-36')}
+        disabled={disabled}
+        onChange={(e) => onChange({ dateFrom: e.target.value })}
+        placeholder="Desde"
+        type="date"
+        value={filters.dateFrom}
+      />
 
-      <div className="block min-w-0 space-y-1.5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Estado</span>
-        <Select
-          disabled={disabled}
-          value={filters.status || '_'}
-          onValueChange={(v) =>
-            onChange({ status: (v === '_' ? '' : v) as '' | SaleStatus })
-          }
+      {/* Date to */}
+      <input
+        aria-label="Fecha hasta"
+        className={cn(inputClass, 'w-36')}
+        disabled={disabled}
+        onChange={(e) => onChange({ dateTo: e.target.value })}
+        placeholder="Hasta"
+        type="date"
+        value={filters.dateTo}
+      />
+
+      {/* Payment method */}
+      <Select
+        disabled={disabled}
+        value={filters.paymentMethod || '_'}
+        onValueChange={(v) => onChange({ paymentMethod: (v === '_' ? '' : v) as PaymentMethodFilter })}
+      >
+        <SelectTrigger
+          aria-label="Método de pago"
+          className="h-8 w-44 rounded-lg border-gray-200 bg-white text-[13px] font-medium text-gray-900 hover:border-gray-300 focus:ring-primary/15"
         >
-          <SelectTrigger aria-label="Estado">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {paymentMethodOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <Button disabled={disabled} onClick={onRetry} type="button" variant="secondary">
-        <SlidersHorizontal size={16} />
-        Filtrar
-      </Button>
-      <Button disabled={disabled} onClick={onReset} type="button" variant="ghost">
-        <RotateCcw size={16} />
+      {/* Status */}
+      <Select
+        disabled={disabled}
+        value={filters.status || '_'}
+        onValueChange={(v) => onChange({ status: (v === '_' ? '' : v) as '' | SaleStatus })}
+      >
+        <SelectTrigger
+          aria-label="Estado"
+          className="h-8 w-44 rounded-lg border-gray-200 bg-white text-[13px] font-medium text-gray-900 hover:border-gray-300 focus:ring-primary/15"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {statusOptions.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Clear */}
+      <button
+        className={cn(
+          'flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5',
+          'text-[12.5px] font-medium text-gray-500 transition',
+          'hover:border-gray-300 hover:text-gray-800',
+          'disabled:cursor-not-allowed disabled:opacity-40',
+        )}
+        disabled={disabled}
+        onClick={onReset}
+        type="button"
+      >
+        <RotateCcw size={12} />
         Limpiar
-      </Button>
+      </button>
     </div>
   )
 }

@@ -55,7 +55,7 @@ public sealed class CustomersSalesEndpointTests
 
     var response = await client.PostAsJsonAsync(
       "/api/customers",
-      new CreateCustomerRequest("Maria Perez", "8095551234", "maria@example.com"));
+      new CreateCustomerRequest("Maria", "Perez", "8095551234", "maria@example.com"));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<CustomerResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -76,7 +76,7 @@ public sealed class CustomersSalesEndpointTests
 
     var response = await client.PostAsJsonAsync(
       "/api/customers",
-      new CreateCustomerRequest("", "8095551234", null));
+      new CreateCustomerRequest("", "Perez", "8095551234", null));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<CustomerResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -198,7 +198,7 @@ public sealed class CustomersSalesEndpointTests
 
     var response = await client.PutAsJsonAsync(
       $"/api/customers/{customer.Id}",
-      new UpdateCustomerRequest("Cliente actualizado", "8095550000", "nuevo@example.com", true));
+      new UpdateCustomerRequest("Cliente", "actualizado", "8095550000", "nuevo@example.com", true));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<CustomerResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -739,9 +739,10 @@ public sealed class CustomersSalesEndpointTests
 
   private static async Task<CustomerResponse> CreateCustomerAsync(HttpClient client, string name)
   {
+    var parts = name.Split(' ', 2);
     var response = await client.PostAsJsonAsync(
       "/api/customers",
-      new CreateCustomerRequest(name, NextPhoneNumber(), $"{Guid.NewGuid():N}@example.com"));
+      new CreateCustomerRequest(parts[0], parts.Length > 1 ? parts[1] : "Test", NextPhoneNumber(), $"{Guid.NewGuid():N}@example.com"));
     var payload = await response.Content.ReadFromJsonAsync<ApiResponse<CustomerResponse>>();
 
     response.StatusCode.Should().Be(HttpStatusCode.Created);

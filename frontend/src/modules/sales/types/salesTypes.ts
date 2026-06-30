@@ -1,10 +1,13 @@
 export type SaleStatus = 'Received' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled'
 
+export type PaymentMethodFilter = '' | 'Cash' | 'Transfer' | 'Card' | 'Credit'
+
 export type SalesFilters = {
   dateFrom: string
   dateTo: string
   page: number
   pageSize: number
+  paymentMethod: PaymentMethodFilter
   query: string
   status: '' | SaleStatus
 }
