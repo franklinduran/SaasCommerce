@@ -49,7 +49,25 @@ Content-Type: application/json
   "attributesJson": null
 }
 
-### Create sale valid; expected 201 Created, status Received
+### Add stock before example sales (10 units)
+POST {{apiBase}}/api/inventory/adjustments
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{createSaleProduct.response.body.$.data.id}}",
+  "quantity": 10,
+  "reason": "Stock inicial para ejemplo de ventas",
+  "branchId": "{{seedBranchId}}"
+}
+
+# ─── Ejemplo: 3 órdenes con distintos métodos de pago ────────────────────────
+# Orden 1 – Efectivo (Cash)
+# Orden 2 – Transferencia (Transfer)
+# Orden 3 – Tarjeta (Card)
+# Sirve para validar el filtro ?paymentMethod= en GET /api/sales
+
+### Orden 1 – Efectivo; expected 201 Created, status Received
 # @name createSale
 POST {{apiBase}}/api/sales
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
@@ -67,8 +85,56 @@ Content-Type: application/json
   ]
 }
 
+### Orden 2 – Transferencia; expected 201 Created, status Received
+# @name createSale2
+POST {{apiBase}}/api/sales
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "branchId": "{{seedBranchId}}",
+  "customerId": null,
+  "paymentMethod": "Transfer",
+  "items": [
+    {
+      "productId": "{{createSaleProduct.response.body.$.data.id}}",
+      "quantity": 3
+    }
+  ]
+}
+
+### Orden 3 – Tarjeta; expected 201 Created, status Received
+# @name createSale3
+POST {{apiBase}}/api/sales
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "branchId": "{{seedBranchId}}",
+  "customerId": null,
+  "paymentMethod": "Card",
+  "items": [
+    {
+      "productId": "{{createSaleProduct.response.body.$.data.id}}",
+      "quantity": 1
+    }
+  ]
+}
+
 ### List sales for current BusinessId
 GET {{apiBase}}/api/sales?page=1&pageSize=10&sortBy=createdAt&sortDirection=desc
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Filtrar solo ventas por Efectivo; expected solo la Orden 1
+GET {{apiBase}}/api/sales?paymentMethod=Cash&pageSize=25
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Filtrar solo ventas por Transferencia; expected solo la Orden 2
+GET {{apiBase}}/api/sales?paymentMethod=Transfer&pageSize=25
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Filtrar solo ventas por Tarjeta; expected solo la Orden 3
+GET {{apiBase}}/api/sales?paymentMethod=Card&pageSize=25
 Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
 ### Get sale by id

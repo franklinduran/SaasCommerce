@@ -222,3 +222,72 @@ button:disabled,
 *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.30);
 }
+
+/* ─── Date-range calendar ────────────────────────────────────────────────────
+ * react-day-picker v10 + custom Tailwind classNames.
+ * Marker classes: .cal-cell (day td), .cal-btn (day button).
+ * Modifier classes keep rdp defaults: .rdp-selected, .rdp-range_*, etc.  */
+
+.cal-cell {
+  position: relative;
+  padding: 0;
+  text-align: center;
+}
+
+.cal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.cal-btn:hover {
+  background: var(--muted);
+}
+
+/* Selected day (range_start, range_end, or single date) */
+.cal-cell.rdp-selected .cal-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 500;
+}
+.cal-cell.rdp-selected .cal-btn:hover {
+  background: var(--primary-hover);
+}
+
+/* Range middle: button is transparent, strip comes from cell bg */
+.cal-cell.rdp-range_middle {
+  background: var(--accent);
+}
+.cal-cell.rdp-range_middle .cal-btn {
+  background: transparent !important;
+  color: var(--foreground);
+}
+.cal-cell.rdp-range_middle .cal-btn:hover {
+  background: oklch(from var(--primary) l c h / 0.08) !important;
+}
+
+/* Strip flush to the edge at start/end */
+.cal-cell.rdp-range_start { border-radius: 6px 0 0 6px; }
+.cal-cell.rdp-range_end   { border-radius: 0 6px 6px 0; }
+
+/* Outside-month days */
+.cal-cell.rdp-outside .cal-btn { opacity: 0.35; }
+
+/* Disabled */
+.cal-cell.rdp-disabled .cal-btn { opacity: 0.35; cursor: not-allowed; }
+
+/* Today: subtle bold text */
+.cal-cell.rdp-today .cal-btn { font-weight: 600; }
+.cal-cell.rdp-today:not(.rdp-selected) .cal-btn {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
