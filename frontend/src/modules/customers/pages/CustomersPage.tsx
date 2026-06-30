@@ -44,6 +44,7 @@ export function CustomersPage() {
 
   const [filters, setFilters] = useState<CustomerFilters>(defaultFilters)
   const [createOpen, setCreateOpen] = useState(false)
+  const [createApiError, setCreateApiError] = useState<string | null>(null)
   const canExportCustomers = useHasPermission(Permission.CustomersExport)
 
   const customers = useCustomers(filters)
@@ -204,13 +205,19 @@ export function CustomersPage() {
       </div>
 
       <CreateCustomerDialog
+        apiError={createApiError}
         isSubmitting={createCustomer.isPending}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(open) => { setCreateOpen(open); if (!open) setCreateApiError(null) }}
         onSubmit={(request) =>
           createCustomer.mutate(request, {
             onSuccess: (created) => {
               setCreateOpen(false)
+              setCreateApiError(null)
               if (created?.id) selectCustomer(created.id)
+            },
+            onError: (err: unknown) => {
+              const msg = err instanceof Error ? err.message : null
+              setCreateApiError(msg ?? 'No se pudo crear el cliente.')
             },
           })
         }

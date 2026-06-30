@@ -17,11 +17,13 @@ import { Label } from '@/shared/components/ui/label'
 type CreateCustomerDialogProps = {
   open: boolean
   isSubmitting: boolean
+  apiError?: string | null
   onOpenChange: (open: boolean) => void
   onSubmit: (request: CustomerUpsertRequest) => void
 }
 
 export function CreateCustomerDialog({
+  apiError,
   isSubmitting,
   onOpenChange,
   onSubmit,
@@ -31,6 +33,7 @@ export function CreateCustomerDialog({
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [cedula, setCedula] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   function resetState() {
@@ -38,6 +41,7 @@ export function CreateCustomerDialog({
     setLastName('')
     setPhone('')
     setEmail('')
+    setCedula('')
     setError(null)
   }
 
@@ -48,6 +52,7 @@ export function CreateCustomerDialog({
 
   function handleSubmit() {
     const payload = {
+      cedula: cedula.trim() || null,
       email: email.trim() || null,
       firstName: firstName.trim(),
       isActive: true,
@@ -84,9 +89,9 @@ export function CreateCustomerDialog({
           className="space-y-4"
           onSubmit={(e) => { e.preventDefault(); handleSubmit() }}
         >
-          {error && (
+          {(error ?? apiError) && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200">
-              {error}
+              {error ?? apiError}
             </div>
           )}
 
@@ -111,6 +116,17 @@ export function CreateCustomerDialog({
                 value={lastName}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="cedula">Cédula / Identificación</Label>
+            <Input
+              disabled={isSubmitting}
+              id="cedula"
+              onChange={(e) => setCedula(e.target.value)}
+              placeholder="001-0000000-0"
+              value={cedula}
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

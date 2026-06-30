@@ -5,4 +5,5 @@ public sealed record UpdateCustomerRequest(
   string LastName,
   string? Phone,
   string? Email,
-  bool IsActive = true);
+  bool IsActive = true,
+  string? Cedula = null);

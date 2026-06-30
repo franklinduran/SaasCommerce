@@ -14,4 +14,5 @@ public sealed record CreateCustomerCommand(
   string FirstName,
   string LastName,
   string? Phone,
-  string? Email);
+  string? Email,
+  string? Cedula = null);

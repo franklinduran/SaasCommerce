@@ -50,6 +50,7 @@ type CustomerDetailPanelProps = {
 
 type CustomerProfileForm = {
   customerId: string
+  cedula: string
   email: string
   firstName: string
   lastName: string
@@ -57,6 +58,7 @@ type CustomerProfileForm = {
 }
 
 type CustomerProfileSource = {
+  cedula?: string | null
   email?: string | null
   firstName: string
   lastName: string
@@ -89,6 +91,7 @@ function getCreditLimitLabel(summary: { creditLimit: number } | null | undefined
 function toProfileForm(data: CustomerProfileSource): CustomerProfileForm {
   return {
     customerId: data.id,
+    cedula: data.cedula ?? '',
     email: data.email ?? '',
     firstName: data.firstName,
     lastName: data.lastName,
@@ -109,7 +112,8 @@ function hasProfileChanges(profile: CustomerProfileForm, data: CustomerProfileSo
     profile.firstName !== data.firstName ||
     profile.lastName !== data.lastName ||
     profile.phone !== (data.phone ?? '') ||
-    profile.email !== (data.email ?? '')
+    profile.email !== (data.email ?? '') ||
+    profile.cedula !== (data.cedula ?? '')
   )
 }
 
@@ -142,6 +146,7 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
   const [formError, setFormError] = useState<string | null>(null)
   const [profileForm, setProfileForm] = useState<CustomerProfileForm>({
     customerId: '',
+    cedula: '',
     email: '',
     firstName: '',
     lastName: '',
@@ -173,6 +178,7 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
 
   function handleSaveProfile() {
     const payload = {
+      cedula: currentProfile.cedula.trim() || null,
       email: currentProfile.email.trim() || null,
       firstName: currentProfile.firstName.trim(),
       isActive: data.isActive,
@@ -187,6 +193,9 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
     setFormError(null)
     updateCustomer.mutate(payload, {
       onSuccess: () => setNotice('Datos del cliente guardados.'),
+      onError: (err: unknown) => {
+        setFormError(err instanceof Error ? err.message : 'No se pudo guardar.')
+      },
     })
   }
 
@@ -335,6 +344,16 @@ export function CustomerDetailPanel({ customerId, onClose }: Readonly<CustomerDe
                 />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cedula">Cédula / Identificación</Label>
+              <Input
+                id="cedula"
+                onChange={(e) => updateProfileForm({ cedula: e.target.value })}
+                placeholder="001-0000000-0"
+                value={currentProfile.cedula}
+              />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Teléfono</Label>

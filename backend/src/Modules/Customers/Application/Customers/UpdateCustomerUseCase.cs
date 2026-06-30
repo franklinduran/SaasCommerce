@@ -42,6 +42,12 @@ public sealed class UpdateCustomerUseCase(
       return Result.Failure<CustomerResponse>(CustomerErrors.CustomerNotFound);
     }
 
+    if (!string.IsNullOrWhiteSpace(command.Cedula) &&
+        await customers.ExistsByCedulaAsync(new BusinessId(businessId), command.Cedula.Trim(), excludeCustomerId: command.CustomerId, cancellationToken: cancellationToken))
+    {
+      return Result.Failure<CustomerResponse>(CustomerErrors.DuplicateCedula);
+    }
+
     try
     {
       customer.Update(
@@ -50,7 +56,8 @@ public sealed class UpdateCustomerUseCase(
         command.Phone,
         command.Email,
         command.IsActive,
-        clock.UtcNow);
+        clock.UtcNow,
+        command.Cedula);
     }
     catch (ArgumentOutOfRangeException)
     {

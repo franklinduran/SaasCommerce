@@ -16,4 +16,5 @@ public sealed record UpdateCustomerCommand(
   string LastName,
   string? Phone,
   string? Email,
-  bool IsActive);
+  bool IsActive,
+  string? Cedula = null);

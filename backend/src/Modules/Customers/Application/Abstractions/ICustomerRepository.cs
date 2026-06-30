@@ -25,6 +25,12 @@ public interface ICustomerRepository
   Task<IReadOnlyCollection<Customer>> ExportAllAsync(
     BusinessId businessId,
     CancellationToken cancellationToken = default);
+
+  Task<bool> ExistsByCedulaAsync(
+    BusinessId businessId,
+    string cedula,
+    Guid? excludeCustomerId = null,
+    CancellationToken cancellationToken = default);
 }
 
 public sealed record CustomerSearchCriteria(

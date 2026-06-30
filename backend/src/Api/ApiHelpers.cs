@@ -148,7 +148,8 @@ internal static class ApiHelpers
         "expenses.duplicate_category_name" or
         "daily_closing.already_closed" or
         "daily_closing.already_closed_status" or
-        "daily_closing.open_cash_sessions" => ApiErrorCodes.Conflict,
+        "daily_closing.open_cash_sessions" or
+        "customers.duplicate_cedula" => ApiErrorCodes.Conflict,
       "subscription.expired" or
         "subscription.suspended" or
         "subscription.cancelled" or

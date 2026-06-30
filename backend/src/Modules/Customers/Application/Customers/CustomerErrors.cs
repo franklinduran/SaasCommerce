@@ -12,4 +12,7 @@ public static class CustomerErrors
 
   public static readonly DomainError CustomerNotFound =
     new("customers.customer_not_found", "The customer was not found.");
+
+  public static readonly DomainError DuplicateCedula =
+    new("customers.duplicate_cedula", "Ya existe un cliente con esa cédula / identificación en este negocio.");
 }

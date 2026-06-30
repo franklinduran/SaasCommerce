@@ -15,20 +15,21 @@ public sealed class Customer
     string lastName,
     string? phone,
     string? email,
-    DateTimeOffset createdAt)
+    DateTimeOffset createdAt,
+    string? cedula = null)
   {
     if (id == Guid.Empty)
     {
       throw new ArgumentException("Customer id is required.", nameof(id));
     }
 
-    Validate(firstName, lastName, phone, email);
+    Validate(firstName, lastName, phone, email, cedula);
 
     Id = id;
     BusinessId = businessId;
     CreatedAt = createdAt;
     IsActive = true;
-    ApplyDetails(firstName, lastName, phone, email);
+    ApplyDetails(firstName, lastName, phone, email, cedula);
   }
 
   public Guid Id { get; private set; }
@@ -47,6 +48,8 @@ public sealed class Customer
 
   public string? Email { get; private set; }
 
+  public string? Cedula { get; private set; }
+
   public bool IsActive { get; private set; }
 
   public DateTimeOffset CreatedAt { get; private set; }
@@ -61,10 +64,11 @@ public sealed class Customer
     string? phone,
     string? email,
     bool isActive,
-    DateTimeOffset updatedAt)
+    DateTimeOffset updatedAt,
+    string? cedula = null)
   {
-    Validate(firstName, lastName, phone, email);
-    ApplyDetails(firstName, lastName, phone, email);
+    Validate(firstName, lastName, phone, email, cedula);
+    ApplyDetails(firstName, lastName, phone, email, cedula);
 
     if (isActive)
     {
@@ -91,16 +95,17 @@ public sealed class Customer
     UpdatedAt = deactivatedAt;
   }
 
-  private void ApplyDetails(string firstName, string lastName, string? phone, string? email)
+  private void ApplyDetails(string firstName, string lastName, string? phone, string? email, string? cedula)
   {
     FirstName = firstName.Trim();
     LastName = lastName.Trim();
     SearchName = FullName.ToUpperInvariant();
     Phone = NormalizePhone(phone);
     Email = NormalizeEmail(email);
+    Cedula = string.IsNullOrWhiteSpace(cedula) ? null : cedula.Trim();
   }
 
-  private static void Validate(string firstName, string lastName, string? phone, string? email)
+  private static void Validate(string firstName, string lastName, string? phone, string? email, string? cedula)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
     ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
@@ -134,6 +139,15 @@ public sealed class Customer
     {
       throw new ArgumentException("Customer email is invalid.", nameof(email));
     }
+
+    if (!string.IsNullOrWhiteSpace(cedula))
+    {
+      var digitCount = cedula.Count(char.IsDigit);
+      if (digitCount != CustomerRules.CedulaDigitCount)
+      {
+        throw new ArgumentOutOfRangeException(nameof(cedula), "Cedula must contain exactly 11 digits.");
+      }
+    }
   }
 
   private static string? NormalizePhone(string? phone)
@@ -160,4 +174,6 @@ public static class CustomerRules
   public const int PhoneMaxLength = 20;
   public const int PhoneMinLength = 7;
   public const int EmailMaxLength = 320;
+  public const int CedulaMaxLength = 20;
+  public const int CedulaDigitCount = 11;
 }

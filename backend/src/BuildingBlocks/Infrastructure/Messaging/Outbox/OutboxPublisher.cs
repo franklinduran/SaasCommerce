@@ -17,6 +17,11 @@ public sealed class OutboxPublisher(
   ILogger<OutboxPublisher> logger)
 {
   private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+  private static readonly Action<ILogger, int, Exception?> LogRescuedStuck =
+    LoggerMessage.Define<int>(
+      LogLevel.Warning,
+      new EventId(2204, nameof(LogRescuedStuck)),
+      "Rescued {Count} outbox message(s) stranded in Processing state (likely from a previous crash).");
   private static readonly Action<ILogger, int, Exception?> LogPublishingBatch =
     LoggerMessage.Define<int>(
       LogLevel.Information,
@@ -44,6 +49,26 @@ public sealed class OutboxPublisher(
     {
       LogOutboxTableNotReady(logger, null);
       return 0;
+    }
+
+    // Reset messages left in Processing state from a previous crash (Npgsql only — not supported on InMemory).
+    // Processing + no PublishedAt means StartAttempt() was saved but the publish never completed.
+    var isNpgsql = dbContext.Database.ProviderName
+      ?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
+
+    if (isNpgsql)
+    {
+      var rescued = await dbContext.OutboxMessages
+        .Where(message => message.Status == OutboxMessageStatus.Processing)
+        .ExecuteUpdateAsync(
+          setter => setter.SetProperty(m => m.Status, OutboxMessageStatus.Pending),
+          cancellationToken)
+        .ConfigureAwait(false);
+
+      if (rescued > 0)
+      {
+        LogRescuedStuck(logger, rescued, null);
+      }
     }
 
     var batchSize = Math.Max(1, options.Value.BatchSize);

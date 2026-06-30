@@ -84,6 +84,17 @@ public static class BuildingBlocksServiceCollectionExtensions
           }
         });
 
+        // Retry transient PostgreSQL errors before sending to the error queue.
+        // 40001 = serialization_failure (concurrent saga inserts), 40P01 = deadlock.
+        // These are ephemeral — a second attempt succeeds once the contention resolves.
+        rabbitMq.UseMessageRetry(retry => retry
+          .Intervals(
+            TimeSpan.FromMilliseconds(250),
+            TimeSpan.FromMilliseconds(500),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(3))
+          .Handle<Npgsql.PostgresException>(ex => ex.SqlState is "40001" or "40P01"));
+
         rabbitMq.ConfigureEndpoints(context);
       });
     });

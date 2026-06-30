@@ -8,6 +8,7 @@ export type Customer = {
   fullName: string
   phone: string | null
   email: string | null
+  cedula: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string | null
@@ -41,6 +42,7 @@ export type CustomerUpsertRequest = {
   lastName: string
   phone?: string | null
   email?: string | null
+  cedula?: string | null
   isActive?: boolean
 }
 

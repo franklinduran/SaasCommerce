@@ -148,6 +148,7 @@ function QuickCreateForm({
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  const [cedula, setCedula] = useState('')
   const [errors, setErrors] = useState<{ firstName?: string; lastName?: string }>({})
   const queryClient = useQueryClient()
 
@@ -158,6 +159,7 @@ function QuickCreateForm({
         lastName: lastName.trim(),
         phone: phone.trim() || null,
         email: null,
+        cedula: cedula.trim() || null,
         isActive: true,
       }),
     onSuccess: async (customer) => {
@@ -217,21 +219,33 @@ function QuickCreateForm({
         </div>
       </div>
 
-      {/* Phone */}
-      <input
-        aria-label="Teléfono del cliente"
-        className={cn(inputClass, 'border-gray-200')}
-        inputMode="tel"
-        onChange={(e) => setPhone(e.target.value)}
-        placeholder="Teléfono (opcional)"
-        type="tel"
-        value={phone}
-      />
+      {/* Cedula + Phone */}
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          aria-label="Cédula / Identificación"
+          className={cn(inputClass, 'border-gray-200')}
+          onChange={(e) => setCedula(e.target.value)}
+          placeholder="Cédula (opcional)"
+          type="text"
+          value={cedula}
+        />
+        <input
+          aria-label="Teléfono del cliente"
+          className={cn(inputClass, 'border-gray-200')}
+          inputMode="tel"
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Teléfono (opcional)"
+          type="tel"
+          value={phone}
+        />
+      </div>
 
       {/* API error */}
       {mutation.isError && (
         <p className="text-[11.5px] font-medium text-destructive">
-          No se pudo crear el cliente. Intenta de nuevo.
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : 'No se pudo crear el cliente. Intenta de nuevo.'}
         </p>
       )}
 

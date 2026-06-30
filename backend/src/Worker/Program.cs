@@ -67,11 +67,15 @@ builder.Services.AddBuildingBlocks(
       {
         repository.ConcurrencyMode = ConcurrencyMode.Pessimistic;
         repository.ExistingDbContext<AppDbContext>();
-        repository.UsePostgres();
+        // serializable:false → uses RepeatableRead instead of Serializable.
+        // With SELECT FOR UPDATE (pessimistic lock), Serializable adds no protection
+        // but causes 40001 errors when multiple saga events arrive simultaneously.
+        repository.LockStatementProvider = new PostgresRepeatableReadLockProvider();
       });
   });
 builder.Services.AddHostedService<OutboxNotificationHostedService>();
 builder.Services.AddHostedService<OutboxPublisherHostedService>();
+builder.Services.AddHostedService<StuckSaleWatchdogService>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
@@ -80,6 +84,17 @@ await host.RunAsync();
 public partial class Program
 {
   protected Program()
+  {
+  }
+}
+
+// Saga uses SELECT FOR UPDATE (pessimistic lock), so Serializable isolation is redundant
+// and causes 40001 errors when multiple saga events arrive concurrently.
+// RepeatableRead + FOR UPDATE is sufficient and avoids serialization conflicts.
+internal sealed class PostgresRepeatableReadLockProvider : SqlLockStatementProvider
+{
+  public PostgresRepeatableReadLockProvider()
+    : base(string.Empty, new PostgresLockStatementFormatter(), false)
   {
   }
 }

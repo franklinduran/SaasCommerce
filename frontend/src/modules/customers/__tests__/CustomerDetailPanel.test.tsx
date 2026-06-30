@@ -117,6 +117,7 @@ describe('CustomerDetailPanel', () => {
 
     expect(updateMutate).toHaveBeenCalledWith(
       {
+        cedula: null,
         email: 'maria@test.com',
         firstName: 'Maria Nueva',
         lastName: 'Cliente',

@@ -4,4 +4,5 @@ public sealed record CreateCustomerRequest(
   string FirstName,
   string LastName,
   string? Phone,
-  string? Email);
+  string? Email,
+  string? Cedula = null);

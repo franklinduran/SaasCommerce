@@ -8,6 +8,7 @@ public sealed record CustomerResponse(
   string FullName,
   string? Phone,
   string? Email,
+  string? Cedula,
   bool IsActive,
   DateTimeOffset CreatedAt,
   DateTimeOffset? UpdatedAt,

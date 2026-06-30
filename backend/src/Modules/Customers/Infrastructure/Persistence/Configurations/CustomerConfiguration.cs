@@ -41,6 +41,9 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
     builder.Property(customer => customer.Email)
       .HasMaxLength(CustomerRules.EmailMaxLength);
 
+    builder.Property(customer => customer.Cedula)
+      .HasMaxLength(CustomerRules.CedulaMaxLength);
+
     builder.Property(customer => customer.IsActive)
       .IsRequired();
 
@@ -49,5 +52,11 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
     builder.HasIndex(customer => new { customer.BusinessId, customer.SearchName });
     builder.HasIndex(customer => new { customer.BusinessId, customer.IsActive });
+
+    // Partial unique index: a cedula must be unique per business, but only when provided.
+    builder.HasIndex(customer => new { customer.BusinessId, customer.Cedula })
+      .IsUnique()
+      .HasFilter("\"Cedula\" IS NOT NULL")
+      .HasDatabaseName("ix_customers_business_id_cedula");
   }
 }

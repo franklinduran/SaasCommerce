@@ -511,7 +511,7 @@ app.MapPost(
     CancellationToken cancellationToken) =>
   {
     var result = await useCase.ExecuteAsync(
-      new CreateCustomerCommand(request.FirstName, request.LastName, request.Phone, request.Email),
+      new CreateCustomerCommand(request.FirstName, request.LastName, request.Phone, request.Email, request.Cedula),
       cancellationToken);
 
     return ApiHelpers.ToApiResult(
@@ -570,7 +570,7 @@ app.MapPut(
     CancellationToken cancellationToken) =>
   {
     var result = await useCase.ExecuteAsync(
-      new UpdateCustomerCommand(id, request.FirstName, request.LastName, request.Phone, request.Email, request.IsActive),
+      new UpdateCustomerCommand(id, request.FirstName, request.LastName, request.Phone, request.Email, request.IsActive, request.Cedula),
       cancellationToken);
 
     return ApiHelpers.ToApiResult(result, correlationIdProvider);

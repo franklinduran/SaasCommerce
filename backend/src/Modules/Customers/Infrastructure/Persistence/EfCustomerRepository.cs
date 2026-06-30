@@ -47,6 +47,15 @@ public sealed class EfCustomerRepository(AppDbContext dbContext) : ICustomerRepo
       .Take(10_000)
       .ToArrayAsync(cancellationToken);
 
+  public Task<bool> ExistsByCedulaAsync(
+    BusinessId businessId,
+    string cedula,
+    Guid? excludeCustomerId = null,
+    CancellationToken cancellationToken = default)
+    => Customers(businessId)
+      .Where(c => c.Cedula == cedula && (excludeCustomerId == null || c.Id != excludeCustomerId.Value))
+      .AnyAsync(cancellationToken);
+
   private IQueryable<Customer> Customers(BusinessId businessId)
     => dbContext.Set<Customer>()
       .Where(customer => customer.BusinessId == businessId);

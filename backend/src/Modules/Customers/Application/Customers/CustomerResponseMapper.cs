@@ -20,6 +20,7 @@ internal static class CustomerResponseMapper
       customer.FullName,
       customer.Phone,
       customer.Email,
+      customer.Cedula,
       customer.IsActive,
       customer.CreatedAt,
       customer.UpdatedAt,
