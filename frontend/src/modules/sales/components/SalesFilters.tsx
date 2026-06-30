@@ -1,4 +1,5 @@
-import { RotateCcw, Search } from 'lucide-react'
+import { CalendarDays, RotateCcw, Search, X } from 'lucide-react'
+import { useRef } from 'react'
 import type { PaymentMethodFilter, SalesFilters, SaleStatus } from '@/modules/sales/types/salesTypes'
 import {
   Select,
@@ -25,14 +26,6 @@ const statusOptions: Array<{ label: string; value: string }> = [
   { label: 'Fallida',           value: 'Failed' },
   { label: 'Cancelada',         value: 'Cancelled' },
 ]
-
-const inputClass = cn(
-  'h-8 w-full rounded-lg border border-gray-200 bg-white px-3',
-  'text-[13px] font-medium text-gray-900 outline-none transition',
-  'placeholder:font-normal placeholder:text-gray-400',
-  'hover:border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/15',
-  'disabled:cursor-not-allowed disabled:opacity-50',
-)
 
 type SalesFiltersProps = {
   disabled?: boolean
@@ -69,25 +62,19 @@ export function SalesFilters({
       </span>
 
       {/* Date from */}
-      <input
-        aria-label="Fecha desde"
-        className={cn(inputClass, 'w-36')}
+      <DateInput
         disabled={disabled}
-        onChange={(e) => onChange({ dateFrom: e.target.value })}
-        placeholder="Desde"
-        type="date"
+        label="Desde"
         value={filters.dateFrom}
+        onChange={(v) => onChange({ dateFrom: v })}
       />
 
       {/* Date to */}
-      <input
-        aria-label="Fecha hasta"
-        className={cn(inputClass, 'w-36')}
+      <DateInput
         disabled={disabled}
-        onChange={(e) => onChange({ dateTo: e.target.value })}
-        placeholder="Hasta"
-        type="date"
+        label="Hasta"
         value={filters.dateTo}
+        onChange={(v) => onChange({ dateTo: v })}
       />
 
       {/* Payment method */}
@@ -147,6 +134,73 @@ export function SalesFilters({
         <RotateCcw size={12} />
         Limpiar
       </button>
+    </div>
+  )
+}
+
+// ─── DateInput ────────────────────────────────────────────────────────────────
+
+function formatIsoDate(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+type DateInputProps = {
+  disabled?: boolean
+  label: string
+  onChange: (v: string) => void
+  value: string
+}
+
+function DateInput({
+  disabled = false,
+  label,
+  onChange,
+  value,
+}: Readonly<DateInputProps>) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <div
+      className={cn(
+        'relative flex h-8 w-36 cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 transition',
+        'hover:border-gray-300 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15',
+        disabled && 'pointer-events-none opacity-50',
+      )}
+      onClick={() => inputRef.current?.showPicker?.()}
+    >
+      {/* Hidden native input — only for picker behaviour */}
+      <input
+        ref={inputRef}
+        aria-label={label}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+        disabled={disabled}
+        tabIndex={-1}
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+
+      <CalendarDays aria-hidden="true" className="shrink-0 text-gray-400" size={13} />
+
+      <span className={cn(
+        'flex-1 select-none whitespace-nowrap text-[12.5px]',
+        value ? 'font-medium text-gray-800' : 'font-normal text-gray-400',
+      )}>
+        {value ? formatIsoDate(value) : label}
+      </span>
+
+      {value && (
+        <button
+          aria-label={`Quitar ${label.toLowerCase()}`}
+          className="relative flex shrink-0 items-center text-gray-300 transition hover:text-gray-500"
+          tabIndex={-1}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onChange('') }}
+        >
+          <X size={11} />
+        </button>
+      )}
     </div>
   )
 }
