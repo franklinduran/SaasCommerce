@@ -1,14 +1,17 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  Banknote,
+  BarChart3,
   CheckCircle,
   Clock,
   Loader2,
-  Plus,
+  Receipt,
+  TrendingUp,
+  Wallet,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import {
@@ -18,32 +21,72 @@ import {
   useOpenCashRegister,
   useRegisterCashMovement,
 } from '@/modules/cash-register/hooks/useCashRegister'
-import type {
-  CashRegisterDetail,
-  CloseCashRegisterResponse,
-} from '@/modules/cash-register/types'
-import { Badge } from '@/shared/components/ui/badge'
+import type { CashRegisterDetail, CloseCashRegisterResponse } from '@/modules/cash-register/types'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { HttpClientError } from '@/shared/services/httpClient'
 import { cn } from '@/shared/utils/cn'
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(amount)
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(n)
+
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatDate(dateString: string) {
+function fmtDateTime(iso: string) {
   return new Intl.DateTimeFormat('es-DO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(dateString))
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).format(new Date(iso))
 }
+
+function elapsed(from: string) {
+  const ms = Date.now() - new Date(from).getTime()
+  const h  = Math.floor(ms / 3_600_000)
+  const m  = Math.floor((ms % 3_600_000) / 60_000)
+  return h > 0 ? `${h}h ${m}min` : `${m}min`
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
+function FormError({ message }: Readonly<{ message: string }>) {
+  return (
+    <div className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+      {message}
+    </div>
+  )
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+
+type StatCardProps = {
+  icon: ReactNode
+  iconClass: string
+  label: string
+  value: string
+  sub?: string
+  valueClass?: string
+}
+
+function StatCard({ icon, iconClass, label, sub, value, valueClass }: Readonly<StatCardProps>) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <div className="mb-2.5 flex items-center gap-1.5">
+        <span className={cn('shrink-0', iconClass)}>{icon}</span>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">{label}</p>
+      </div>
+      <p className={cn('text-[16px] font-bold tabular-nums', valueClass ?? 'text-gray-900')}>{value}</p>
+      {sub && <p className="mt-0.5 text-[12px] text-gray-400">{sub}</p>}
+    </div>
+  )
+}
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
 
 export function CashRegisterPage() {
   useCashRegisterRealtimeInvalidation()
@@ -53,7 +96,7 @@ export function CashRegisterPage() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="animate-spin text-stone-400" size={28} />
+        <Loader2 className="animate-spin text-gray-400" size={28} />
       </div>
     )
   }
@@ -70,111 +113,87 @@ export function CashRegisterPage() {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Panel: Open register (no active register)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Open register panel ──────────────────────────────────────────────────────
 
 function OpenRegisterPanel() {
   const openRegister = useOpenCashRegister()
-  const session = useAuthStore((state) => state.session)
+  const session      = useAuthStore((s) => s.session)
   const [openingAmount, setOpeningAmount] = useState('')
-  const [notes, setNotes] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [notes, setNotes]                 = useState('')
+  const [error, setError]                 = useState<string | null>(null)
 
-  async function handleOpen() {
+  async function handleOpen(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setError(null)
-    const amount = parseFloat(openingAmount)
-    if (isNaN(amount) || amount < 0) {
-      setError('El monto inicial debe ser 0 o mayor.')
-      return
-    }
+    const amount   = parseFloat(openingAmount)
     const branchId = session?.user.branchId
-    if (!branchId) {
-      setError('No se pudo determinar la sucursal. Vuelve a iniciar sesión.')
-      return
-    }
+    if (isNaN(amount) || amount < 0) { setError('El balance inicial debe ser 0 o mayor.'); return }
+    if (!branchId) { setError('No se pudo determinar la sucursal. Vuelve a iniciar sesión.'); return }
     try {
-      await openRegister.mutateAsync({
-        branchId,
-        openingAmount: amount,
-        notes: notes.trim() || null,
-      })
+      await openRegister.mutateAsync({ branchId, openingAmount: amount, notes: notes.trim() || null })
     } catch (err) {
-      const message =
-        err instanceof HttpClientError
-          ? err.error?.message ?? 'No se pudo abrir la caja.'
-          : 'No se pudo abrir la caja.'
-      setError(message)
+      setError(err instanceof HttpClientError ? (err.error?.message ?? 'No se pudo abrir la caja.') : 'No se pudo abrir la caja.')
     }
   }
 
   return (
-    <div className="p-6">
-      <div className="mx-auto max-w-md">
-        <div className="mb-6 flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100">
-            <Banknote className="text-stone-600" size={20} />
-          </span>
-          <div>
-            <h2 className="text-lg font-semibold text-stone-900">Abrir caja avanzada</h2>
-            <p className="text-sm text-stone-500">No tienes una caja abierta.</p>
-          </div>
+    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+      <header>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Apertura de caja</h1>
+        <p className="mt-1 text-[13.5px] text-muted-foreground">
+          No hay un turno activo para esta sucursal.
+        </p>
+      </header>
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="border-b border-gray-100 px-5 py-3.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">Iniciar turno</p>
         </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleOpen() }}>
-              <div className="space-y-2">
-                <Label htmlFor="opening-amount">Monto inicial (RD$)</Label>
-                <Input
-                  id="opening-amount"
-                  min="0"
-                  placeholder="0.00"
-                  step="0.01"
-                  type="number"
-                  value={openingAmount}
-                  onChange={(e) => setOpeningAmount(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="open-notes">Notas (opcional)</Label>
-                <Textarea
-                  id="open-notes"
-                  placeholder="Observaciones de apertura..."
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-
-              {error && (
-                <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                  {error}
-                </p>
-              )}
-
-              <Button className="w-full" disabled={openRegister.isPending} type="submit">
-                {openRegister.isPending ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Abriendo...
-                  </>
-                ) : (
-                  'Abrir caja'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="max-w-sm px-5 py-6">
+          <form className="space-y-4" onSubmit={(e) => void handleOpen(e)}>
+            <div className="space-y-1.5">
+              <Label htmlFor="ob">Balance de apertura (RD$)</Label>
+              <Input
+                autoFocus
+                id="ob"
+                min="0"
+                placeholder="0.00"
+                step="0.01"
+                type="number"
+                value={openingAmount}
+                onChange={(e) => setOpeningAmount(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Monto en efectivo disponible para dar cambio al iniciar el turno.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="notes">Notas (opcional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Observaciones de apertura..."
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+            {error && <FormError message={error} />}
+            <Button className="w-full" disabled={openRegister.isPending} type="submit">
+              {openRegister.isPending
+                ? <><Loader2 className="animate-spin" size={15} />Abriendo...</>
+                : 'Abrir caja'}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Panel: Active register
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Active register panel ────────────────────────────────────────────────────
+
+type ActiveForm = 'ingreso' | 'salida' | 'cierre' | null
 
 type ActiveRegisterPanelProps = {
   register: CashRegisterDetail
@@ -182,254 +201,276 @@ type ActiveRegisterPanelProps = {
 }
 
 function ActiveRegisterPanel({ register, onViewSummary }: Readonly<ActiveRegisterPanelProps>) {
-  const [showMovementForm, setShowMovementForm] = useState(false)
-  const [showCloseForm, setShowCloseForm] = useState(false)
+  const [activeForm, setActiveForm]   = useState<ActiveForm>(null)
   const [closeResult, setCloseResult] = useState<CloseCashRegisterResponse | null>(null)
+
+  const { expectedCash, totalSales } = useMemo(() => ({
+    expectedCash:
+      register.openingAmount +
+      register.cashSalesTotal -
+      register.cashReturnsTotal +
+      register.manualCashIn -
+      register.manualCashOut,
+    totalSales:
+      register.cashSalesTotal +
+      register.cardSalesTotal +
+      register.transferSalesTotal +
+      register.creditSalesTotal,
+  }), [register])
+
+  function toggleForm(form: ActiveForm) {
+    setActiveForm((prev) => (prev === form ? null : form))
+  }
 
   if (closeResult) {
     return <CloseResultPanel result={closeResult} onViewSummary={onViewSummary} />
   }
 
-  const expectedCash =
-    register.openingAmount +
-    register.cashSalesTotal -
-    register.cashReturnsTotal +
-    register.manualCashIn -
-    register.manualCashOut
+  const movementsCount = register.movements.length
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium uppercase tracking-wide text-stone-500">
-              Monto inicial
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-semibold text-stone-900">
-              {formatCurrency(register.openingAmount)}
-            </p>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium uppercase tracking-wide text-stone-500">
-              Efectivo esperado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-semibold text-stone-900">{formatCurrency(expectedCash)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium uppercase tracking-wide text-stone-500">
-              Apertura
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-1.5">
-              <Clock className="text-stone-400" size={14} />
-              <p className="text-sm font-medium text-stone-700">{formatDate(register.openedAt)}</p>
-            </div>
-            <Badge className="mt-1" variant="outline">
-              <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-green-500" />{' '}Abierta
-            </Badge>
-          </CardContent>
-        </Card>
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Turno activo</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11.5px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              Abierta
+            </span>
+            <span className="flex items-center gap-1 text-[12px] text-gray-400">
+              <Clock size={12} />
+              {elapsed(register.openedAt)} activo · desde {fmtDateTime(register.openedAt)}
+            </span>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2 pt-1">
+          <Button
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            size="sm"
+            variant="default"
+            onClick={() => toggleForm('ingreso')}
+          >
+            <ArrowDownLeft size={14} />
+            Ingreso
+          </Button>
+          <Button
+            className="border-red-200 text-red-600 hover:bg-red-50"
+            size="sm"
+            variant="outline"
+            onClick={() => toggleForm('salida')}
+          >
+            <ArrowUpRight size={14} />
+            Salida
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onViewSummary}>
+            <BarChart3 size={14} />
+            Arqueo
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => toggleForm('cierre')}
+          >
+            <X size={13} />
+            Cerrar caja
+          </Button>
+        </div>
       </div>
 
-      {/* Sales breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Ventas del turno</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2 sm:grid-cols-4">
-          {[
-            { label: 'Efectivo', value: register.cashSalesTotal },
-            { label: 'Tarjeta', value: register.cardSalesTotal },
-            { label: 'Transferencia', value: register.transferSalesTotal },
-            { label: 'Crédito', value: register.creditSalesTotal },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-md bg-stone-50 px-3 py-2">
-              <p className="text-xs font-medium text-stone-500">{label}</p>
-              <p className="mt-0.5 text-sm font-semibold text-stone-900">
-                {formatCurrency(value)}
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Actions */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={() => {
-            setShowMovementForm(true)
-            setShowCloseForm(false)
-          }}
-          variant="outline"
-        >
-          <Plus size={16} />
-          Registrar movimiento
-        </Button>
-        <Button
-          onClick={() => {
-            setShowCloseForm(true)
-            setShowMovementForm(false)
-          }}
-          variant="destructive"
-        >
-          <X size={16} />
-          Cerrar caja
-        </Button>
-        <Button onClick={onViewSummary} variant="ghost">
-          Arqueo diario
-        </Button>
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <StatCard icon={<Wallet size={14} />}      iconClass="text-gray-400"   label="Balance apertura" value={fmt(register.openingAmount)} />
+        <StatCard icon={<Wallet size={14} />}      iconClass="text-blue-500"   label="Ef. esperado"     value={fmt(expectedCash)} />
+        <StatCard icon={<Receipt size={14} />}     iconClass="text-emerald-600" label="Ventas efectivo" value={fmt(register.cashSalesTotal)} />
+        <StatCard icon={<TrendingUp size={14} />}  iconClass="text-violet-500" label="Total ventas"     value={fmt(totalSales)} />
+        <StatCard icon={<ArrowDownLeft size={14} />} iconClass="text-sky-500"  label="Entradas"         value={fmt(register.manualCashIn)} />
+        <StatCard icon={<ArrowUpRight size={14} />}  iconClass="text-red-500"  label="Salidas"          value={fmt(register.manualCashOut)} />
       </div>
 
-      {showMovementForm && (
-        <MovementForm registerId={register.id} onClose={() => setShowMovementForm(false)} />
+      {/* Inline forms */}
+      {activeForm === 'ingreso' && (
+        <MovementForm
+          isCashIn
+          label="Registrar ingreso de efectivo"
+          registerId={register.id}
+          onClose={() => setActiveForm(null)}
+        />
       )}
-      {showCloseForm && (
+      {activeForm === 'salida' && (
+        <MovementForm
+          isCashIn={false}
+          label="Registrar salida de efectivo"
+          registerId={register.id}
+          onClose={() => setActiveForm(null)}
+        />
+      )}
+      {activeForm === 'cierre' && (
         <CloseRegisterForm
+          expectedCash={expectedCash}
           register={register}
-          onClose={() => setShowCloseForm(false)}
+          onClose={() => setActiveForm(null)}
           onSuccess={(result) => setCloseResult(result)}
         />
       )}
 
-      {register.movements.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold">Movimientos manuales</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-stone-100">
-              {[...register.movements].reverse().map((movement) => (
-                <div key={movement.id} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span
+      {/* Main content card */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        {/* Info bar */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-100 px-5 py-3 text-[12px] text-gray-500">
+          <span className="flex items-center gap-1.5">
+            <Wallet size={12} className="text-gray-400" />
+            Apertura {fmt(register.openingAmount)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Clock size={12} className="text-gray-400" />
+            {fmtDateTime(register.openedAt)}
+          </span>
+          <span className="ml-auto text-[11.5px] font-medium text-gray-400">
+            {movementsCount} movimiento{movementsCount !== 1 ? 's' : ''} manual{movementsCount !== 1 ? 'es' : ''}
+          </span>
+        </div>
+
+        {/* Ventas por método */}
+        <div className="grid border-b border-gray-100 sm:grid-cols-4">
+          {[
+            { label: 'Efectivo',      value: register.cashSalesTotal,     cls: 'text-emerald-700' },
+            { label: 'Tarjeta',       value: register.cardSalesTotal,     cls: 'text-blue-600'    },
+            { label: 'Transferencia', value: register.transferSalesTotal, cls: 'text-violet-600'  },
+            { label: 'Crédito',       value: register.creditSalesTotal,   cls: 'text-amber-600'   },
+          ].map(({ label, value, cls }, i) => (
+            <div
+              key={label}
+              className={cn('px-5 py-3.5', i < 3 ? 'border-b border-gray-100 sm:border-b-0 sm:border-r' : '')}
+            >
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-gray-400">{label}</p>
+              <p className={cn('mt-1 text-[14px] font-bold tabular-nums', cls)}>{fmt(value)}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Movements table */}
+        {register.movements.length === 0 ? (
+          <div className="flex h-28 items-center justify-center text-[13px] text-gray-400">
+            Sin movimientos manuales en este turno.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-gray-100 bg-gray-50/70">
+                <tr>
+                  {[
+                    { label: 'Hora',    right: false },
+                    { label: 'Tipo',    right: false },
+                    { label: 'Motivo',  right: false },
+                    { label: 'Monto',   right: true  },
+                  ].map(({ label, right }) => (
+                    <th
+                      key={label}
                       className={cn(
-                        'flex h-8 w-8 items-center justify-center rounded-full',
-                        movement.movementType === 'CashIn'
-                          ? 'bg-green-50 text-green-600'
-                          : 'bg-red-50 text-red-600',
+                        'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-400',
+                        right ? 'text-right' : 'text-left',
                       )}
                     >
-                      {movement.movementType === 'CashIn' ? (
-                        <ArrowDownLeft size={16} />
-                      ) : (
-                        <ArrowUpRight size={16} />
-                      )}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-stone-900">{movement.reason}</p>
-                      <p className="text-xs text-stone-500">{formatDate(movement.createdAt)}</p>
-                    </div>
-                  </div>
-                  <p
-                    className={cn(
-                      'text-sm font-semibold tabular-nums',
-                      movement.movementType === 'CashIn' ? 'text-green-700' : 'text-red-700',
-                    )}
-                  >
-                    {movement.movementType === 'CashIn' ? '+' : '-'}
-                    {formatCurrency(movement.amount)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {[...register.movements].reverse().map((mov) => {
+                  const isCashIn = mov.movementType === 'CashIn'
+                  return (
+                    <tr key={mov.id} className="bg-white transition-colors hover:bg-gray-50/60">
+                      <td className="whitespace-nowrap px-5 py-3 text-[12.5px] font-medium text-gray-500">
+                        {fmtTime(mov.createdAt)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={cn(
+                          'inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1',
+                          isCashIn
+                            ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                            : 'bg-red-50 text-red-700 ring-red-200',
+                        )}>
+                          {isCashIn ? 'Ingreso' : 'Salida'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-[13px] font-medium text-gray-900">
+                        {mov.reason}
+                      </td>
+                      <td className={cn(
+                        'px-5 py-3 text-right text-[13px] font-semibold tabular-nums',
+                        isCashIn ? 'text-emerald-700' : 'text-red-600',
+                      )}>
+                        {isCashIn ? '+' : '−'}{fmt(mov.amount)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3.5">
+          <span className="text-[12.5px] font-medium text-gray-500">Efectivo esperado en caja</span>
+          <span className="text-[14px] font-bold tabular-nums text-gray-900">{fmt(expectedCash)}</span>
+        </div>
+      </div>
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Movement form
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Movement form ────────────────────────────────────────────────────────────
 
-function MovementForm({
-  registerId,
-  onClose,
-}: Readonly<{ registerId: string; onClose: () => void }>) {
+type MovementFormProps = {
+  isCashIn: boolean
+  label: string
+  registerId: string
+  onClose: () => void
+}
+
+function MovementForm({ isCashIn, label, registerId, onClose }: Readonly<MovementFormProps>) {
   const registerMovement = useRegisterCashMovement()
-  const [type, setType] = useState<'CashIn' | 'CashOut'>('CashIn')
-  const [amount, setAmount] = useState('')
-  const [reason, setReason] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [amount, setAmount]   = useState('')
+  const [reason, setReason]   = useState('')
+  const [error, setError]     = useState<string | null>(null)
 
-  async function handleSubmit() {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setError(null)
-    const parsedAmount = parseFloat(amount)
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('El monto debe ser mayor a 0.')
-      return
-    }
-    if (!reason.trim()) {
-      setError('El motivo es requerido.')
-      return
-    }
+    const amt = parseFloat(amount)
+    if (isNaN(amt) || amt <= 0) { setError('El monto debe ser mayor a 0.'); return }
+    if (!reason.trim())         { setError('El motivo es requerido.'); return }
     try {
       await registerMovement.mutateAsync({
         id: registerId,
-        request: { type, amount: parsedAmount, reason: reason.trim() },
+        request: { type: isCashIn ? 'CashIn' : 'CashOut', amount: amt, reason: reason.trim() },
       })
       onClose()
     } catch (err) {
-      const message =
-        err instanceof HttpClientError
-          ? err.error?.message ?? 'Error al registrar movimiento.'
-          : 'Error al registrar movimiento.'
-      setError(message)
+      setError(err instanceof HttpClientError ? (err.error?.message ?? 'No se pudo registrar.') : 'No se pudo registrar.')
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold">Nuevo movimiento</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              className={cn(
-                'rounded-md border px-3 py-2 text-sm font-medium transition-colors',
-                type === 'CashIn'
-                  ? 'border-green-200 bg-green-50 text-green-700'
-                  : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50',
-              )}
-              type="button"
-              onClick={() => setType('CashIn')}
-            >
-              <ArrowDownLeft className="mr-1.5 inline" size={14} />
-              Entrada
-            </button>
-            <button
-              className={cn(
-                'rounded-md border px-3 py-2 text-sm font-medium transition-colors',
-                type === 'CashOut'
-                  ? 'border-red-200 bg-red-50 text-red-700'
-                  : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50',
-              )}
-              type="button"
-              onClick={() => setType('CashOut')}
-            >
-              <ArrowUpRight className="mr-1.5 inline" size={14} />
-              Salida
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="move-amount">Monto (RD$)</Label>
+    <div className={cn('overflow-hidden rounded-xl border bg-white', isCashIn ? 'border-emerald-100' : 'border-red-100')}>
+      <div className={cn('border-b px-5 py-3.5', isCashIn ? 'border-emerald-100 bg-emerald-50/40' : 'border-red-100 bg-red-50/40')}>
+        <p className={cn('text-[11px] font-semibold uppercase tracking-[0.12em]', isCashIn ? 'text-emerald-700' : 'text-red-700')}>
+          {label}
+        </p>
+      </div>
+      <form className="space-y-4 px-5 py-5" onSubmit={(e) => void handleSubmit(e)}>
+        <div className="grid gap-4 sm:grid-cols-[9rem_1fr]">
+          <div className="space-y-1.5">
+            <Label htmlFor="mv-amount">Monto (RD$)</Label>
             <Input
-              id="move-amount"
+              autoFocus
+              id="mv-amount"
               min="0.01"
               placeholder="0.00"
               step="0.01"
@@ -438,72 +479,56 @@ function MovementForm({
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="move-reason">Motivo</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="mv-reason">Motivo</Label>
             <Input
-              id="move-reason"
-              placeholder="Ej. Cambio de turno"
+              id="mv-reason"
+              placeholder={isCashIn ? 'Ej. Aporte de monedas para dar cambio' : 'Ej. Compra de suministros de limpieza'}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
           </div>
-
-          {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-              {error}
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <Button disabled={registerMovement.isPending} type="submit">
-              {registerMovement.isPending ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : (
-                'Registrar'
-              )}
-            </Button>
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
-
-      </CardContent>
-    </Card>
+        </div>
+        {error && <FormError message={error} />}
+        <div className="flex justify-end gap-2">
+          <Button size="sm" type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button
+            className={isCashIn ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+            disabled={registerMovement.isPending}
+            size="sm"
+            type="submit"
+            variant={isCashIn ? 'default' : 'destructive'}
+          >
+            {registerMovement.isPending
+              ? <><Loader2 className="animate-spin" size={14} />Registrando...</>
+              : 'Registrar'}
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Close register form
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Close register form ──────────────────────────────────────────────────────
 
 type CloseRegisterFormProps = {
+  expectedCash: number
   register: CashRegisterDetail
   onClose: () => void
   onSuccess: (result: CloseCashRegisterResponse) => void
 }
 
-function CloseRegisterForm({ register, onClose, onSuccess }: Readonly<CloseRegisterFormProps>) {
+function CloseRegisterForm({ expectedCash, onClose, onSuccess, register }: Readonly<CloseRegisterFormProps>) {
   const closeRegister = useCloseCashRegister()
   const [countedAmount, setCountedAmount] = useState('')
-  const [closeNotes, setCloseNotes] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [closeNotes, setCloseNotes]       = useState('')
+  const [error, setError]                 = useState<string | null>(null)
 
-  const expectedCash =
-    register.openingAmount +
-    register.cashSalesTotal -
-    register.cashReturnsTotal +
-    register.manualCashIn -
-    register.manualCashOut
-
-  async function handleSubmit() {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setError(null)
     const amount = parseFloat(countedAmount)
-    if (isNaN(amount) || amount < 0) {
-      setError('El monto contado debe ser 0 o mayor.')
-      return
-    }
+    if (isNaN(amount) || amount < 0) { setError('El monto contado debe ser 0 o mayor.'); return }
     try {
       const result = await closeRegister.mutateAsync({
         id: register.id,
@@ -511,30 +536,31 @@ function CloseRegisterForm({ register, onClose, onSuccess }: Readonly<CloseRegis
       })
       onSuccess(result)
     } catch (err) {
-      const message =
-        err instanceof HttpClientError
-          ? err.error?.message ?? 'Error al cerrar la caja.'
-          : 'Error al cerrar la caja.'
-      setError(message)
+      setError(err instanceof HttpClientError ? (err.error?.message ?? 'Error al cerrar la caja.') : 'Error al cerrar la caja.')
     }
   }
 
   return (
-    <Card className="border-red-200 bg-red-50">
-      <CardHeader>
-        <CardTitle className="text-sm font-semibold text-red-900">Cerrar caja</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="mb-4 text-sm text-red-700">
-          Efectivo esperado:{' '}
-          <strong>{formatCurrency(expectedCash)}</strong>. Ingresa el monto contado en físico.
-        </p>
-        <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void handleSubmit() }}>
-          <div className="space-y-2">
-            <Label htmlFor="counted-amount">Monto contado (RD$)</Label>
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="border-b border-gray-100 px-5 py-3.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400">Cierre de caja</p>
+      </div>
+      <div className="px-5 py-5">
+        <form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+          <div className="rounded-lg bg-gray-50 px-4 py-3.5 ring-1 ring-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-[12.5px] text-gray-500">Balance esperado en caja</span>
+              <span className="text-[13.5px] font-bold tabular-nums text-gray-900">{fmt(expectedCash)}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-gray-400">
+              Apertura + ventas efectivo − devoluciones + entradas − salidas.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="counted">Efectivo contado (RD$)</Label>
             <Input
-              className="bg-white"
-              id="counted-amount"
+              autoFocus
+              id="counted"
               min="0"
               placeholder="0.00"
               step="0.01"
@@ -542,12 +568,13 @@ function CloseRegisterForm({ register, onClose, onSuccess }: Readonly<CloseRegis
               value={countedAmount}
               onChange={(e) => setCountedAmount(e.target.value)}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Cuenta el efectivo físico disponible en la caja antes de cerrar.
+            </p>
           </div>
-
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="close-notes">Notas de cierre (opcional)</Label>
             <Textarea
-              className="bg-white"
               id="close-notes"
               placeholder="Observaciones del cierre..."
               rows={2}
@@ -555,34 +582,22 @@ function CloseRegisterForm({ register, onClose, onSuccess }: Readonly<CloseRegis
               onChange={(e) => setCloseNotes(e.target.value)}
             />
           </div>
-
-          {error && (
-            <p className="rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-800">
-              {error}
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <Button disabled={closeRegister.isPending} type="submit" variant="destructive">
-              {closeRegister.isPending ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : (
-                'Confirmar cierre'
-              )}
-            </Button>
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancelar
+          {error && <FormError message={error} />}
+          <div className="flex justify-end gap-2">
+            <Button size="sm" type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button disabled={closeRegister.isPending} size="sm" type="submit" variant="destructive">
+              {closeRegister.isPending
+                ? <><Loader2 className="animate-spin" size={14} />Cerrando...</>
+                : 'Cerrar caja'}
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Close result panel
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Close result panel ───────────────────────────────────────────────────────
 
 type CloseResultPanelProps = {
   result: CloseCashRegisterResponse
@@ -590,75 +605,71 @@ type CloseResultPanelProps = {
 }
 
 function CloseResultPanel({ result, onViewSummary }: Readonly<CloseResultPanelProps>) {
-  const outcomeConfig = {
-    Balanced: { label: 'Cuadrado', className: 'border-green-200 bg-green-50 text-green-900' },
-    Surplus: { label: 'Sobrante', className: 'border-amber-200 bg-amber-50 text-amber-900' },
-    Shortage: { label: 'Faltante', className: 'border-red-200 bg-red-50 text-red-900' },
+  const outcomeLabel = { Balanced: 'Cuadrado', Surplus: 'Sobrante', Shortage: 'Faltante' }[result.differenceType]
+  const outcomeClass = { Balanced: 'text-emerald-700', Surplus: 'text-amber-600', Shortage: 'text-red-700' }[result.differenceType]
+  const outcomeBadge = {
+    Balanced: 'bg-emerald-50 ring-emerald-200',
+    Surplus:  'bg-amber-50 ring-amber-200',
+    Shortage: 'bg-red-50 ring-red-200',
   }[result.differenceType]
 
+  const rows = [
+    { label: 'Monto inicial',      value: fmt(result.openingAmount),      cls: 'text-gray-900' },
+    { label: 'Ventas efectivo',    value: `+${fmt(result.cashSales)}`,     cls: 'text-emerald-700' },
+    { label: 'Devoluciones',       value: `−${fmt(result.cashReturns)}`,   cls: 'text-red-600' },
+    { label: 'Entradas manuales',  value: `+${fmt(result.manualCashIn)}`,  cls: 'text-emerald-700' },
+    { label: 'Salidas manuales',   value: `−${fmt(result.manualCashOut)}`, cls: 'text-red-600' },
+  ]
+
   return (
-    <div className="p-6">
-      <div className="mx-auto max-w-md space-y-4">
-        <div className="flex items-center gap-3">
-          <CheckCircle className="text-green-600" size={24} />
-          <h2 className="text-lg font-semibold text-stone-900">Caja cerrada</h2>
+    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+      <header>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Caja cerrada</h1>
+        <p className="mt-1 text-[13.5px] text-muted-foreground">El turno fue cerrado correctamente.</p>
+      </header>
+
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-3.5">
+          <CheckCircle className="shrink-0 text-emerald-600" size={15} />
+          <p className="text-[13px] font-semibold text-gray-900">Resumen del cierre</p>
+          <span className={cn(
+            'ml-auto inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1',
+            outcomeBadge, outcomeClass,
+          )}>
+            {outcomeLabel}
+          </span>
         </div>
 
-        <Card className={cn('border', outcomeConfig.className)}>
-          <CardContent className="pt-6">
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Monto inicial</span>
-                <span className="font-semibold">{formatCurrency(result.openingAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Ventas efectivo</span>
-                <span className="font-semibold">{formatCurrency(result.cashSales)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Devoluciones</span>
-                <span className="font-semibold text-red-700">
-                  -{formatCurrency(result.cashReturns)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Entradas manuales</span>
-                <span className="font-semibold text-green-700">
-                  +{formatCurrency(result.manualCashIn)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Salidas manuales</span>
-                <span className="font-semibold text-red-700">
-                  -{formatCurrency(result.manualCashOut)}
-                </span>
-              </div>
-              <div className="flex justify-between border-t pt-3">
-                <span className="font-medium opacity-80">Efectivo esperado</span>
-                <span className="font-semibold">{formatCurrency(result.expectedCashAmount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Efectivo contado</span>
-                <span className="font-semibold">{formatCurrency(result.countedAmount)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-3">
-                <span className="font-semibold">Diferencia</span>
-                <span className="text-base font-bold">
-                  {result.difference > 0 ? '+' : ''}
-                  {formatCurrency(result.difference)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium opacity-80">Resultado</span>
-                <span className="font-bold">{outcomeConfig.label}</span>
-              </div>
+        <div className="divide-y divide-gray-100">
+          {rows.map(({ label, value, cls }) => (
+            <div key={label} className="flex items-center justify-between px-5 py-3">
+              <span className="text-[13px] text-gray-500">{label}</span>
+              <span className={cn('text-[13px] font-semibold tabular-nums', cls)}>{value}</span>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+          <div className="flex items-center justify-between bg-gray-50/60 px-5 py-3">
+            <span className="text-[13px] font-semibold text-gray-700">Efectivo esperado</span>
+            <span className="text-[13.5px] font-bold tabular-nums text-gray-900">{fmt(result.expectedCashAmount)}</span>
+          </div>
+          <div className="flex items-center justify-between bg-gray-50/60 px-5 py-3">
+            <span className="text-[13px] font-semibold text-gray-700">Efectivo contado</span>
+            <span className="text-[13.5px] font-bold tabular-nums text-gray-900">{fmt(result.countedAmount)}</span>
+          </div>
+          <div className="flex items-center justify-between px-5 py-4">
+            <span className="text-[14px] font-bold text-gray-900">Diferencia</span>
+            <span className={cn('text-[15px] font-bold tabular-nums', outcomeClass)}>
+              {result.difference > 0 ? '+' : ''}{fmt(result.difference)}
+            </span>
+          </div>
+        </div>
 
-        <Button className="w-full" onClick={onViewSummary} variant="outline">
-          Ver arqueo diario
-        </Button>
+        <div className="border-t border-gray-100 px-5 py-4">
+          <Button className="w-full" variant="outline" onClick={onViewSummary}>
+            <BarChart3 size={15} />
+            Ver arqueo del día
+          </Button>
+        </div>
       </div>
     </div>
   )

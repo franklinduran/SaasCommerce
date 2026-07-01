@@ -56,8 +56,7 @@ export const navigationGroups: readonly NavigationGroup[] = [
     items: [
       { label: 'POS', path: '/pos', icon: ShoppingCart, requiredPermission: Permission.SalesCreate },
       { label: 'Ventas', path: '/sales', icon: History, requiredPermission: Permission.SalesView },
-      { label: 'Caja', path: '/cash', icon: Wallet, requiredPermission: Permission.CashView },
-      { label: 'Arqueo de caja', path: '/cash-register', icon: Banknote, requiredPermission: Permission.CashView },
+      { label: 'Caja', path: '/cash-register', icon: Wallet, requiredPermission: Permission.CashView },
       { label: 'Cierre diario', path: '/daily-closing', icon: CalendarCheck, requiredPermission: Permission.DailyClosingView },
     ],
   },
