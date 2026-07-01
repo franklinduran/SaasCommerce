@@ -186,7 +186,7 @@ function yesterdayRange(): DateRange {
   return { from: d, to: d }
 }
 
-function thisWeekRange(): DateRange {
+function thisWeekRange(): { from: Date; to: Date } {
   const t = new Date()
   const day = t.getDay()
   const diff = day === 0 ? 6 : day - 1
