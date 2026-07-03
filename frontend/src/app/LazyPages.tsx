@@ -199,19 +199,9 @@ const NotificationListPage = lazy(() =>
     default: module.NotificationListPage,
   })),
 )
-const CashRegisterPage = lazy(() =>
-  import('@/modules/cash-register/pages/CashRegisterPage').then((module) => ({
-    default: module.CashRegisterPage,
-  })),
-)
-const CashRegisterHistoryPage = lazy(() =>
-  import('@/modules/cash-register/pages/CashRegisterHistoryPage').then((module) => ({
-    default: module.CashRegisterHistoryPage,
-  })),
-)
-const DailyCashRegisterSummaryPage = lazy(() =>
-  import('@/modules/cash-register/pages/DailyCashRegisterSummaryPage').then((module) => ({
-    default: module.DailyCashRegisterSummaryPage,
+const ArqueoPage = lazy(() =>
+  import('@/modules/cash-register/pages/ArqueoPage').then((module) => ({
+    default: module.ArqueoPage,
   })),
 )
 
@@ -367,16 +357,8 @@ export function NotificationsRoute() {
   return <NotificationListPage />
 }
 
-export function CashRegisterRoute() {
-  return <CashRegisterPage />
-}
-
-export function CashRegisterHistoryRoute() {
-  return <CashRegisterHistoryPage />
-}
-
-export function DailyCashRegisterSummaryRoute() {
-  return <DailyCashRegisterSummaryPage />
+export function ArqueoRoute() {
+  return <ArqueoPage />
 }
 
 export function OnboardingRoute() {

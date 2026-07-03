@@ -31,8 +31,8 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    expect(await screen.findByText('Abrir caja avanzada')).toBeTruthy()
-    expect(screen.getByLabelText('Monto inicial (RD$)')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Apertura de caja' })).toBeTruthy()
+    expect(screen.getByLabelText('Balance de apertura (RD$)')).toBeTruthy()
   })
 
   it('shows active register panel when register is open', async () => {
@@ -40,9 +40,9 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    expect(await screen.findByText('Monto inicial')).toBeTruthy()
-    expect(screen.getByText('Efectivo esperado')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Registrar movimiento/i })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Turno activo' })).toBeTruthy()
+    expect(screen.getByText('Ef. esperado')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Ingreso' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Cerrar caja/i })).toBeTruthy()
   })
 
@@ -51,21 +51,22 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    expect(await screen.findByText('Ventas del turno')).toBeTruthy()
-    expect(screen.getByText('Efectivo')).toBeTruthy()
+    // Payment-method breakdown labels
+    expect(await screen.findByText('Transferencia')).toBeTruthy()
     expect(screen.getByText('Tarjeta')).toBeTruthy()
+    expect(screen.getByText('Crédito')).toBeTruthy()
   })
 
-  it('shows movement form when register movement button clicked', async () => {
+  it('shows movement form when Ingreso button clicked', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', createFetchMock({ active: createActiveRegister() }))
 
     renderCashRegisterPage()
 
-    await screen.findByRole('button', { name: /Registrar movimiento/i })
-    await user.click(screen.getByRole('button', { name: /Registrar movimiento/i }))
+    await screen.findByRole('button', { name: 'Ingreso' })
+    await user.click(screen.getByRole('button', { name: 'Ingreso' }))
 
-    expect(screen.getByText('Nuevo movimiento')).toBeTruthy()
+    expect(screen.getByText('Registrar ingreso de efectivo')).toBeTruthy()
     expect(screen.getByLabelText('Motivo')).toBeTruthy()
   })
 
@@ -81,14 +82,18 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
+    // Header toggle button opens the close form
     await screen.findByRole('button', { name: /Cerrar caja/i })
     await user.click(screen.getByRole('button', { name: /Cerrar caja/i }))
 
-    await screen.findByLabelText('Monto contado (RD$)')
-    await user.type(screen.getByLabelText('Monto contado (RD$)'), '1000')
-    await user.click(screen.getByRole('button', { name: /Confirmar cierre/i }))
+    await screen.findByLabelText('Efectivo contado (RD$)')
+    await user.type(screen.getByLabelText('Efectivo contado (RD$)'), '1000')
 
-    expect(await screen.findByText('Caja cerrada')).toBeTruthy()
+    // Two "Cerrar caja" buttons now exist (header toggle + form submit) — submit is last
+    const closeButtons = screen.getAllByRole('button', { name: /Cerrar caja/i })
+    await user.click(closeButtons[closeButtons.length - 1])
+
+    expect(await screen.findByRole('heading', { name: 'Caja cerrada' })).toBeTruthy()
     expect(screen.getByText('Cuadrado')).toBeTruthy()
   })
 
@@ -98,10 +103,10 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    await screen.findByLabelText('Monto inicial (RD$)')
+    await screen.findByLabelText('Balance de apertura (RD$)')
     await user.click(screen.getByRole('button', { name: /Abrir caja/i }))
 
-    expect(await screen.findByText('El monto inicial debe ser 0 o mayor.')).toBeTruthy()
+    expect(await screen.findByText('El balance inicial debe ser 0 o mayor.')).toBeTruthy()
   })
 
   it('opens register when form is submitted with valid opening amount', async () => {
@@ -110,21 +115,21 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    await user.type(await screen.findByLabelText('Monto inicial (RD$)'), '1000')
+    await user.type(await screen.findByLabelText('Balance de apertura (RD$)'), '1000')
     await user.click(screen.getByRole('button', { name: /Abrir caja/i }))
 
     // After success the query invalidates → refetch still returns null → form reappears
-    expect(await screen.findByText('Abrir caja avanzada')).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Apertura de caja' })).toBeTruthy()
   })
 
-  it('navigates to daily summary when Arqueo diario button is clicked', async () => {
+  it('navigates to daily summary when Arqueo button is clicked', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', createFetchMock({ active: createActiveRegister() }))
 
     renderCashRegisterPage()
 
-    await screen.findByRole('button', { name: /Arqueo diario/i })
-    await user.click(screen.getByRole('button', { name: /Arqueo diario/i }))
+    await screen.findByRole('button', { name: 'Arqueo' })
+    await user.click(screen.getByRole('button', { name: 'Arqueo' }))
 
     expect(await screen.findByText('Daily Summary')).toBeTruthy()
   })
@@ -135,8 +140,8 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    await screen.findByRole('button', { name: /Registrar movimiento/i })
-    await user.click(screen.getByRole('button', { name: /Registrar movimiento/i }))
+    await screen.findByRole('button', { name: 'Ingreso' })
+    await user.click(screen.getByRole('button', { name: 'Ingreso' }))
 
     // Submit without filling in the amount
     await user.click(screen.getByRole('button', { name: /^Registrar$/i }))
@@ -150,15 +155,15 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    await screen.findByRole('button', { name: /Registrar movimiento/i })
-    await user.click(screen.getByRole('button', { name: /Registrar movimiento/i }))
+    await screen.findByRole('button', { name: 'Ingreso' })
+    await user.click(screen.getByRole('button', { name: 'Ingreso' }))
 
     await user.type(screen.getByLabelText('Monto (RD$)'), '100')
     await user.type(screen.getByLabelText('Motivo'), 'Fondo de cambio')
     await user.click(screen.getByRole('button', { name: /^Registrar$/i }))
 
-    // Form closes on success — 'Nuevo movimiento' heading disappears
-    await waitFor(() => expect(screen.queryByText('Nuevo movimiento')).toBeNull())
+    // Form closes on success — the form heading disappears
+    await waitFor(() => expect(screen.queryByText('Registrar ingreso de efectivo')).toBeNull())
   })
 
   it('shows movements list when active register has manual movements', async () => {
@@ -181,8 +186,9 @@ describe('CashRegisterPage', () => {
 
     renderCashRegisterPage()
 
-    expect(await screen.findByText('Movimientos manuales')).toBeTruthy()
-    expect(screen.getByText('Fondo de cambio')).toBeTruthy()
+    expect(await screen.findByText('Fondo de cambio')).toBeTruthy()
+    // Movements table renders its column headers
+    expect(screen.getByText('Motivo')).toBeTruthy()
   })
 })
 

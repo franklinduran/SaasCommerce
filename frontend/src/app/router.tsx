@@ -11,13 +11,11 @@ import {
   PilotBusinessRoute,
   PilotMetricsRoute,
   ProductImportRoute,
+  ArqueoRoute,
   BranchProfitabilityRoute,
   CashHistoryRoute,
-  CashRegisterHistoryRoute,
-  CashRegisterRoute,
   CashRoute,
   CashSessionDetailRoute,
-  DailyCashRegisterSummaryRoute,
   DailyClosingDetailRoute,
   DailyClosingHistoryRoute,
   DailyClosingRoute,
@@ -409,23 +407,7 @@ export const router = createBrowserRouter([
         path: 'cash-register',
         element: (
           <PermissionRoute permissions={Permission.CashView}>
-            {withPageLoading(<CashRegisterRoute />)}
-          </PermissionRoute>
-        ),
-      },
-      {
-        path: 'cash-register/history',
-        element: (
-          <PermissionRoute permissions={Permission.CashView}>
-            {withPageLoading(<CashRegisterHistoryRoute />)}
-          </PermissionRoute>
-        ),
-      },
-      {
-        path: 'cash-register/daily-summary',
-        element: (
-          <PermissionRoute permissions={Permission.CashRegisterDailySummary}>
-            {withPageLoading(<DailyCashRegisterSummaryRoute />)}
+            {withPageLoading(<ArqueoRoute />)}
           </PermissionRoute>
         ),
       },

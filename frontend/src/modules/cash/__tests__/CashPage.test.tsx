@@ -31,7 +31,7 @@ describe('CashPage', () => {
 
     // Both the heading and button say "Abrir caja" — use findAllByText
     expect((await screen.findAllByText('Abrir caja')).length).toBeGreaterThan(0)
-    expect(screen.getByText('No hay una caja abierta para esta sucursal.')).toBeTruthy()
+    expect(screen.getByText('No hay un turno activo para esta sucursal.')).toBeTruthy()
   })
 
   it('shows the active session panel when there is an open session', async () => {
@@ -39,8 +39,8 @@ describe('CashPage', () => {
 
     renderCashPage()
 
-    expect(await screen.findByText('Balance sistema')).toBeTruthy()
-    expect(screen.getByText('Balance inicial')).toBeTruthy()
+    expect(await screen.findByText('Balance actual')).toBeTruthy()
+    expect(screen.getByText('Ventas efectivo')).toBeTruthy()
     expect(screen.getAllByText('RD$1,000.00').length).toBeGreaterThan(0)
   })
 
@@ -62,7 +62,7 @@ describe('CashPage', () => {
 
     expect(await screen.findByText('Fondo inicial extra')).toBeTruthy()
     expect(screen.getByText('Pago de servicio')).toBeTruthy()
-    expect(screen.getByText('Movimientos de caja')).toBeTruthy()
+    expect(screen.getByText('Total neto en caja')).toBeTruthy()
   })
 
   it('shows action buttons when session is open', async () => {
@@ -70,9 +70,9 @@ describe('CashPage', () => {
 
     renderCashPage()
 
-    expect(await screen.findByRole('button', { name: /Registrar movimiento/i })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Ingreso' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Cerrar caja/i })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Ver historial/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Historial' })).toBeTruthy()
   })
 
   it('shows the movement form when Registrar movimiento is clicked', async () => {
@@ -81,10 +81,10 @@ describe('CashPage', () => {
 
     renderCashPage()
 
-    await user.click(await screen.findByRole('button', { name: /Registrar movimiento/i }))
+    await user.click(await screen.findByRole('button', { name: 'Ingreso' }))
 
-    // After opening form: "Nuevo movimiento" card title appears
-    expect(screen.getByText('Nuevo movimiento')).toBeTruthy()
+    // After opening form: the cash-in form title appears
+    expect(screen.getByText('Registrar ingreso de efectivo')).toBeTruthy()
     // The cancel button inside the form
     expect(screen.getByRole('button', { name: /Cancelar/i })).toBeTruthy()
   })
@@ -99,7 +99,7 @@ describe('CashPage', () => {
 
     // Multiple "Cerrar caja" elements appear (button + form title) — check form-specific label
     expect(screen.getAllByText(/Cerrar caja/i).length).toBeGreaterThan(0)
-    expect(screen.getByLabelText(/Balance contado/i)).toBeTruthy()
+    expect(screen.getByLabelText(/Efectivo contado/i)).toBeTruthy()
   })
 
   it('shows validation error when opening balance is not entered', async () => {
@@ -122,7 +122,7 @@ describe('CashPage', () => {
 
     renderCashPage()
 
-    await user.type(await screen.findByLabelText(/Balance inicial/i), '250')
+    await user.type(await screen.findByLabelText(/Balance de apertura/i), '250')
     await user.type(screen.getByLabelText(/Notas/i), '  turno manana  ')
     await user.click(screen.getByRole('button', { name: 'Abrir caja' }))
 
@@ -140,16 +140,15 @@ describe('CashPage', () => {
 
     renderCashPage()
 
-    await user.click(await screen.findByRole('button', { name: /Registrar movimiento/i }))
+    await user.click(await screen.findByRole('button', { name: 'Ingreso' }))
     await user.click(screen.getByRole('button', { name: 'Registrar' }))
     expect(await screen.findByText('El monto debe ser mayor a 0.')).toBeTruthy()
 
     await user.type(screen.getByLabelText(/Monto/i), '75')
-    await user.click(screen.getByRole('button', { name: 'Salida' }))
     await user.click(screen.getByRole('button', { name: 'Registrar' }))
-    expect(await screen.findByText('La descripcion es requerida.')).toBeTruthy()
+    expect(await screen.findByText('La descripción es requerida.')).toBeTruthy()
 
-    await user.type(screen.getByLabelText(/Descripcion/i), 'Compra menor')
+    await user.type(screen.getByLabelText(/Descripción/i), 'Compra menor')
     await user.click(screen.getByRole('button', { name: 'Registrar' }))
 
     await waitFor(() => {
@@ -179,7 +178,7 @@ describe('CashPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Cerrar caja' }).at(-1)!)
     expect(await screen.findByText('El balance de cierre debe ser 0 o mayor.')).toBeTruthy()
 
-    await user.type(screen.getByLabelText(/Balance contado/i), '1010')
+    await user.type(screen.getByLabelText(/Efectivo contado/i), '1010')
     await user.click(screen.getAllByRole('button', { name: 'Cerrar caja' }).at(-1)!)
 
     await waitFor(() => {

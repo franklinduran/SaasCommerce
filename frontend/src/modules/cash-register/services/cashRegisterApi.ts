@@ -2,7 +2,6 @@ import { useAuthStore } from '@/modules/auth/authStore'
 import { httpClient } from '@/shared/services/httpClient'
 import type {
   CashRegisterDetail,
-  CashRegisterHistoryResponse,
   CloseCashRegisterRequest,
   CloseCashRegisterResponse,
   DailyCashRegisterSummary,
@@ -65,26 +64,6 @@ export const cashRegisterApi = {
     if (params.branchId) query.set('branchId', params.branchId)
     const response = await httpClient<DailyCashRegisterSummary>(
       `/api/cash-registers/daily-summary?${query.toString()}`,
-      { accessToken: getAccessToken() },
-    )
-    return response.data!
-  },
-
-  async getHistory(params: {
-    dateFrom?: string
-    dateTo?: string
-    status?: string
-    page?: number
-    pageSize?: number
-  }): Promise<CashRegisterHistoryResponse> {
-    const query = new URLSearchParams()
-    if (params.dateFrom) query.set('dateFrom', params.dateFrom)
-    if (params.dateTo) query.set('dateTo', params.dateTo)
-    if (params.status) query.set('status', params.status)
-    query.set('page', String(params.page ?? 1))
-    query.set('pageSize', String(params.pageSize ?? 20))
-    const response = await httpClient<CashRegisterHistoryResponse>(
-      `/api/cash-registers?${query.toString()}`,
       { accessToken: getAccessToken() },
     )
     return response.data!

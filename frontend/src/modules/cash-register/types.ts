@@ -90,13 +90,6 @@ export type DailyCashRegisterSummaryItem = {
   manualCashOut: number
 }
 
-export type CashRegisterHistoryResponse = {
-  items: DailyCashRegisterSummaryItem[]
-  page: number
-  pageSize: number
-  totalCount: number
-}
-
 export type DailyCashRegisterSummary = {
   date: string
   openRegisters: number

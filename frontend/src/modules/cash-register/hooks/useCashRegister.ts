@@ -31,21 +31,6 @@ export function useDailyCashRegisterSummary(params: { date?: string; branchId?: 
   })
 }
 
-export function useCashRegisterHistory(params: {
-  dateFrom?: string
-  dateTo?: string
-  status?: string
-  page?: number
-  pageSize?: number
-}) {
-  return useQuery({
-    queryKey: cashRegisterQueryKeys.history(params),
-    queryFn: () => cashRegisterApi.getHistory(params),
-    staleTime: 1000 * 60,
-    retry: false,
-  })
-}
-
 export function useOpenCashRegister() {
   const queryClient = useQueryClient()
 

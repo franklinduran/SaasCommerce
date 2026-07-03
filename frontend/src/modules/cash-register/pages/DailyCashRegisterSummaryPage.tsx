@@ -147,7 +147,7 @@ function RegisterRow({ reg }: Readonly<{ reg: DailyCashRegisterSummaryItem }>) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export function DailyCashRegisterSummaryPage() {
+export function DailyCashRegisterSummaryPage({ embedded = false }: Readonly<{ embedded?: boolean }> = {}) {
   useCashRegisterRealtimeInvalidation()
   const [date, setDate]                 = useState(todayString())
   const [selectedBranchId, setSelectedBranchId] = useState('')
@@ -166,20 +166,22 @@ export function DailyCashRegisterSummaryPage() {
   const netDiff = summary?.totalDifference ?? 0
 
   return (
-    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+    <div className={cn('flex flex-col gap-6', embedded ? '' : 'overflow-y-auto p-6 lg:p-8')}>
 
       {/* Header */}
-      <header>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-          Arqueo
-        </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
-          Arqueo diario de cajas
-        </h1>
-        <p className="mt-1 text-[13.5px] text-muted-foreground">
-          Resumen de todas las cajas abiertas y cerradas del día.
-        </p>
-      </header>
+      {!embedded && (
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+            Arqueo
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+            Arqueo diario de cajas
+          </h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
+            Resumen de todas las cajas abiertas y cerradas del día.
+          </p>
+        </header>
+      )}
 
       {/* Filters */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

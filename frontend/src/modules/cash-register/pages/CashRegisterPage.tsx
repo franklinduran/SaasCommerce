@@ -88,7 +88,7 @@ function StatCard({ icon, iconClass, label, sub, value, valueClass }: Readonly<S
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
-export function CashRegisterPage() {
+export function CashRegisterPage({ embedded = false }: Readonly<{ embedded?: boolean }> = {}) {
   useCashRegisterRealtimeInvalidation()
   const { data: activeRegister, isLoading } = useActiveCashRegister()
   const navigate = useNavigate()
@@ -102,11 +102,12 @@ export function CashRegisterPage() {
   }
 
   if (!activeRegister) {
-    return <OpenRegisterPanel />
+    return <OpenRegisterPanel embedded={embedded} />
   }
 
   return (
     <ActiveRegisterPanel
+      embedded={embedded}
       register={activeRegister}
       onViewSummary={() => navigate('/cash-register/daily-summary')}
     />
@@ -115,7 +116,7 @@ export function CashRegisterPage() {
 
 // ─── Open register panel ──────────────────────────────────────────────────────
 
-function OpenRegisterPanel() {
+function OpenRegisterPanel({ embedded = false }: Readonly<{ embedded?: boolean }>) {
   const openRegister = useOpenCashRegister()
   const session      = useAuthStore((s) => s.session)
   const [openingAmount, setOpeningAmount] = useState('')
@@ -137,14 +138,16 @@ function OpenRegisterPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
-      <header>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Apertura de caja</h1>
-        <p className="mt-1 text-[13.5px] text-muted-foreground">
-          No hay un turno activo para esta sucursal.
-        </p>
-      </header>
+    <div className={cn('flex flex-col gap-6', embedded ? '' : 'overflow-y-auto p-6 lg:p-8')}>
+      {!embedded && (
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Apertura de caja</h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">
+            No hay un turno activo para esta sucursal.
+          </p>
+        </header>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="border-b border-gray-100 px-5 py-3.5">
@@ -198,9 +201,10 @@ type ActiveForm = 'ingreso' | 'salida' | 'cierre' | null
 type ActiveRegisterPanelProps = {
   register: CashRegisterDetail
   onViewSummary: () => void
+  embedded?: boolean
 }
 
-function ActiveRegisterPanel({ register, onViewSummary }: Readonly<ActiveRegisterPanelProps>) {
+function ActiveRegisterPanel({ embedded = false, register, onViewSummary }: Readonly<ActiveRegisterPanelProps>) {
   const [activeForm, setActiveForm]   = useState<ActiveForm>(null)
   const [closeResult, setCloseResult] = useState<CloseCashRegisterResponse | null>(null)
 
@@ -223,20 +227,24 @@ function ActiveRegisterPanel({ register, onViewSummary }: Readonly<ActiveRegiste
   }
 
   if (closeResult) {
-    return <CloseResultPanel result={closeResult} onViewSummary={onViewSummary} />
+    return <CloseResultPanel embedded={embedded} result={closeResult} onViewSummary={onViewSummary} />
   }
 
   const movementsCount = register.movements.length
 
   return (
-    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
+    <div className={cn('flex flex-col gap-6', embedded ? '' : 'overflow-y-auto p-6 lg:p-8')}>
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Turno activo</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {!embedded && (
+            <>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Turno activo</h1>
+            </>
+          )}
+          <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1', embedded ? '' : 'mt-2')}>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11.5px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
               <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               Abierta
@@ -266,10 +274,12 @@ function ActiveRegisterPanel({ register, onViewSummary }: Readonly<ActiveRegiste
             <ArrowUpRight size={14} />
             Salida
           </Button>
-          <Button size="sm" variant="ghost" onClick={onViewSummary}>
-            <BarChart3 size={14} />
-            Arqueo
-          </Button>
+          {!embedded && (
+            <Button size="sm" variant="ghost" onClick={onViewSummary}>
+              <BarChart3 size={14} />
+              Arqueo
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -602,9 +612,10 @@ function CloseRegisterForm({ expectedCash, onClose, onSuccess, register }: Reado
 type CloseResultPanelProps = {
   result: CloseCashRegisterResponse
   onViewSummary: () => void
+  embedded?: boolean
 }
 
-function CloseResultPanel({ result, onViewSummary }: Readonly<CloseResultPanelProps>) {
+function CloseResultPanel({ embedded = false, result, onViewSummary }: Readonly<CloseResultPanelProps>) {
   const outcomeLabel = { Balanced: 'Cuadrado', Surplus: 'Sobrante', Shortage: 'Faltante' }[result.differenceType]
   const outcomeClass = { Balanced: 'text-emerald-700', Surplus: 'text-amber-600', Shortage: 'text-red-700' }[result.differenceType]
   const outcomeBadge = {
@@ -622,12 +633,14 @@ function CloseResultPanel({ result, onViewSummary }: Readonly<CloseResultPanelPr
   ]
 
   return (
-    <div className="flex flex-col gap-6 overflow-y-auto p-6 lg:p-8">
-      <header>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Caja cerrada</h1>
-        <p className="mt-1 text-[13.5px] text-muted-foreground">El turno fue cerrado correctamente.</p>
-      </header>
+    <div className={cn('flex flex-col gap-6', embedded ? '' : 'overflow-y-auto p-6 lg:p-8')}>
+      {!embedded && (
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Caja</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">Caja cerrada</h1>
+          <p className="mt-1 text-[13.5px] text-muted-foreground">El turno fue cerrado correctamente.</p>
+        </header>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-3.5">
@@ -664,12 +677,14 @@ function CloseResultPanel({ result, onViewSummary }: Readonly<CloseResultPanelPr
           </div>
         </div>
 
-        <div className="border-t border-gray-100 px-5 py-4">
-          <Button className="w-full" variant="outline" onClick={onViewSummary}>
-            <BarChart3 size={15} />
-            Ver arqueo del día
-          </Button>
-        </div>
+        {!embedded && (
+          <div className="border-t border-gray-100 px-5 py-4">
+            <Button className="w-full" variant="outline" onClick={onViewSummary}>
+              <BarChart3 size={15} />
+              Ver arqueo del día
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

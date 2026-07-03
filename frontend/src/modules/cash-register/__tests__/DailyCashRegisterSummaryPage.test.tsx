@@ -46,8 +46,8 @@ describe('DailyCashRegisterSummaryPage', () => {
 
     expect(await screen.findByText('Cajas abiertas')).toBeTruthy()
     expect(screen.getByText('Cajas cerradas')).toBeTruthy()
-    expect(screen.getByText('Efectivo esperado')).toBeTruthy()
-    expect(screen.getByText('Efectivo contado')).toBeTruthy()
+    expect(screen.getByText('Ef. esperado')).toBeTruthy()
+    expect(screen.getByText('Ef. contado')).toBeTruthy()
   })
 
   it('shows register list when registers are present', async () => {
